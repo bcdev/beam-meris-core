@@ -1,0 +1,95 @@
+<graph>
+    <id>rad2refl</id>
+
+    <node>
+        <id>l1b</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>refl</id>
+        <operator>org.esa.beam.bop.meris.brr.Rad2ReflOp$Spi</operator>
+        <sources>
+            <input>l1b</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>cloudclassif</id>
+        <operator>org.esa.beam.bop.meris.brr.CloudClassificationOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <rhotoa>refl</rhotoa>
+        </sources>
+    </node>
+
+    <node>
+        <id>gascor</id>
+        <operator>org.esa.beam.bop.meris.brr.GaseousCorrectionOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <rhotoa>refl</rhotoa>
+            <cloud>cloudclassif</cloud>
+        </sources>
+    </node>
+
+    <node>
+        <id>landClass</id>
+        <operator>org.esa.beam.bop.meris.brr.LandClassificationOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <gascor>gascor</gascor>
+        </sources>
+    </node>
+
+    <node>
+        <id>merged</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ProductMergeOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <refl>refl</refl>
+            <cloudclassif>cloudclassif</cloudclassif>
+            <gascor>gascor</gascor>
+            <landClass>landClass</landClass>
+        </sources>
+        <parameters>
+            <productType>MER_L2_BRR</productType>
+            <baseGeoInfo>l1b</baseGeoInfo>
+            <band>
+                <product>l1b</product>
+                <nameExp>.*</nameExp>
+            </band>
+            <band>
+                <product>refl</product>
+                <nameExp>.*</nameExp>
+            </band>
+            <band>
+                <product>cloudclassif</product>
+                <nameExp>.*</nameExp>
+            </band>
+            <band>
+                <product>gascor</product>
+                <nameExp>.*</nameExp>
+            </band>
+            <band>
+                <product>landClass</product>
+                <nameExp>.*</nameExp>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>merged</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

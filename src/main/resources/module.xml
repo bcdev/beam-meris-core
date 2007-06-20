@@ -1,0 +1,16 @@
+<module>
+    <manifestVersion>1.0.0</manifestVersion>
+    <symbolicName>bop-meris-brr</symbolicName>
+    <version>2.0-SNAPSHOT</version>
+    <name>BEAM MERIS BRR</name>
+
+    <dependency>
+        <module>beam-gpf</module>
+    </dependency>
+    <dependency>
+        <module>beam-envisat-reader</module>
+    </dependency>
+
+    <categories>System,Application,Processing</categories>
+
+</module>
