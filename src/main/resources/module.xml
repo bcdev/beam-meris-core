@@ -1,0 +1,34 @@
+<module>
+    <manifestVersion>1.0.0</manifestVersion>
+    <symbolicName>bop-meris-albedomap</symbolicName>
+    <version>2.0-SNAPSHOT</version>
+    <name>BEAM MERIS Albedomap</name>
+
+    <dependency>
+        <module>bop-meris-brr</module>
+    </dependency>
+    <dependency>
+        <module>beam-envisat-reader</module>
+    </dependency>
+    <dependency>
+        <module>lib-hdf</module>
+    </dependency>
+
+    <categories>System,Application,Processing</categories>
+
+
+    <extension point="beam-core:rgbProfiles">
+        <rgbProfile>
+            <name>MERIS SDR - High Quality</name>
+            <red>log(0.05 + 0.35 * sdr_2 + 0.6 * sdr_5 + sdr_6 + 0.13 * sdr_7)</red>
+            <green>log(0.05 + 0.21 * sdr_3 + 0.5 * sdr_4 + sdr_5 + 0.38 * sdr_6)</green>
+            <blue>log(0.05 + 0.21 * sdr_1 + 1.75 * sdr_2 + 0.47 * sdr_3 + 0.16 * sdr_4)</blue>
+        </rgbProfile>
+        <rgbProfile>
+            <name>MERIS SDR - simple</name>
+            <red>sdr_7</red>
+            <green>sdr_5</green>
+            <blue>sdr_2</blue>
+        </rgbProfile>
+    </extension>
+</module>

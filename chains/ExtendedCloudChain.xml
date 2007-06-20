@@ -1,0 +1,106 @@
+<graph>
+    <id>Blue</id>
+
+    <node>
+        <id>load</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>brr</id>
+        <operator>org.esa.beam.bop.meris.brr.BrrOp$Spi</operator>
+        <sources>
+            <input>load</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>blue</id>
+        <operator>org.esa.beam.bop.meris.cloud.BlueBandOp$Spi</operator>
+        <sources>
+            <toar>brr</toar>
+            <l1b>load</l1b>
+        </sources>
+    </node>
+
+    <node>
+        <id>cloudProb</id>
+        <operator>org.esa.beam.bop.meris.cloud.CloudProbabilityOp$Spi</operator>
+        <sources>
+            <input>load</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>combinedCloud</id>
+        <operator>org.esa.beam.bop.meris.cloud.CombinedCloudOp$Spi</operator>
+        <sources>
+            <cloudProb>cloudProb</cloudProb>
+            <blueBand>blue</blueBand>
+        </sources>
+    </node>
+
+    <node>
+        <id>cloudEdge</id>
+        <operator>org.esa.beam.bop.meris.cloud.CloudEdgeOp$Spi</operator>
+        <sources>
+            <input>combinedCloud</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>cloudShadow</id>
+        <operator>org.esa.beam.bop.meris.cloud.CloudShadowOp$Spi</operator>
+        <sources>
+            <cloud>cloudEdge</cloud>
+            <l1b>load</l1b>
+        </sources>
+    </node>
+
+    <node>
+        <id>mergedFlags</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ProductMergeOp$Spi</operator>
+        <sources>
+            <l1b>load</l1b>
+            <brr>brr</brr>
+            <cloud>cloudShadow</cloud>
+        </sources>
+        <parameters>
+            <band>
+                <product>l1b</product>
+                <nameExp>l1_flags</nameExp>
+            </band>
+            <band>
+                <product>brr</product>
+                <nameExp>l2_flags_p1</nameExp>
+            </band>
+            <band>
+                <product>cloud</product>
+                <nameExp>combined_cloud</nameExp>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>processFurther</id>
+        <operator>org.esa.beam.bop.meris.ProcessFurtherStateOp$Spi</operator>
+        <sources>
+            <input>mergedFlags</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>processFurther</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

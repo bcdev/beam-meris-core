@@ -1,0 +1,191 @@
+<graph>
+    <id>Blue</id>
+
+    <node>
+        <id>l1b</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>l2</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile2}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>composite</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile3}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>compositeToL1</id>
+        <operator>org.esa.beam.framework.gpf.operators.meris.L3ToL1Op$Spi</operator>
+        <sources>
+            <l1>l1b</l1>
+            <l3>composite</l3>
+        </sources>
+    </node>
+
+    <node>
+        <id>fillL3</id>
+        <operator>org.esa.beam.bop.meris.FillAerosolOp$Spi</operator>
+        <sources>
+            <input>compositeToL1</input>
+        </sources>
+        <parameters>
+            <pixelWidth>25</pixelWidth>
+            <band>
+                <name>aero_alpha</name>
+                <validExp>aero_alpha != -1</validExp>
+            </band>
+            <band>
+                <name>aero_opt_thick_443</name>
+                <validExp>aero_opt_thick_443 != -1</validExp>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>fillL2</id>
+        <operator>org.esa.beam.bop.meris.FillAerosolOp$Spi</operator>
+        <sources>
+            <input>l2</input>
+        </sources>
+        <parameters>
+            <pixelWidth>25</pixelWidth>
+            <band>
+                <name>aero_alpha</name>
+                <validExp>!l2_flags.PCD_19 AND (l2_flags.LAND OR l2_flags.WATER)</validExp>
+            </band>
+            <band>
+                <name>aero_opt_thick_443</name>
+                <validExp>!l2_flags.PCD_19 AND l2_flags.LAND</validExp>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>aerosolFilled</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ConditionalFillerOp$Spi</operator>
+        <sources>
+            <lars>fillL2</lars>
+            <composite>fillL3</composite>
+        </sources>
+        <parameters>
+            <flagName>aerosol_fill_flags</flagName>
+            <band>
+                <name>alpha</name>
+                <bandSource>
+                    <key>lars</key>
+                    <band>aero_alpha</band>
+                    <validExp>aero_alpha != -1</validExp>
+                </bandSource>
+                <bandSource>
+                    <key>composite</key>
+                    <band>aero_alpha</band>
+                    <validExp>aero_alpha != -1</validExp>
+                </bandSource>
+                <defaultValue>1.0</defaultValue>
+            </band>
+            <band>
+                <name>aot_443</name>
+                <bandSource>
+                    <key>lars</key>
+                    <band>aero_opt_thick_443</band>
+                    <validExp>aero_opt_thick_443 != -1</validExp>
+                </bandSource>
+                <bandSource>
+                    <key>composite</key>
+                    <band>aero_opt_thick_443</band>
+                    <validExp>aero_opt_thick_443 != -1</validExp>
+                </bandSource>
+                <defaultValue>0.1</defaultValue>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>merged</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ProductMergeOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <l2>l2</l2>
+            <l3>compositeToL1</l3>
+            <filled>aerosolFilled</filled>
+            <fillL3>fillL3</fillL3>
+            <fillL2>fillL2</fillL2>
+        </sources>
+        <parameters>
+            <productType>MER_L2_SDR</productType>
+            <baseGeoInfo>l1b</baseGeoInfo>
+            <band>
+                <product>l2</product>
+                <name>aero_alpha</name>
+                <newName>aero_alpha_l2</newName>
+            </band>
+            <band>
+                <product>l2</product>
+                <name>aero_opt_thick_443</name>
+                <newName>aero_opt_thick_443_l2</newName>
+            </band>
+            <band>
+                <product>l2</product>
+                <name>l2_flags</name>
+            </band>
+            <band>
+                <product>l3</product>
+                <name>aero_alpha</name>
+                <newName>aero_alpha_l3</newName>
+            </band>
+            <band>
+                <product>l3</product>
+                <name>aero_opt_thick_443</name>
+                <newName>aero_opt_thick_443_l3</newName>
+            </band>
+            <band>
+                <product>fillL3</product>
+                <name>aero_alpha</name>
+                <newName>aero_alpha_l3_filled</newName>
+            </band>
+            <band>
+                <product>fillL3</product>
+                <name>aero_opt_thick_443</name>
+                <newName>aero_opt_thick_443_l3_filled</newName>
+            </band>
+            <band>
+                <product>fillL2</product>
+                <name>aero_alpha</name>
+                <newName>aero_alpha_l2_filled</newName>
+            </band>
+            <band>
+                <product>fillL2</product>
+                <name>aero_opt_thick_443</name>
+                <newName>aero_opt_thick_443_l2_filled</newName>
+            </band>
+            <band>
+                <product>filled</product>
+                <nameExp>.*</nameExp>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>merged</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

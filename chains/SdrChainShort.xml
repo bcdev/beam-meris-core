@@ -1,0 +1,85 @@
+<graph>
+    <id>Blue</id>
+
+    <node>
+        <id>l1b</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>l2</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile2}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>brr</id>
+        <operator>org.esa.beam.bop.meris.brr.BrrOp$Spi</operator>
+        <sources>
+            <input>l1b</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>blue</id>
+        <operator>org.esa.beam.bop.meris.cloud.BlueBandOp$Spi</operator>
+        <sources>
+            <toar>brr</toar>
+            <l1b>l1b</l1b>
+        </sources>
+    </node>
+
+    <node>
+        <id>cloudProb</id>
+        <operator>org.esa.beam.bop.meris.cloud.CloudProbabilityOp$Spi</operator>
+        <sources>
+            <input>l1b</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>combinedCloud</id>
+        <operator>org.esa.beam.bop.meris.cloud.CombinedCloudOp$Spi</operator>
+        <sources>
+            <cloudProb>cloudProb</cloudProb>
+            <blueBand>blue</blueBand>
+        </sources>
+    </node>
+
+    <node>
+        <id>sdr</id>
+        <operator>org.esa.beam.bop.meris.sdr.SdrOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <brr>brr</brr>
+            <aerosol>l2</aerosol>
+            <cloud>combinedCloud</cloud>
+        </sources>
+        <parameters>
+            <neuralNetFile>fub_aerosol_16.10.2006.nna</neuralNetFile>
+            <cloudFreeExpression>NOT combined_cloud.cloud</cloudFreeExpression>
+            <!-- if used without blueband and combined cloud use the next line -->
+            <!--          <cloudFreeExpression>cloud_flag.cloudfree</cloudFreeExpression>-->
+            <validLandExpression>l2_flags_p1.F_LANDCONS</validLandExpression>
+            <aot470Name>aero_opt_thick_443</aot470Name>
+            <angName>aero_alpha</angName>
+        </parameters>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>sdr</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

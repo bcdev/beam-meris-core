@@ -1,0 +1,31 @@
+<graph>
+    <id>Cloud</id>
+
+    <node>
+        <id>load</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>ctp</id>
+        <operator>org.esa.beam.bop.meris.cloud.CloudTopPressureOp$Spi</operator>
+        <sources>
+            <input>load</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>ctp</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

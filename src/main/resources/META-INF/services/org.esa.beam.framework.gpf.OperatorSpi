@@ -1,0 +1,8 @@
+org.esa.beam.bop.meris.cloud.BlueBandOp$Spi
+org.esa.beam.bop.meris.cloud.CloudEdgeOp$Spi
+org.esa.beam.bop.meris.cloud.CloudProbabilityOp$Spi
+org.esa.beam.bop.meris.cloud.CombinedCloudOp$Spi
+org.esa.beam.bop.meris.cloud.CloudTopPressureOp$Spi
+org.esa.beam.bop.meris.cloud.CloudShadowOp$Spi
+org.esa.beam.bop.meris.brr.BrrOp$Spi
+org.esa.beam.bop.meris.sdr.SdrOp$Spi
