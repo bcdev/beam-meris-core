@@ -16,20 +16,22 @@
  */
 package org.esa.beam.bop.meris;
 
-import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.core.SubProgressMonitor;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
-import org.esa.beam.framework.gpf.Operator;
-import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.support.CachingOperator;
-import org.esa.beam.framework.gpf.support.ProductDataCache;
-import org.esa.beam.framework.gpf.support.SourceDataRetriever;
+import java.awt.Rectangle;
+
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
+import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
-import java.awt.*;
+import com.bc.ceres.core.ProgressMonitor;
+import com.bc.jexp.ParseException;
+import com.bc.jexp.Term;
 
 /**
  * Created by marcoz.
@@ -37,7 +39,7 @@ import java.awt.*;
  * @author marcoz
  * @version $Revision: 1.1 $ $Date: 2007/03/27 12:52:22 $
  */
-public class ProcessFurtherStateOp extends CachingOperator {
+public class ProcessFurtherStateOp extends MerisBasisOp {
 
     private static final String PROCESS_FURTHER_BAND_NAME = "process_further_state";
 
@@ -51,56 +53,51 @@ public class ProcessFurtherStateOp extends CachingOperator {
             "combined_cloud.snow",
             "l1_flags.INVALID"};
 
-    private SourceDataRetriever dataRetriever;
-
-    private boolean[][] isValid;
+    private Term[] terms;
+    
+    @SourceProduct(alias="input")
+    private Product sourceProduct;
+    @TargetProduct
+    private Product targetProduct;
 
     public ProcessFurtherStateOp(OperatorSpi spi) {
         super(spi);
     }
 
     @Override
-    public boolean isComputingAllBandsAtOnce() {
-        return false;
-    }
-
-    @Override
-    public Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
-        Product inputProduct = getContext().getSourceProduct("input");
-
-        final int sceneWidth = inputProduct.getSceneRasterWidth();
-        final int sceneHeight = inputProduct.getSceneRasterHeight();
-
-        Product targetProduct = new Product("MER", "MER_L2", sceneWidth, sceneHeight);
-        Band processFurtherBand = new Band(PROCESS_FURTHER_BAND_NAME,
-                                           ProductData.TYPE_INT8, sceneWidth, sceneHeight);
+    public Product initialize(ProgressMonitor pm) throws OperatorException {
+        targetProduct = createCompatibleProduct(sourceProduct, "MER", "MER_L2");
+        Band processFurtherBand = targetProduct.addBand(PROCESS_FURTHER_BAND_NAME, ProductData.TYPE_INT8);
         processFurtherBand.setDescription("process further state");
-        targetProduct.addBand(processFurtherBand);
 
+        terms = new Term[EXPRESSIONS.length];
+        
+        try {
+        	for (int i = 0; i < EXPRESSIONS.length; i++) {
+        		terms[i] = sourceProduct.createTerm(EXPRESSIONS[i]);	
+    		}
+		} catch (ParseException e) {
+			throw new OperatorException("Could not create Term for expression.", e);
+		}
         return targetProduct;
     }
 
     @Override
-    public void initSourceRetriever() {
-        final Product inputProduct = getContext().getSourceProduct("input");
-        dataRetriever = new SourceDataRetriever(maxTileSize);
+    public void computeTile(Tile targetTile,
+            ProgressMonitor pm) throws OperatorException {
 
-        isValid = new boolean[EXPRESSIONS.length][0];
-        for (int j = 0; j < EXPRESSIONS.length; j++) {
-            isValid[j] = dataRetriever.connectBooleanExpression(inputProduct, EXPRESSIONS[j]);
-        }
-    }
-
-    @Override
-    public void computeTile(Band band, Rectangle rectangle,
-                            ProductDataCache cache, ProgressMonitor pm) throws OperatorException {
-
+    	Rectangle rectangle = targetTile.getRectangle();
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-            dataRetriever.readData(rectangle, new SubProgressMonitor(pm, 1));
+        	boolean[][] isValid = new boolean[EXPRESSIONS.length][0];
+        	for (int i = 0; i < isValid.length; i++) {
+        		isValid[i] = new boolean[size];
+        		sourceProduct.readBitmask(rectangle.x, rectangle.y,
+    	    			rectangle.width, rectangle.height, terms[i], isValid[i], ProgressMonitor.NULL);
+			}
 
-            ProductData flagData = cache.createData(band);
+            ProductData flagData = targetTile.getDataBuffer();
             byte[] processfurther = (byte[]) flagData.getElems();
 
             for (int i = 0; i < size; i++) {

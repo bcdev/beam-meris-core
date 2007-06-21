@@ -168,7 +168,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
 			validOceanTerm = l1bProduct.createTerm(validOceanExpression);
 			landTerm = l1bProduct.createTerm("l1_flags.LAND_OCEAN");
 		} catch (ParseException e) {
-			e.printStackTrace();
+			throw new OperatorException("Could not create Term for expression.", e);
 		}
         
 

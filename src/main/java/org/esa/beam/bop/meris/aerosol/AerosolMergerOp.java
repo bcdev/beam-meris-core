@@ -16,19 +16,23 @@
  */
 package org.esa.beam.bop.meris.aerosol;
 
-import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.core.SubProgressMonitor;
+import java.awt.Color;
+import java.awt.Rectangle;
+
+import org.esa.beam.framework.datamodel.Band;
+import org.esa.beam.framework.datamodel.BitmaskDef;
+import org.esa.beam.framework.datamodel.FlagCoding;
+import org.esa.beam.framework.datamodel.MetadataAttribute;
+import org.esa.beam.framework.datamodel.Product;
+import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
-import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.support.CachingOperator;
-import org.esa.beam.framework.gpf.support.ProductDataCache;
-import org.esa.beam.framework.gpf.support.SourceDataRetriever;
-import org.esa.beam.framework.datamodel.*;
+import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
-import java.awt.*;
-import java.io.IOException;
+import com.bc.ceres.core.ProgressMonitor;
 
 /**
  * Created by marcoz.
@@ -36,7 +40,7 @@ import java.io.IOException;
  * @author marcoz
  * @version $Revision: 1.1 $ $Date: 2007/03/27 12:52:21 $
  */
-public class AerosolMergerOp extends CachingOperator {
+public class AerosolMergerOp extends MerisBasisOp {
 
     private static final int LARS_FLAG = 1;
     private static final int MOD08_FLAG = 2;
@@ -45,49 +49,43 @@ public class AerosolMergerOp extends CachingOperator {
     private static final float AOT_DEFAULT = 0.1f;
     private static final float ANG_DEFAULT = 1f;
 
-    private SourceDataRetriever dataRetriever;
     private Band aot470Band;
     private Band angstrBand;
     private Band flagBand;
     private float[] modAot;
     private float[] modAng;
-    private int[] modFlag;
+    private byte[] modFlag;
     private float[] l2Aot;
     private float[] l2Ang;
     private float[] aot470;
     private float[] ang;
     private byte[] flag;
 
+    @SourceProduct(alias="l2")
+    private Product l2Product;
+    @SourceProduct(alias="mod08")
+    private Product mod08Product;
+    @TargetProduct
+    private Product targetProduct;
+    
     public AerosolMergerOp(OperatorSpi spi) {
         super(spi);
     }
 
     @Override
-    public boolean isComputingAllBandsAtOnce() {
-        return true;
-    }
+    public Product initialize(ProgressMonitor pm) throws OperatorException {
+        targetProduct = createCompatibleProduct(mod08Product, "AEROSOL", "AEROSOL");
+        aot470Band = targetProduct.addBand("aot_470", ProductData.TYPE_FLOAT32);
+        angstrBand = targetProduct.addBand("ang", ProductData.TYPE_FLOAT32);
 
-    @Override
-    public Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
-        final Product sourceProduct = getSourceProduct("l2");
+        FlagCoding cloudFlagCoding = createFlagCoding(mod08Product);
+        mod08Product.addFlagCoding(cloudFlagCoding);
 
-        final int width = sourceProduct.getSceneRasterWidth();
-        final int height = sourceProduct.getSceneRasterHeight();
-        final Product aerosolProduct = new Product("AEROSOL", "AEROSOL", width, height);
-        aot470Band = new Band("aot_470", ProductData.TYPE_FLOAT32, width, height);
-        aerosolProduct.addBand(aot470Band);
-        angstrBand = new Band("ang", ProductData.TYPE_FLOAT32, width, height);
-        aerosolProduct.addBand(angstrBand);
-
-        FlagCoding cloudFlagCoding = createFlagCoding(aerosolProduct);
-        aerosolProduct.addFlagCoding(cloudFlagCoding);
-
-        flagBand = new Band("aerosol_flags", ProductData.TYPE_UINT8, width, height);
+        flagBand = targetProduct.addBand("aerosol_flags", ProductData.TYPE_UINT8);
         flagBand.setDescription("Aerosol specific flags");
         flagBand.setFlagCoding(cloudFlagCoding);
-        aerosolProduct.addBand(flagBand);
 
-        return aerosolProduct;
+        return targetProduct;
     }
 
     private FlagCoding createFlagCoding(Product outputProduct) {
@@ -125,34 +123,27 @@ public class AerosolMergerOp extends CachingOperator {
         return flagCoding;
     }
 
-    @Override
-    public void initSourceRetriever() {
-        final Product mod08Product = getSourceProduct("mod08");
-        final Product l2Product = getSourceProduct("l2");
+    private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
 
-        dataRetriever = new SourceDataRetriever(maxTileSize);
+        modAot = (float[]) getTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getDataBuffer().getElems();
+        modAng = (float[]) getTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle).getDataBuffer().getElems();
+        modFlag = (byte[]) getTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle).getDataBuffer().getElems();
 
-        modAot = dataRetriever.connectFloat(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470));
-        modAng = dataRetriever.connectFloat(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG));
-        modFlag = dataRetriever.connectInt(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS));
-
-        l2Aot = dataRetriever.connectFloat(l2Product.getBand("aero_opt_thick_443"));
-        l2Ang = dataRetriever.connectFloat(l2Product.getBand("aero_alpha"));
+        l2Aot = (float[]) getTile(l2Product.getBand("aero_opt_thick_443"), rectangle).getDataBuffer().getElems();
+        l2Ang = (float[]) getTile(l2Product.getBand("aero_alpha"), rectangle).getDataBuffer().getElems();
     }
 
     @Override
-    public void computeTiles(Rectangle rectangle,
-                             ProductDataCache cache, ProgressMonitor pm)
-            throws OperatorException {
+    public void computeTiles(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", 1 + size);
         try {
-            dataRetriever.readData(rectangle, new SubProgressMonitor(pm, 1));
+            loadSourceTiles(rectangle);
 
-            aot470 = (float[]) cache.createData(aot470Band).getElems();
-            ang = (float[]) cache.createData(angstrBand).getElems();
-            flag = (byte[]) cache.createData(flagBand).getElems();
+            aot470 = (float[]) getTile(aot470Band, rectangle).getDataBuffer().getElems();
+            ang = (float[]) getTile(angstrBand, rectangle).getDataBuffer().getElems();
+            flag = (byte[]) getTile(flagBand, rectangle).getDataBuffer().getElems();
 
             for (int i = 0; i < size; i++) {
                 if (l2Aot[i] >= 0 && l2Ang[i] >= 0) {
@@ -170,8 +161,6 @@ public class AerosolMergerOp extends CachingOperator {
                 }
                 pm.worked(1);
             }
-        } catch (IOException e) {
-            throw new OperatorException(e);
         } finally {
             pm.done();
         }

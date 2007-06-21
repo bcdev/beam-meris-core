@@ -16,26 +16,35 @@
  */
 package org.esa.beam.bop.meris;
 
-import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.core.SubProgressMonitor;
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.io.xml.XppDomReader;
-import com.thoughtworks.xstream.io.xml.xppdom.Xpp3Dom;
-import org.esa.beam.framework.gpf.support.CachingOperator;
-import org.esa.beam.framework.gpf.support.ProductDataCache;
-import org.esa.beam.framework.gpf.support.SourceDataRetriever;
-import org.esa.beam.framework.gpf.support.TileRectCalculator;
-import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.datamodel.Band;
-import org.esa.beam.framework.datamodel.Product;
-import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.*;
-
-import java.awt.*;
+import java.awt.Rectangle;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.esa.beam.framework.datamodel.Band;
+import org.esa.beam.framework.datamodel.Product;
+import org.esa.beam.framework.datamodel.ProductData;
+import org.esa.beam.framework.datamodel.RasterDataNode;
+import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.Operator;
+import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.ParameterConverter;
+import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.framework.gpf.support.TileRectCalculator;
+
+import com.bc.ceres.core.ProgressMonitor;
+import com.bc.jexp.ParseException;
+import com.bc.jexp.Term;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.xml.XppDomReader;
+import com.thoughtworks.xstream.io.xml.xppdom.Xpp3Dom;
 
 /**
  * Created by marcoz.
@@ -43,15 +52,20 @@ import java.util.Map;
  * @author marcoz
  * @version $Revision: 1.1 $ $Date: 2007/05/14 12:26:01 $
  */
-public class FillAerosolOp extends CachingOperator implements ParameterConverter {
+public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
 
     private TileRectCalculator rectCalculator;
-    private Map<Band, Band> bandMap;
-    private Map<Band, SourceDataRetriever> dataRetrieverMap;
-    private Map<Band, float[]> valueMap;
-    private Map<Band, boolean[]> validMap;
+    private Map<Band, Band> sourceBands;
+    private Map<Band, Band> defaultBands;
+    private Map<Band, Term> validTerms;
+    
+    @SourceProduct(alias="input")
+    private Product sourceProduct;
+    @SourceProduct(alias="default")
+    private Product defaultProduct;
     @TargetProduct
     private Product targetProduct;
+    
     private Configuration config;
 
 
@@ -71,16 +85,12 @@ public class FillAerosolOp extends CachingOperator implements ParameterConverter
     public class BandDesc {
         String name;
         String validExp;
+        String defaultBand;
     }
 
     public FillAerosolOp(OperatorSpi spi) {
         super(spi);
         config = new Configuration();
-    }
-
-    @Override
-    public boolean isComputingAllBandsAtOnce() {
-        return false;
     }
 
     public void setParameterValues(Operator operator, Xpp3Dom parameterDom) throws OperatorException {
@@ -93,98 +103,93 @@ public class FillAerosolOp extends CachingOperator implements ParameterConverter
     }
 
     @Override
-    public Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
-        Product srcProduct = getContext().getSourceProduct("input");
-
-        final int sceneWidth = srcProduct.getSceneRasterWidth();
-        final int sceneHeight = srcProduct.getSceneRasterHeight();
-
-        targetProduct = new Product("MER_SDR", "MER_SDR", sceneWidth, sceneHeight);
-        bandMap = new HashMap<Band, Band>(config.bands.size());
+    public Product initialize(ProgressMonitor pm) throws OperatorException {
+        targetProduct = createCompatibleProduct(sourceProduct, "fill_aerosol", "MER_L2");
+        sourceBands = new HashMap<Band, Band>(config.bands.size());
+        defaultBands = new HashMap<Band, Band>(config.bands.size());
+        validTerms = new HashMap<Band, Term>(config.bands.size());
         for (BandDesc bandDesc : config.bands) {
-            Band srcBand = srcProduct.getBand(bandDesc.name);
+            Band srcBand = sourceProduct.getBand(bandDesc.name);
             Band targetBand = targetProduct.addBand(srcBand.getName(), ProductData.TYPE_FLOAT32);
             targetBand.setNoDataValue(-1);
             targetBand.setNoDataValueUsed(true);
-            bandMap.put(targetBand, srcBand);
+            
+            sourceBands.put(targetBand, srcBand);
+            Band defaultBand = defaultProduct.getBand(bandDesc.defaultBand);
+            defaultBands.put(targetBand, defaultBand);
+            try {
+            	Term valid = sourceProduct.createTerm(bandDesc.validExp);
+            	validTerms.put(targetBand, valid);
+    		} catch (ParseException e) {
+    			throw new OperatorException("Could not create Term for expression.", e);
+    		}
         }
+        rectCalculator = new TileRectCalculator(sourceProduct, config.pixelWidth, config.pixelWidth);
         return targetProduct;
     }
 
     @Override
-    public void initSourceRetriever() {
-        final Product srcProduct = getContext().getSourceProduct("input");
+    public void computeTile(Tile targetTile,
+            ProgressMonitor pm) throws OperatorException {
 
-        rectCalculator = new TileRectCalculator(srcProduct, config.pixelWidth, config.pixelWidth);
-        Dimension maxSourceSize = rectCalculator.computeMaxSourceSize(maxTileSize);
-
-        dataRetrieverMap = new HashMap<Band, SourceDataRetriever>(config.bands.size());
-        valueMap = new HashMap<Band, float[]>(config.bands.size());
-        validMap = new HashMap<Band, boolean[]>(config.bands.size());
-        for (BandDesc bandDesc : config.bands) {
-            SourceDataRetriever dataRetriever = new SourceDataRetriever(maxSourceSize);
-            Band targetBand = targetProduct.getBand(bandDesc.name);
-            dataRetrieverMap.put(targetBand, dataRetriever);
-
-            Band srcBand = bandMap.get(targetBand);
-
-            float[] values = dataRetriever.connectFloat(srcBand);
-            valueMap.put(targetBand, values);
-
-            boolean[] valid = dataRetriever.connectBooleanExpression(srcProduct, bandDesc.validExp);
-            validMap.put(targetBand, valid);
-        }
-    }
-
-    @Override
-    public void computeTile(Band targetBand, Rectangle targetRect,
-                            ProductDataCache cache, ProgressMonitor pm) throws OperatorException {
-
+    	RasterDataNode targetBand = targetTile.getRasterDataNode();
+    	Rectangle targetRect = targetTile.getRectangle();
         Rectangle sourceRect = rectCalculator.computeSourceRectangle(targetRect);
         pm.beginTask("Processing frame...", sourceRect.height + 1);
         try {
-            SourceDataRetriever dataRetriever = dataRetrieverMap.get(targetBand);
-            dataRetriever.readData(sourceRect, new SubProgressMonitor(pm, 1));
-
-            float[] inValues = valueMap.get(targetBand);
-            boolean[] valid = validMap.get(targetBand);
-            float[] outValues = (float[]) cache.createData(targetBand).getElems();
-
-            int targetIndex = 0;
+            Raster values = getTile(sourceBands.get(targetBand), sourceRect);
+            Raster defaultValues = getTile(defaultBands.get(targetBand), sourceRect);
+            
+            final int size = sourceRect.height * sourceRect.width;
+            boolean[] isValid = new boolean[size];
+            Term validTerm = validTerms.get(targetBand);
+            sourceProduct.readBitmask(sourceRect.x, sourceRect.y,
+            		sourceRect.width, sourceRect.height, validTerm, isValid, ProgressMonitor.NULL);
+			
             for (int y = targetRect.y; y < targetRect.y + targetRect.height; y++) {
+            	int sourceIndex = TileRectCalculator.convertToIndex(targetRect.x, y, sourceRect)-1;
                 for (int x = targetRect.x; x < targetRect.x + targetRect.width; x++) {
-                    final int sourceIndex = TileRectCalculator.convertToIndex(x, y, sourceRect);
-                    if (valid[sourceIndex]) {
-                        outValues[targetIndex] = inValues[sourceIndex];
+                    sourceIndex++;
+                    if (isValid[sourceIndex]) {
+                        targetTile.setFloat(x, y, values.getFloat(x, y));
                     } else {
                         double weigthSum = 0;
+						double weigthSumTotal = 0;
                         double tauSum = 0;
-                        for (int iy = y - config.pixelWidth; iy < y + config.pixelWidth; iy++) {
+                        final int iyStart = Math.max(y - config.pixelWidth,sourceRect.y);
+                        final int iyEnd = Math.min(y + config.pixelWidth,sourceRect.y+sourceRect.height);
+                        for (int iy = iyStart; iy < iyEnd; iy++) {
                             final int yDist = iy - y;
-                            for (int ix = x - config.pixelWidth; ix < x + config.pixelWidth; ix++) {
-                                if (sourceRect.contains(ix, iy)) {
-                                    final int internalIndex = TileRectCalculator.convertToIndex(ix, iy, sourceRect);
-                                    final int xDist = ix - x;
-                                    if (valid[internalIndex] && xDist != 0 && yDist != 0) {
-                                        final double weight = 1.0 / (xDist * xDist + yDist * yDist);
-                                        weigthSum += weight;
-                                        tauSum += inValues[internalIndex] * weight;
-                                    }
+                            final int ixStart = Math.max(x - config.pixelWidth,sourceRect.x);
+                            final int ixEnd = Math.min(x + config.pixelWidth,sourceRect.x+sourceRect.width);
+                            for (int ix = ixStart; ix < ixEnd; ix++) {
+                            	final int xDist = ix - x;
+								if (xDist == 0 && yDist == 0) {
+									continue;
+								}
+								final double weight = 1.0 / (xDist * xDist + yDist * yDist);
+								weigthSumTotal += weight;
+								final int internalIndex = TileRectCalculator.convertToIndex(ix, iy, sourceRect);
+								if (isValid[internalIndex]) {
+									weigthSum += weight;
+									tauSum += values.getFloat(ix, iy) * weight;
                                 }
                             }
                         }
                         if (weigthSum > 0) {
-                            outValues[targetIndex] = (float) (tauSum / weigthSum);
+							final double tauTemp = tauSum/weigthSum;
+							final double ww = weigthSum/weigthSumTotal;
+							final double tau = ww * tauTemp + (1.0 - ww)* defaultValues.getFloat(x, y);
+							targetTile.setFloat(x, y, (float) tau);
                         } else {
-                            outValues[targetIndex] = -1;
+							targetTile.setFloat(x, y, defaultValues.getFloat(x, y));
                         }
                     }
-                    targetIndex++;
                 }
                 pm.worked(1);
             }
-        } catch (Exception e) {
-            throw new OperatorException(e);
+        } catch (IOException e) {
+        	throw new OperatorException("Couldn't load bitmasks", e);
         } finally {
             pm.done();
         }

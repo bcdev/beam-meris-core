@@ -6,3 +6,9 @@ org.esa.beam.bop.meris.cloud.CloudTopPressureOp$Spi
 org.esa.beam.bop.meris.cloud.CloudShadowOp$Spi
 org.esa.beam.bop.meris.brr.BrrOp$Spi
 org.esa.beam.bop.meris.sdr.SdrOp$Spi
+org.esa.beam.bop.meris.FillAerosolOp$Spi
+org.esa.beam.bop.meris.FillBandOp$Spi
+org.esa.beam.bop.meris.aerosol.AerosolMergerOp$Spi
+org.esa.beam.bop.meris.aerosol.ModisAerosolOp$Spi
+org.esa.beam.bop.meris.GapLessSdrOp$Spi
+org.esa.beam.bop.meris.ProcessFurtherStateOp$Spi

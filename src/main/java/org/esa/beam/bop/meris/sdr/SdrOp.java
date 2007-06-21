@@ -62,7 +62,7 @@ public class SdrOp extends MerisBasisOp {
     private Band sdrFlagBand;
 
     private float[][] reflectance;
-    private short[][] sdr;
+    private float[][] sdr;
     private float[] sza;
     private float[] saa;
     private float[] vza;
@@ -128,9 +128,10 @@ public class SdrOp extends MerisBasisOp {
         return createTargetProduct();
     }
 
-    private Product createTargetProduct() {
+    private Product createTargetProduct() throws OperatorException {
         targetProduct = createCompatibleProduct(l1bProduct, DEFAULT_OUTPUT_PRODUCT_NAME, SDR_PRODUCT_TYPE);
         
+        reflectanceBands = new Band[sdrBandNo.length];
         sdrBands = new Band[sdrBandNo.length];
         for (int i = 0; i < sdrBandNo.length; i++) {
         	reflectanceBands[i] = brrProduct.getBand("brr_" + Integer.toString(sdrBandNo[i]));
@@ -162,7 +163,7 @@ public class SdrOp extends MerisBasisOp {
 			validLandTerm = brrProduct.createTerm(validLandExpression);
 			cloudFreeTerm = cloudProduct.createTerm(cloudFreeExpression);
 		} catch (ParseException e) {
-			e.printStackTrace();
+			throw new OperatorException("Could not create Term for expression.", e);
 		}
 		
         return targetProduct;
@@ -180,8 +181,7 @@ public class SdrOp extends MerisBasisOp {
 
 
         reflectance = new float[sdrBandNo.length][0];
-        reflectanceBands = new Band[sdrBandNo.length];
-        sdr = new short[sdrBandNo.length][0];
+        sdr = new float[sdrBandNo.length][0];
         
         for (int i = 0; i < sdrBandNo.length; i++) {
             reflectance[i] = (float[]) getTile(reflectanceBands[i], rectangle).getDataBuffer().getElems();
@@ -213,7 +213,7 @@ public class SdrOp extends MerisBasisOp {
 
             for (int i = 0; i < sdrBands.length; i++) {
                 ProductData data = getTile(sdrBands[i], rectangle).getDataBuffer();
-                sdr[i] = (short[]) data.getElems();
+                sdr[i] = (float[]) data.getElems();
             }
             ProductData data = getTile(sdrFlagBand, rectangle).getDataBuffer();
             sdrFlag = (short[]) data.getElems();
@@ -263,7 +263,8 @@ public class SdrOp extends MerisBasisOp {
                             sdrFlags |= 1 << (reflInputBand
                                     .getSpectralBandIndex() + 1);
                         }
-                        sdr[bandId][i] = (short) (t_sdr / SCALING_FACTOR);
+//                        sdr[bandId][i] = (short) (t_sdr / SCALING_FACTOR);
+                        sdr[bandId][i] = (float) t_sdr;
                     }
                     sdrFlags |= (sdrFlags == 0 ? 0 : 1); // Combine SDR-Flags
                     // to single INVALID

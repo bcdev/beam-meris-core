@@ -110,14 +110,14 @@ public class CloudTopPressureOp extends MerisBasisOp {
         }
     }
 
-    private Product createTargetProduct() {
+    private Product createTargetProduct() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "MER_CTP", "MER_L2");
         targetProduct.addBand("cloud_top_press", ProductData.TYPE_FLOAT32);
 
         try {
 			term = sourceProduct.createTerm(INVALID_EXPRESSION);
 		} catch (ParseException e) {
-			e.printStackTrace();
+			throw new OperatorException("Could not create Term for expression.", e);
 		}
         
         return targetProduct;

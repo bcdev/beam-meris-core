@@ -6,30 +6,42 @@
  */
 package org.esa.beam.bop.meris.aerosol;
 
-import com.bc.ceres.core.ProgressMonitor;
-import ncsa.hdf.hdflib.HDFConstants;
-import ncsa.hdf.hdflib.HDFException;
-import ncsa.hdf.hdflib.HDFLibrary;
-import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.support.CachingOperator;
-import org.esa.beam.framework.gpf.support.ProductDataCache;
-import org.esa.beam.framework.gpf.annotations.Parameter;
-import org.esa.beam.framework.datamodel.*;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
-import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.*;
-import org.esa.beam.util.math.FractIndex;
-import org.esa.beam.util.math.Interp;
-import org.esa.beam.util.math.LUT;
-import org.esa.beam.util.StringUtils;
-
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 
+import ncsa.hdf.hdflib.HDFConstants;
+import ncsa.hdf.hdflib.HDFException;
+import ncsa.hdf.hdflib.HDFLibrary;
 
-public class ModisAerosolOp extends CachingOperator {
+import org.esa.beam.framework.datamodel.Band;
+import org.esa.beam.framework.datamodel.BitmaskDef;
+import org.esa.beam.framework.datamodel.FlagCoding;
+import org.esa.beam.framework.datamodel.GeoCoding;
+import org.esa.beam.framework.datamodel.GeoPos;
+import org.esa.beam.framework.datamodel.MetadataAttribute;
+import org.esa.beam.framework.datamodel.PixelPos;
+import org.esa.beam.framework.datamodel.Product;
+import org.esa.beam.framework.datamodel.ProductData;
+import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.annotations.Parameter;
+import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.util.StringUtils;
+import org.esa.beam.util.math.FractIndex;
+import org.esa.beam.util.math.Interp;
+import org.esa.beam.util.math.LUT;
+
+import com.bc.ceres.core.ProgressMonitor;
+
+
+public class ModisAerosolOp extends MerisBasisOp {
 
     public static final String BAND_NAME_AOT_470 = "aot_470";
     public static final String BAND_NAME_AOT_660 = "aot_660";
@@ -59,16 +71,15 @@ public class ModisAerosolOp extends CachingOperator {
 
     private GapFiller gapFiller;
 
+    @SourceProduct(alias="input")
+    private Product sourceProduct;
+    @TargetProduct
+    private Product targetProduct;
     @Parameter
     private String auxdataDir;
 
     public ModisAerosolOp(OperatorSpi spi) {
         super(spi);
-    }
-
-    @Override
-    public boolean isComputingAllBandsAtOnce() {
-        return true;
     }
 
     @Override
@@ -94,53 +105,39 @@ public class ModisAerosolOp extends CachingOperator {
         } catch (IOException e) {
             throw new OperatorException("Could not load MOD08 data files", e);
         }
-        return super.initialize(pm);
+        return createTargetProduct();
     }
 
-    @Override
-    public Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
-        final Product sourceProduct = getSourceProduct("input");
-        final int width = sourceProduct.getSceneRasterWidth();
-        final int height = sourceProduct.getSceneRasterHeight();
-        final Product aerosolProduct = new Product("AEROSOL", "AEROSOL", width, height);
-        _aot470Band = new Band(BAND_NAME_AOT_470, ProductData.TYPE_FLOAT32, width, height);
-        aerosolProduct.addBand(_aot470Band);
-        _aot660Band = new Band(BAND_NAME_AOT_660, ProductData.TYPE_FLOAT32, width, height);
-        aerosolProduct.addBand(_aot660Band);
-        _angstrBand = new Band(BAND_NAME_ANG, ProductData.TYPE_FLOAT32, width, height);
-        aerosolProduct.addBand(_angstrBand);
+    private Product createTargetProduct() {
+    	targetProduct = createCompatibleProduct(sourceProduct, "AEROSOL", "AEROSOL");
+        _aot470Band = targetProduct.addBand(BAND_NAME_AOT_470, ProductData.TYPE_FLOAT32);
+        _aot660Band = targetProduct.addBand(BAND_NAME_AOT_660, ProductData.TYPE_FLOAT32);
+        _angstrBand = targetProduct.addBand(BAND_NAME_ANG, ProductData.TYPE_FLOAT32);
 
         // create and add the flags coding
-        FlagCoding cloudFlagCoding = createFlagCoding(aerosolProduct);
-        aerosolProduct.addFlagCoding(cloudFlagCoding);
+        FlagCoding cloudFlagCoding = createFlagCoding(targetProduct);
+        targetProduct.addFlagCoding(cloudFlagCoding);
 
         // create and add the SDR flags dataset
-        _flagsBand = new Band(BAND_NAME_FLAGS, ProductData.TYPE_UINT8, width, height);
+        _flagsBand = targetProduct.addBand(BAND_NAME_FLAGS, ProductData.TYPE_UINT8);
         _flagsBand.setDescription("Aerosol specific flags");
         _flagsBand.setFlagCoding(cloudFlagCoding);
-        aerosolProduct.addBand(_flagsBand);
 
-        return aerosolProduct;
+        return targetProduct;
     }
 
     @Override
-    public void computeTiles(Rectangle rectangle,
-                             ProductDataCache cache, ProgressMonitor pm) throws OperatorException {
+    public void computeTiles(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
-        final Product sourceProduct = getSourceProduct("input");
         final GeoCoding geoCoding = sourceProduct.getGeoCoding();
         final GeoPos geoPos = new GeoPos();
         final PixelPos pixelPos = new PixelPos();
         final FractIndex[] indexes = FractIndex.createArray(3);
 
-        ProductData aot470PD = cache.createData(_aot470Band);
-        float[] aot470 = (float[]) aot470PD.getElems();
-        ProductData aot660PD = cache.createData(_aot660Band);
-        float[] aot660 = (float[]) aot660PD.getElems();
-        ProductData angPD = cache.createData(_angstrBand);
-        float[] ang = (float[]) angPD.getElems();
-        ProductData flagPD = cache.createData(_flagsBand);
-        byte[] flag = (byte[]) flagPD.getElems();
+        Raster aot470Raster = getTile(_aot470Band, rectangle);
+        Raster aot660Raster = getTile(_aot660Band, rectangle);
+        Raster angRaster = getTile(_angstrBand, rectangle);
+        Raster flagRaster = getTile(_flagsBand, rectangle);
 
         final double time = getSceneRasterMeanTime(sourceProduct).getMJD();
         final double logWavelengthDiff = Math.log(AOT_660_WAVELENGTH) - Math.log(AOT_470_WAVELENGTH);
@@ -157,9 +154,11 @@ public class ModisAerosolOp extends CachingOperator {
                 Interp.interpCoord(lat, _aot470LUT.getTab(1), indexes[1]);
                 Interp.interpCoord(lon, _aot470LUT.getTab(2), indexes[2]);
 
-                aot470[i] = (float) Interp.interpolate(_aot470LUT.getJavaArray(), indexes);
-                aot660[i] = (float) Interp.interpolate(_aot660LUT.getJavaArray(), indexes);
-                ang[i] = (float) ((Math.log(aot470[i]) - Math.log(aot660[i])) / logWavelengthDiff);
+                double aot470 = Interp.interpolate(_aot470LUT.getJavaArray(), indexes);
+				aot470Raster.setFloat(x, y, (float) aot470);
+                double aot660 = Interp.interpolate(_aot660LUT.getJavaArray(), indexes);
+				aot660Raster.setFloat(x, y, (float) aot660);
+                angRaster.setFloat(x, y, (float) ((Math.log(aot470) - Math.log(aot660)) / logWavelengthDiff));
 
                 int xInt = indexes[2].index;
                 int yInt = indexes[1].index;
@@ -169,7 +168,7 @@ public class ModisAerosolOp extends CachingOperator {
                         tFlag += 1 << prod;
                     }
                 }
-                flag[i] = tFlag;
+                flagRaster.setInt(x, y, tFlag);
 
                 i++;
             }
@@ -237,7 +236,6 @@ public class ModisAerosolOp extends CachingOperator {
     }
 
     private void readMod08() throws IOException {
-        final Product sourceProduct = getSourceProduct("input");
         final ProductData.UTC meanTime = getSceneRasterMeanTime(sourceProduct);
         if (meanTime == null) {
             throw new IOException("failed to retrieve sensing time information from input product");

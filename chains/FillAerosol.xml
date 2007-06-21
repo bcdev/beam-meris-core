@@ -1,6 +1,5 @@
-
 <graph>
-  <id>Blue</id>
+  <id>FillAerosol</id>
 
     <node>
       <id>l2</id>
@@ -8,23 +7,6 @@
       <configuration>
           <filePath>${inputFile1}</filePath>
       </configuration>
-    </node>
-    
-    <node>
-      <id>composite</id>
-      <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
-      <configuration>
-          <filePath>${inputFile2}</filePath>
-      </configuration>
-    </node>
-    
-    <node>
-      <id>compositeToL1</id>
-      <operator>org.esa.beam.framework.gpf.operators.meris.L3ToL1Op$Spi</operator>
-      <sources>
-        <l1>l2</l1>
-        <l3>composite</l3>
-      </sources>
     </node>
     
     <node>
@@ -45,34 +27,12 @@
       </configuration>
     </node>
     
-    <node>
-      <id>fillL3</id>
-      <operator>org.esa.beam.bop.meris.FillAerosolOp$Spi</operator>
-      <sources>
-        <input>compositeToL1</input>
-        <default>climatology</default>
-      </sources>
-      <configuration>
-        <pixelWidth>25</pixelWidth>
-        <band>
-          <name>aero_alpha</name>
-          <validExp>aero_alpha != -1</validExp>
-          <defaultBand>aero_alpha</defaultBand>
-        </band>
-        <band>
-          <name>aero_opt_thick_443</name>
-          <validExp>aero_opt_thick_443 != -1</validExp>
-          <defaultBand>aero_opt_thick_443</defaultBand>
-        </band>
-      </configuration>
-    </node>
-    
      <node>
       <id>fillL2</id>
       <operator>org.esa.beam.bop.meris.FillAerosolOp$Spi</operator>
       <sources>
         <input>l2</input>
-        <default>fillL3</default>
+        <default>climatology</default>
       </sources>
       <configuration>
         <pixelWidth>25</pixelWidth>
@@ -88,8 +48,7 @@
         </band>
       </configuration>
     </node>
-
-        
+    
     <node>
       <id>write</id>
       <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
