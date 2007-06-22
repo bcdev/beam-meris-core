@@ -16,23 +16,25 @@
  */
 package org.esa.beam.bop.meris.brr;
 
-import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.core.SubProgressMonitor;
-import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.support.CachingOperator;
-import org.esa.beam.framework.gpf.support.ProductDataCache;
-import org.esa.beam.framework.gpf.support.SourceDataRetriever;
-import org.esa.beam.framework.gpf.annotations.Parameter;
+import java.awt.Rectangle;
+import java.io.IOException;
+
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.*;
+import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.annotations.Parameter;
+import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.ProductUtils;
 
-import java.awt.*;
+import com.bc.ceres.core.ProgressMonitor;
+import com.bc.jexp.ParseException;
+import com.bc.jexp.Term;
 
 /**
  * Created by marcoz.
@@ -40,31 +42,33 @@ import java.awt.*;
  * @author marcoz
  * @version $Revision: 1.2 $ $Date: 2007/04/26 11:53:53 $
  */
-public class SmileCorrectionOp extends CachingOperator implements Constants {
+public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 
     private static final String MERIS_L2_CONF = "meris_l2_config.xml";
 
-    private SourceDataRetriever dataRetriever;
     private DpmConfig dpmConfig;
     private L2AuxData auxData;
 
     private float[][] rho;
-    private int[] detectorIndex;
-    private boolean[] isLandCons;
+    private short[] detectorIndex;
+    private Term isLandTerm;
 
     private Band[] rhoCorectedBands;
     private float[][] rhoCorrected;
 
+    @SourceProduct(alias="l1b")
+    private Product l1bProduct;
+    @SourceProduct(alias="gascor")
+    private Product gascorProduct;
+    @SourceProduct(alias="land")
+    private Product landProduct;
+    @TargetProduct
+    private Product targetProduct;
     @Parameter
     private String configFile = MERIS_L2_CONF;
 
     public SmileCorrectionOp(OperatorSpi spi) {
         super(spi);
-    }
-
-    @Override
-    public boolean isComputingAllBandsAtOnce() {
-        return true;
     }
 
     @Override
@@ -74,67 +78,56 @@ public class SmileCorrectionOp extends CachingOperator implements Constants {
         } catch (Exception e) {
             throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
         }
-
-        return super.initialize(pm);
-    }
-
-    @Override
-    public Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
-        Product inputProduct = getSourceProduct("gascor");
-
-        final int sceneWidth = inputProduct.getSceneRasterWidth();
-        final int sceneHeight = inputProduct.getSceneRasterHeight();
-
-        Product targetProduct = new Product("MER", "MER_L2", sceneWidth, sceneHeight);
-        rhoCorectedBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
-        for (int i = 0; i < rhoCorectedBands.length; i++) {
-            Band inBand = inputProduct.getBandAt(i);
-
-            rhoCorectedBands[i] = new Band(inBand.getName(),
-                                           ProductData.TYPE_FLOAT32, sceneWidth, sceneHeight);
-            ProductUtils.copySpectralAttributes(inBand, rhoCorectedBands[i]);
-            rhoCorectedBands[i].setNoDataValueUsed(true);
-            rhoCorectedBands[i].setNoDataValue(BAD_VALUE);
-
-            targetProduct.addBand(rhoCorectedBands[i]);
-        }
-        return targetProduct;
-    }
-
-    @Override
-    public void initSourceRetriever() throws OperatorException {
-        final Product l1bProduct = getSourceProduct("l1b");
-        final Product inputProduct = getSourceProduct("gascor");
-        final Product landProduct = getSourceProduct("land");
-
-        dataRetriever = new SourceDataRetriever(maxTileSize);
         try {
             auxData = new L2AuxData(dpmConfig, l1bProduct);
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);
         }
-        detectorIndex = dataRetriever.connectInt(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME));
+        
+        return createTargetProduct();
+    }
 
-        rho = new float[rhoCorectedBands.length][0];
+    private Product createTargetProduct() throws OperatorException {
+        targetProduct = createCompatibleProduct(gascorProduct, "MER", "MER_L2");
+        rhoCorectedBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
         for (int i = 0; i < rhoCorectedBands.length; i++) {
-            rho[i] = dataRetriever.connectFloat(inputProduct.getBand(rhoCorectedBands[i].getName()));
-        }
-        isLandCons = dataRetriever.connectBooleanExpression(landProduct, LandClassificationOp.LAND_FLAGS + ".F_LANDCONS");
+            Band inBand = gascorProduct.getBandAt(i);
 
+            rhoCorectedBands[i] = targetProduct.addBand(inBand.getName(), ProductData.TYPE_FLOAT32);
+            ProductUtils.copySpectralAttributes(inBand, rhoCorectedBands[i]);
+            rhoCorectedBands[i].setNoDataValueUsed(true);
+            rhoCorectedBands[i].setNoDataValue(BAD_VALUE);
+        }
+        
         rhoCorrected = new float[rhoCorectedBands.length][0];
+        rho = new float[rhoCorectedBands.length][0];
+        
+        try {
+        	isLandTerm = landProduct.createTerm(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS");
+		} catch (ParseException e) {
+			throw new OperatorException("Could not create Term for expression.", e);
+		}
+		
+        return targetProduct;
     }
 
     @Override
     public void computeTiles(Rectangle rectangle,
-                             ProductDataCache cache, ProgressMonitor pm) throws OperatorException {
+            ProgressMonitor pm) throws OperatorException {
 
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            dataRetriever.readData(rectangle, new SubProgressMonitor(pm, 1));
-
+        	detectorIndex = (short[]) getTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
             for (int i = 0; i < rhoCorectedBands.length; i++) {
-                rhoCorrected[i] = (float[]) cache.createData(rhoCorectedBands[i]).getElems();
+                rho[i] = (float[]) getTile(gascorProduct.getBand(rhoCorectedBands[i].getName()), rectangle).getDataBuffer().getElems();
+            }
+            boolean[] isLandCons = new boolean[size];
+            landProduct.readBitmask(rectangle.x, rectangle.y,
+            		rectangle.width, rectangle.height, isLandTerm, isLandCons, ProgressMonitor.NULL);
+            
+            for (int i = 0; i < rhoCorectedBands.length; i++) {
+                rhoCorrected[i] = (float[]) getTile(rhoCorectedBands[i], rectangle).getDataBuffer().getElems();
             }
 
             for (int i = 0; i < size; i++) {
@@ -149,9 +142,9 @@ public class SmileCorrectionOp extends CachingOperator implements Constants {
                 }
                 pm.worked(1);
             }
-        } catch (Exception e) {
-            throw new OperatorException(e);
-        } finally {
+        } catch (IOException e) {
+        	throw new OperatorException("Couldn't load bitmasks", e);
+		} finally {
             pm.done();
         }
     }

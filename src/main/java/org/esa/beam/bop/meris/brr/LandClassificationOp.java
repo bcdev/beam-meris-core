@@ -16,14 +16,8 @@
  */
 package org.esa.beam.bop.meris.brr;
 
-import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.core.SubProgressMonitor;
-import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.support.CachingOperator;
-import org.esa.beam.framework.gpf.support.ProductDataCache;
-import org.esa.beam.framework.gpf.support.SourceDataRetriever;
-import org.esa.beam.framework.gpf.support.TileRectCalculator;
-import org.esa.beam.framework.gpf.annotations.Parameter;
+import java.awt.Rectangle;
+
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -31,14 +25,20 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.*;
+import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.Parameter;
+import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.framework.gpf.support.TileRectCalculator;
 import org.esa.beam.operator.util.HelperFunctions;
 import org.esa.beam.util.FlagWrapper;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
 
-import java.awt.*;
+import com.bc.ceres.core.ProgressMonitor;
 
 /**
  * Created by marcoz.
@@ -46,7 +46,7 @@ import java.awt.*;
  * @author marcoz
  * @version $Revision: 1.2 $ $Date: 2007/05/08 08:03:52 $
  */
-public class LandClassificationOp extends CachingOperator implements Constants {
+public class LandClassificationOp extends MerisBasisOp implements Constants {
 
     public static final String LAND_FLAGS = "land_classif_flags";
     private static final String MERIS_L2_CONF = "meris_l2_config.xml";
@@ -57,7 +57,6 @@ public class LandClassificationOp extends CachingOperator implements Constants {
     public static final int F_LANDCONS = 3;
 
 
-    private SourceDataRetriever dataRetriever;
     private DpmConfig dpmConfig;
     private L2AuxData auxData;
 
@@ -73,16 +72,17 @@ public class LandClassificationOp extends CachingOperator implements Constants {
     private FlagWrapper gasFlags;
     private FlagWrapper landFlags;
 
+    @SourceProduct(alias="l1b")
+    private Product l1bProduct;
+    @SourceProduct(alias="gascor")
+    private Product gasCorProduct;
+    @TargetProduct
+    private Product targetProduct;
     @Parameter
     private String configFile = MERIS_L2_CONF;
 
     public LandClassificationOp(OperatorSpi spi) {
         super(spi);
-    }
-
-    @Override
-    public boolean isComputingAllBandsAtOnce() {
-        return false;
     }
 
     @Override
@@ -92,26 +92,23 @@ public class LandClassificationOp extends CachingOperator implements Constants {
         } catch (Exception e) {
             throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
         }
-
-        return super.initialize(pm);
+        try {
+            auxData = new L2AuxData(dpmConfig, l1bProduct);
+        } catch (Exception e) {
+            throw new OperatorException("could not load L2Auxdata", e);
+        }
+        return createTargetProduct();
     }
 
-    @Override
-    public Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
-        Product inputProduct = getSourceProduct("l1b");
+    private Product createTargetProduct() {
+        targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
-        final int sceneWidth = inputProduct.getSceneRasterWidth();
-        final int sceneHeight = inputProduct.getSceneRasterHeight();
-
-        Product targetProduct = new Product("MER", "MER_L2", sceneWidth, sceneHeight);
-
-        Band band = new Band(LAND_FLAGS, ProductData.TYPE_INT8,
-                             sceneWidth, sceneHeight);
-        targetProduct.addBand(band);
+        Band band = targetProduct.addBand(LAND_FLAGS, ProductData.TYPE_INT8);
         FlagCoding flagCoding = createFlagCoding();
         band.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
-
+        
+        rhoNg = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
         return targetProduct;
     }
 
@@ -124,40 +121,30 @@ public class LandClassificationOp extends CachingOperator implements Constants {
         return flagCoding;
     }
 
-    @Override
-    public void initSourceRetriever() throws OperatorException {
-        final Product l1bProduct = getSourceProduct("l1b");
-        final Product gasCorProduct = getSourceProduct("gascor");
+    private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
+    	sza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        saa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vaa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        windu = (float[]) getTile(l1bProduct.getTiePointGrid("zonal_wind"), rectangle).getDataBuffer().getElems();
+        windv = (float[]) getTile(l1bProduct.getTiePointGrid("merid_wind"), rectangle).getDataBuffer().getElems();
+        l1Flags = new FlagWrapper.Byte((byte[])getTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getDataBuffer().getElems());
 
-        dataRetriever = new SourceDataRetriever(maxTileSize);
-        try {
-            auxData = new L2AuxData(dpmConfig, l1bProduct);
-        } catch (Exception e) {
-            throw new OperatorException("could not load L2Auxdata", e);
-        }
-        sza = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME));
-        vza = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME));
-        saa = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME));
-        vaa = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME));
-        windu = dataRetriever.connectFloat(l1bProduct.getTiePointGrid("zonal_wind"));
-        windv = dataRetriever.connectFloat(l1bProduct.getTiePointGrid("merid_wind"));
-        l1Flags = new FlagWrapper.Int(dataRetriever.connectInt(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME)));
-
-        rhoNg = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
+        
         for (int i = 0; i < rhoNg.length; i++) {
-            rhoNg[i] = dataRetriever.connectFloat(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)));
+            rhoNg[i] = (float[]) getTile(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
         }
-        gasFlags = new FlagWrapper.Int(dataRetriever.connectInt(gasCorProduct.getBand(GaseousCorrectionOp.GAS_FLAGS)));
+        gasFlags = new FlagWrapper.Byte((byte[]) getTile(gasCorProduct.getBand(GaseousCorrectionOp.GAS_FLAGS), rectangle).getDataBuffer().getElems());
     }
 
     @Override
-    public void computeTile(Band band, Rectangle rectangle,
-                            ProductDataCache cache, ProgressMonitor pm) throws OperatorException {
-
+    public void computeTile(Tile targetTile, ProgressMonitor pm) throws OperatorException {
+    	
+    	Rectangle rectangle = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            dataRetriever.readData(rectangle, new SubProgressMonitor(pm, 1));
-            landFlags = new FlagWrapper.Byte((byte[]) cache.createData(band).getElems());
+            loadSourceTiles(rectangle);
+            landFlags = new FlagWrapper.Byte((byte[]) targetTile.getDataBuffer().getElems());
 
             for (int iPL1 = rectangle.y; iPL1 < rectangle.y + rectangle.height; iPL1 += Constants.SUBWIN_HEIGHT) {
                 for (int iPC1 = rectangle.x; iPC1 < rectangle.x + rectangle.width; iPC1 += Constants.SUBWIN_WIDTH) {

@@ -16,28 +16,30 @@
  */
 package org.esa.beam.bop.meris.brr;
 
-import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.core.SubProgressMonitor;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
-import org.esa.beam.framework.gpf.Operator;
-import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.support.CachingOperator;
-import org.esa.beam.framework.gpf.support.ProductDataCache;
-import org.esa.beam.framework.gpf.support.SourceDataRetriever;
-import org.esa.beam.framework.gpf.support.TileRectCalculator;
-import org.esa.beam.framework.gpf.annotations.Parameter;
+import java.awt.Rectangle;
+import java.io.IOException;
+
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
+import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.annotations.Parameter;
+import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.framework.gpf.support.TileRectCalculator;
 import org.esa.beam.operator.util.HelperFunctions;
 import org.esa.beam.util.FlagWrapper;
 import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
 
-import java.awt.*;
+import com.bc.ceres.core.ProgressMonitor;
+import com.bc.jexp.ParseException;
+import com.bc.jexp.Term;
 
 /**
  * Created by marcoz.
@@ -45,13 +47,12 @@ import java.awt.*;
  * @author marcoz
  * @version $Revision: 1.3 $ $Date: 2007/04/27 15:30:03 $
  */
-public class RayleighCorrectionOp extends CachingOperator implements Constants {
+public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     public static final String BRR_BAND_PREFIX = "brr";
     public static final String RAY_CORR_FLAGS = "ray_corr_flags";
     private static final String MERIS_L2_CONF = "meris_l2_config.xml";
 
-    private SourceDataRetriever dataRetriever;
     private DpmConfig dpmConfig;
     protected L2AuxData auxData;
 
@@ -63,6 +64,7 @@ public class RayleighCorrectionOp extends CachingOperator implements Constants {
     protected float[] altitude;
     protected float[] ecmwfPressure;
     protected boolean[] isLandCons;
+    private Term isLandTerm;
 
     private Band[] brrBands;
     private Band flagBand;
@@ -70,6 +72,14 @@ public class RayleighCorrectionOp extends CachingOperator implements Constants {
     protected FlagWrapper brrFlags;
     protected RayleighCorrection rayleighCorrection;
 
+    @SourceProduct(alias="l1b")
+    private Product l1bProduct;
+    @SourceProduct(alias="input")
+    private Product gascorProduct;
+    @SourceProduct(alias="land")
+    private Product landProduct;
+    @TargetProduct
+    private Product targetProduct;
     @Parameter
     private String configFile = MERIS_L2_CONF;
     @Parameter
@@ -80,53 +90,49 @@ public class RayleighCorrectionOp extends CachingOperator implements Constants {
     }
 
     @Override
-    public boolean isComputingAllBandsAtOnce() {
-        return true;
-    }
-
-    @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
         try {
             dpmConfig = new DpmConfig(configFile);
         } catch (Exception e) {
             throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
         }
-
-        return super.initialize(pm);
+        try {
+            auxData = new L2AuxData(dpmConfig, l1bProduct);
+            rayleighCorrection = new RayleighCorrection(auxData);
+        } catch (Exception e) {
+            throw new OperatorException("could not load L2Auxdata", e);
+        }
+        return createTargetProduct();
     }
 
-    @Override
-    public Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
-        Product inputProduct = getSourceProduct("l1b");
-
-        final int sceneWidth = inputProduct.getSceneRasterWidth();
-        final int sceneHeight = inputProduct.getSceneRasterHeight();
-
-        Product targetProduct = new Product("MER", "MER_L2", sceneWidth, sceneHeight);
+    protected Product createTargetProduct() throws OperatorException {
+    	targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
         brrBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
         for (int i = 0; i < brrBands.length; i++) {
             if (i == bb11 || i == bb15) {
                 continue;
             }
-            Band rhoToaBand = inputProduct.getBandAt(i);
+            Band rhoToaBand = l1bProduct.getBandAt(i);
 
-            brrBands[i] = new Band(BRR_BAND_PREFIX + "_" + (i + 1),
-                                   ProductData.TYPE_FLOAT32, sceneWidth, sceneHeight);
+            brrBands[i] = targetProduct.addBand(BRR_BAND_PREFIX + "_" + (i + 1), ProductData.TYPE_FLOAT32);
             ProductUtils.copySpectralAttributes(rhoToaBand, brrBands[i]);
             brrBands[i].setNoDataValueUsed(true);
             brrBands[i].setNoDataValue(BAD_VALUE);
-
-            targetProduct.addBand(brrBands[i]);
         }
 
-        flagBand = new Band(RAY_CORR_FLAGS, ProductData.TYPE_INT16,
-                            sceneWidth, sceneHeight);
-        targetProduct.addBand(flagBand);
+        flagBand = targetProduct.addBand(RAY_CORR_FLAGS, ProductData.TYPE_INT16);
         FlagCoding flagCoding = createFlagCoding();
         flagBand.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
 
+        try {
+        	isLandTerm = landProduct.createTerm(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS");
+		} catch (ParseException e) {
+			throw new OperatorException("Could not create Term for expression.", e);
+		}
+		rhoNg = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
+		brr = new float[rhoNg.length][0];
         return targetProduct;
     }
 
@@ -143,51 +149,43 @@ public class RayleighCorrectionOp extends CachingOperator implements Constants {
         return flagCoding;
     }
 
-    @Override
-    public void initSourceRetriever() throws OperatorException {
-        final Product l1bProduct = getSourceProduct("l1b");
-        final Product landProduct = getSourceProduct("land");
-        final Product gasCorProduct = getSourceProduct("input");
+    protected void loadSourceTiles(Rectangle rectangle) throws OperatorException {
+        
+        sza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        saa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vaa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        altitude = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
+        ecmwfPressure = (float[]) getTile(l1bProduct.getTiePointGrid("atm_press"), rectangle).getDataBuffer().getElems();
 
-        dataRetriever = new SourceDataRetriever(maxTileSize);
-        try {
-            auxData = new L2AuxData(dpmConfig, l1bProduct);
-            rayleighCorrection = new RayleighCorrection(auxData);
-        } catch (Exception e) {
-            throw new OperatorException("could not load L2Auxdata", e);
-        }
-        sza = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME));
-        vza = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME));
-        saa = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME));
-        vaa = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME));
-        altitude = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME));
-        ecmwfPressure = dataRetriever.connectFloat(l1bProduct.getTiePointGrid("atm_press"));
-
-        rhoNg = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
         for (int i = 0; i < rhoNg.length; i++) {
             if (i == bb11 || i == bb15) {
                 continue;
             }
-            rhoNg[i] = dataRetriever.connectFloat(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)));
+            rhoNg[i] = (float[]) getTile(gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
         }
-        isLandCons = dataRetriever.connectBooleanExpression(landProduct, LandClassificationOp.LAND_FLAGS + ".F_LANDCONS");
-
-        brr = new float[rhoNg.length][0];
+        final int size = rectangle.height * rectangle.width;
+        isLandCons = new boolean[size];
+        try {
+        	landProduct.readBitmask(rectangle.x, rectangle.y,
+        			rectangle.width, rectangle.height, isLandTerm, isLandCons, ProgressMonitor.NULL);
+        } catch (IOException e) {
+        	throw new OperatorException("Couldn't load bitmasks", e);
+        }
     }
 
     @Override
-    public void computeTiles(Rectangle rectangle,
-                             ProductDataCache cache, ProgressMonitor pm) throws OperatorException {
+    public void computeTiles(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            dataRetriever.readData(rectangle, new SubProgressMonitor(pm, 1));
+            loadSourceTiles(rectangle);
 
-            brrFlags = new FlagWrapper.Short((short[]) cache.createData(flagBand).getElems());
+            brrFlags = new FlagWrapper.Short((short[]) getTile(flagBand, rectangle).getDataBuffer().getElems());
             for (int i = 0; i < brrBands.length; i++) {
                 Band band = brrBands[i];
                 if (band != null) {
-                    brr[i] = (float[]) cache.createData(band).getElems();
+                    brr[i] = (float[]) getTile(band, rectangle).getDataBuffer().getElems();
                 }
             }
 

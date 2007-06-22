@@ -16,26 +16,28 @@
  */
 package org.esa.beam.bop.meris.brr;
 
-import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.core.SubProgressMonitor;
-import org.esa.beam.framework.gpf.Operator;
-import org.esa.beam.framework.gpf.*;
-import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.support.CachingOperator;
-import org.esa.beam.framework.gpf.support.ProductDataCache;
-import org.esa.beam.framework.gpf.support.SourceDataRetriever;
+import java.awt.Rectangle;
+
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
+import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.Parameter;
+import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.operator.util.HelperFunctions;
 import org.esa.beam.util.FlagWrapper;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
 
-import java.awt.*;
+import com.bc.ceres.core.ProgressMonitor;
 
 /**
  * Created by marcoz.
@@ -43,7 +45,7 @@ import java.awt.*;
  * @author marcoz
  * @version $Revision: 1.1 $ $Date: 2007/03/27 12:51:41 $
  */
-public class CloudClassificationOp extends CachingOperator implements Constants {
+public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
     public static final String CLOUD_FLAGS = "cloud_classif_flags";
     private static final String MERIS_L2_CONF = "meris_l2_config.xml";
@@ -62,13 +64,12 @@ public class CloudClassificationOp extends CachingOperator implements Constants 
     public static final int F_SLOPE_1 = 7;
     public static final int F_SLOPE_2 = 8;
 
-    private SourceDataRetriever dataRetriever;
     private DpmConfig dpmConfig;
     private L2AuxData auxData;
 
     private float[][] rhoToa;
     private float[][] radiance;
-    private int[] detectorIndex;
+    private short[] detectorIndex;
     private float[] sza;
     private float[] vza;
     private float[] saa;
@@ -80,53 +81,43 @@ public class CloudClassificationOp extends CachingOperator implements Constants 
     private FlagWrapper cloudFlags;
     private RayleighCorrection rayleighCorrection;
 
-    /**
-     * Configuration Elements (can be set from XML)
-     */
-    private static class Configuration {
-        private String configFile = MERIS_L2_CONF;
-    }
-
-    private Configuration config;
+    
+    @SourceProduct(alias="l1b")
+    private Product l1bProduct;
+    @SourceProduct(alias="rhotoa")
+    private Product rhoToaProduct;
+    @TargetProduct
+    private Product targetProduct;
+    @Parameter
+    private String configFile = MERIS_L2_CONF;
 
 
     public CloudClassificationOp(OperatorSpi spi) {
         super(spi);
-        config = new Configuration();
-    }
-
-    @Override
-    public boolean isComputingAllBandsAtOnce() {
-        return false;
-    }
-
-    public Object getConfigurationObject() {
-        return config;
     }
 
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
         try {
-            dpmConfig = new DpmConfig(config.configFile);
+            dpmConfig = new DpmConfig(configFile);
         } catch (Exception e) {
-            throw new OperatorException("Failed to load configuration from " + config.configFile + ":\n" + e.getMessage(), e);
+            throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
         }
-
-        return super.initialize(pm);
+        try {
+            auxData = new L2AuxData(dpmConfig, l1bProduct);
+            rayleighCorrection = new RayleighCorrection(auxData);
+        } catch (Exception e) {
+            throw new OperatorException("could not load L2Auxdata", e);
+        }
+        rhoToa = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
+        radiance = new float[3][0];
+        return createTargetProduct();
     }
 
-    @Override
-    public Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
-        Product inputProduct = getSourceProduct("l1b");
+    private Product createTargetProduct() {
+        targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
-        final int sceneWidth = inputProduct.getSceneRasterWidth();
-        final int sceneHeight = inputProduct.getSceneRasterHeight();
-
-        Product targetProduct = new Product("MER", "MER_L2", sceneWidth, sceneHeight);
-
-        Band band = new Band(CLOUD_FLAGS, ProductData.TYPE_INT16,
-                             sceneWidth, sceneHeight);
-        targetProduct.addBand(band);
+        Band band = targetProduct.addBand(CLOUD_FLAGS, ProductData.TYPE_INT16);
         FlagCoding flagCoding = createFlagCoding();
         band.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
@@ -148,50 +139,41 @@ public class CloudClassificationOp extends CachingOperator implements Constants 
         return flagCoding;
     }
 
-    @Override
-    public void initSourceRetriever() throws OperatorException {
-        final Product l1bProduct = getSourceProduct("l1b");
-        final Product rhoToaProduct = getSourceProduct("rhotoa");
+    private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
 
-        dataRetriever = new SourceDataRetriever(maxTileSize);
-        try {
-            auxData = new L2AuxData(dpmConfig, l1bProduct);
-            rayleighCorrection = new RayleighCorrection(auxData);
-        } catch (Exception e) {
-            throw new OperatorException("could not load L2Auxdata", e);
-        }
-
-        rhoToa = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
         for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
-            rhoToa[i] = dataRetriever.connectFloat(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)));
+            rhoToa[i] = (float[]) getTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
         }
-        radiance = new float[3][0];
-        radiance[BAND_BRIGHT_N] = dataRetriever.connectFloat(
-                l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_bright_n]));
-        radiance[BAND_SLOPE_N_1] = dataRetriever.connectFloat(
-                l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_slope_n_1]));
-        radiance[BAND_SLOPE_N_2] = dataRetriever.connectFloat(
-                l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_slope_n_2]));
-        detectorIndex = dataRetriever.connectInt(
-                l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME));
-        sza = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME));
-        vza = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME));
-        saa = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME));
-        vaa = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME));
-        altitude = dataRetriever.connectFloat(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME));
-        ecmwfPressure = dataRetriever.connectFloat(l1bProduct.getTiePointGrid("atm_press"));
-        l1Flags = new FlagWrapper.Int(dataRetriever.connectInt(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME)));
+        radiance[BAND_BRIGHT_N] = (float[]) getTile(
+				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_bright_n]),
+				rectangle).getDataBuffer().getElems();
+		radiance[BAND_SLOPE_N_1] = (float[]) getTile(
+				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_slope_n_1]),
+				rectangle).getDataBuffer().getElems();
+		radiance[BAND_SLOPE_N_2] = (float[]) getTile(
+				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_slope_n_2]),
+				rectangle).getDataBuffer().getElems();
+		detectorIndex = (short[]) getTile(
+				l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME),
+				rectangle).getDataBuffer().getElems();
+        sza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        saa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vaa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        altitude = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
+        ecmwfPressure = (float[]) getTile(l1bProduct.getTiePointGrid("atm_press"), rectangle).getDataBuffer().getElems();
+        l1Flags = new FlagWrapper.Byte((byte[]) getTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getDataBuffer().getElems());
     }
 
     @Override
-    public void computeTile(Band band, Rectangle rectangle,
-                            ProductDataCache cache, ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
+    	Rectangle rectangle = targetTile.getRectangle();
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-            dataRetriever.readData(rectangle, new SubProgressMonitor(pm, 1));
-            cloudFlags = new FlagWrapper.Short((short[]) cache.createData(band).getElems());
+            loadSourceTiles(rectangle);
+            cloudFlags = new FlagWrapper.Short((short[]) targetTile.getDataBuffer().getElems());
 
             PixelInfo pixelInfo = new PixelInfo();
             for (int i = 0; i < size; i++) {
