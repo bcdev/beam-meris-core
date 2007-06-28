@@ -100,14 +100,14 @@ public class CloudShadowOp extends MerisBasisOp {
         final int size = sourceRectangle.height * sourceRectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-        	Raster szaRaster = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle);
-        	Raster saaRaster = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle);
-        	Raster vzaRaster = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), sourceRectangle);
-        	Raster vaaRaster = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle);
-        	Raster cloudRaster = getTile(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle);
-        	Raster ctpRaster = getTile(ctpProduct.getBand("cloud_top_press"), sourceRectangle);
+        	Raster szaRaster = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle);
+        	Raster saaRaster = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle);
+        	Raster vzaRaster = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), sourceRectangle);
+        	Raster vaaRaster = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle);
+        	Raster cloudRaster = getRaster(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle);
+        	Raster ctpRaster = getRaster(ctpProduct.getBand("cloud_top_press"), sourceRectangle);
 
-        	Raster cloudTargetRaster = getTile(targetRaster.getRasterDataNode(), targetRectangle);
+        	Raster cloudTargetRaster = getRaster(targetRaster.getRasterDataNode(), targetRectangle);
 
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
                 for (int x = targetRectangle.x; x < targetRectangle.x + targetRectangle.width; x++) {

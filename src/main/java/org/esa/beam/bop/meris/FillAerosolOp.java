@@ -136,8 +136,8 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         Rectangle sourceRect = rectCalculator.computeSourceRectangle(targetRect);
         pm.beginTask("Processing frame...", sourceRect.height + 1);
         try {
-            Raster values = getTile(sourceBands.get(targetBand), sourceRect);
-            Raster defaultValues = getTile(defaultBands.get(targetBand), sourceRect);
+            Raster values = getRaster(sourceBands.get(targetBand), sourceRect);
+            Raster defaultValues = getRaster(defaultBands.get(targetBand), sourceRect);
             
             final int size = sourceRect.height * sourceRect.width;
             boolean[] isValid = new boolean[size];

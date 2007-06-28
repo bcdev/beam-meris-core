@@ -97,8 +97,8 @@ public class GapLessSdrOp extends MerisBasisOp {
         pm.beginTask("Processing frame...", size + 1);
         try {
         	Band targetBand = (Band) targetRaster.getRasterDataNode();
-        	float sdr[] = (float[]) getTile(sdrBands.get(targetBand), rectangle).getDataBuffer().getElems();
-        	float toar[] = (float[]) getTile(toarBands.get(targetBand), rectangle).getDataBuffer().getElems();
+        	float sdr[] = (float[]) getRaster(sdrBands.get(targetBand), rectangle).getDataBuffer().getElems();
+        	float toar[] = (float[]) getRaster(toarBands.get(targetBand), rectangle).getDataBuffer().getElems();
         	
         	boolean[] invalid = new boolean[size];
         	toarProduct.readBitmask(rectangle.x, rectangle.y,

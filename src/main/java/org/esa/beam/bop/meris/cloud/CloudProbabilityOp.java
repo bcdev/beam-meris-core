@@ -263,17 +263,17 @@ public class CloudProbabilityOp extends MerisBasisOp {
     private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
 
         for (int i = 0; i < radianceBands.length; i++) {
-            radiance[i] = (float[]) getTile(radianceBands[i], rectangle).getDataBuffer().getElems();
+            radiance[i] = (float[]) getRaster(radianceBands[i], rectangle).getDataBuffer().getElems();
         }
 
-        detector = (short[]) getTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
+        detector = (short[]) getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
 
-        sza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        saa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vaa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        pressure = (float[]) getTile(l1bProduct.getTiePointGrid("atm_press"), rectangle).getDataBuffer().getElems();
-        altitude = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
+        sza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        saa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vaa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        pressure = (float[]) getRaster(l1bProduct.getTiePointGrid("atm_press"), rectangle).getDataBuffer().getElems();
+        altitude = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
 
         final int size = rectangle.height * rectangle.width;
         if (isValidLand == null ||isValidLand.length != size) {
@@ -304,8 +304,8 @@ public class CloudProbabilityOp extends MerisBasisOp {
             loadSourceTiles(rectangle);
 
 //            short[] cloudScanLine = (short[]) getTile(cloudBand, rectangle).getDataBuffer().getElems();
-            float[] cloudScanLine = (float[]) getTile(cloudBand, rectangle).getDataBuffer().getElems();
-            byte[] flagScanLine = (byte[]) getTile(cloudFlagBand, rectangle).getDataBuffer().getElems();
+            float[] cloudScanLine = (float[]) getRaster(cloudBand, rectangle).getDataBuffer().getElems();
+            byte[] flagScanLine = (byte[]) getRaster(cloudFlagBand, rectangle).getDataBuffer().getElems();
 
             for (int i = 0; i < size; i++) {
                 if (pm.isCanceled()) {

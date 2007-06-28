@@ -171,20 +171,20 @@ public class SdrOp extends MerisBasisOp {
 
     private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
 
-        sza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        saa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vaa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        sza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        saa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vaa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
 
-        ang = (float[]) getTile(aerosolProduct.getBand(angName), rectangle).getDataBuffer().getElems();
-        aot470 = (float[]) getTile(aerosolProduct.getBand(aot470Name), rectangle).getDataBuffer().getElems();
+        ang = (float[]) getRaster(aerosolProduct.getBand(angName), rectangle).getDataBuffer().getElems();
+        aot470 = (float[]) getRaster(aerosolProduct.getBand(aot470Name), rectangle).getDataBuffer().getElems();
 
 
         reflectance = new float[sdrBandNo.length][0];
         sdr = new float[sdrBandNo.length][0];
         
         for (int i = 0; i < sdrBandNo.length; i++) {
-            reflectance[i] = (float[]) getTile(reflectanceBands[i], rectangle).getDataBuffer().getElems();
+            reflectance[i] = (float[]) getRaster(reflectanceBands[i], rectangle).getDataBuffer().getElems();
         }
         
         final int size = rectangle.height * rectangle.width;
@@ -212,10 +212,10 @@ public class SdrOp extends MerisBasisOp {
             loadSourceTiles(rectangle);
 
             for (int i = 0; i < sdrBands.length; i++) {
-                ProductData data = getTile(sdrBands[i], rectangle).getDataBuffer();
+                ProductData data = getRaster(sdrBands[i], rectangle).getDataBuffer();
                 sdr[i] = (float[]) data.getElems();
             }
-            ProductData data = getTile(sdrFlagBand, rectangle).getDataBuffer();
+            ProductData data = getRaster(sdrFlagBand, rectangle).getDataBuffer();
             sdrFlag = (short[]) data.getElems();
 
             // process the complete rect

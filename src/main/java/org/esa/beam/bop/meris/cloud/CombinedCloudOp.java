@@ -80,10 +80,10 @@ public class CombinedCloudOp extends MerisBasisOp {
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-        	cloudProb = (byte[]) getTile(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getDataBuffer().getElems();
-        	blueBand = (byte[]) getTile(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle).getDataBuffer().getElems();
+        	cloudProb = (byte[]) getRaster(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getDataBuffer().getElems();
+        	blueBand = (byte[]) getRaster(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle).getDataBuffer().getElems();
 
-            ProductData flagData = getTile(combinedCloudBand, rectangle).getDataBuffer();
+            ProductData flagData = getRaster(combinedCloudBand, rectangle).getDataBuffer();
             combinedCloud = (byte[]) flagData.getElems();
             pm.worked(1);
             

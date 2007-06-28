@@ -114,21 +114,21 @@ public class BlueBandOp extends MerisBasisOp {
     }
     
     private void getSourceTiles(Rectangle rect) throws OperatorException {
-        toar1 = (float[]) getTile(brrProduct.getBand("toar_1"), rect).getDataBuffer().getElems();
-        toar7 = (float[]) getTile(brrProduct.getBand("toar_7"), rect).getDataBuffer().getElems();
-        toar9 = (float[]) getTile(brrProduct.getBand("toar_9"), rect).getDataBuffer().getElems();
-        toar10 = (float[]) getTile(brrProduct.getBand("toar_10"), rect).getDataBuffer().getElems();
-        toar11 = (float[]) getTile(brrProduct.getBand("toar_11"), rect).getDataBuffer().getElems();
-        toar13 = (float[]) getTile(brrProduct.getBand("toar_13"), rect).getDataBuffer().getElems();
-        toar14 = (float[]) getTile(brrProduct.getBand("toar_14"), rect).getDataBuffer().getElems();
+        toar1 = (float[]) getRaster(brrProduct.getBand("toar_1"), rect).getDataBuffer().getElems();
+        toar7 = (float[]) getRaster(brrProduct.getBand("toar_7"), rect).getDataBuffer().getElems();
+        toar9 = (float[]) getRaster(brrProduct.getBand("toar_9"), rect).getDataBuffer().getElems();
+        toar10 = (float[]) getRaster(brrProduct.getBand("toar_10"), rect).getDataBuffer().getElems();
+        toar11 = (float[]) getRaster(brrProduct.getBand("toar_11"), rect).getDataBuffer().getElems();
+        toar13 = (float[]) getRaster(brrProduct.getBand("toar_13"), rect).getDataBuffer().getElems();
+        toar14 = (float[]) getRaster(brrProduct.getBand("toar_14"), rect).getDataBuffer().getElems();
 
         if (l1bProduct.getProductType().equals(
                 EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
-            latitude = (float[]) getTile(l1bProduct.getBand("corr_latitude"), rect).getDataBuffer().getElems();
-            altitude = (float[]) getTile(l1bProduct.getBand("altitude"), rect).getDataBuffer().getElems();
+            latitude = (float[]) getRaster(l1bProduct.getBand("corr_latitude"), rect).getDataBuffer().getElems();
+            altitude = (float[]) getRaster(l1bProduct.getBand("altitude"), rect).getDataBuffer().getElems();
         } else {
-            latitude = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect).getDataBuffer().getElems();
-            altitude = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect).getDataBuffer().getElems();
+            latitude = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect).getDataBuffer().getElems();
+            altitude = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect).getDataBuffer().getElems();
         }
     }
 

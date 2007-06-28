@@ -111,7 +111,7 @@ public class FillBandOp extends MerisBasisOp implements ParameterConverter {
 		try {
 			RasterDataNode targetNode = targetRaster.getRasterDataNode();
 			Rectangle targetRect = targetRaster.getRectangle();
-			float[] outValues = (float[]) getTile(targetNode, targetRect).getDataBuffer().getElems();
+			float[] outValues = (float[]) getRaster(targetNode, targetRect).getDataBuffer().getElems();
 			final float defaultValue = defaultMap.get(targetNode);
 			
 			Arrays.fill(outValues, defaultValue);

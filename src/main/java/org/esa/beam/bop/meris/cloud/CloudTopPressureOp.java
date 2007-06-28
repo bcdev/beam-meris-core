@@ -143,17 +143,17 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
     private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
 
-        detector = (short[]) getTile(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
-        sza = (float[]) getTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        saa = (float[]) getTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vza = (float[]) getTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vaa = (float[]) getTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        detector = (short[]) getRaster(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
+        sza = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        saa = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vza = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vaa = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
 
-        lat = (float[]) getTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle).getDataBuffer().getElems();
-        lon = (float[]) getTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle).getDataBuffer().getElems();
+        lat = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle).getDataBuffer().getElems();
+        lon = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle).getDataBuffer().getElems();
 
-        toar10 = (float[]) getTile(sourceProduct.getBand("radiance_10"), rectangle).getDataBuffer().getElems();
-        toar11 = (float[]) getTile(sourceProduct.getBand("radiance_11"), rectangle).getDataBuffer().getElems();
+        toar10 = (float[]) getRaster(sourceProduct.getBand("radiance_10"), rectangle).getDataBuffer().getElems();
+        toar11 = (float[]) getRaster(sourceProduct.getBand("radiance_11"), rectangle).getDataBuffer().getElems();
 
         final int size = rectangle.height * rectangle.width;
         isInvalid = new boolean[size];
@@ -175,7 +175,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
         try {
         	loadSourceTiles(rectangle);
 
-            ProductData productDataCtp = getTile(targetRaster.getRasterDataNode(), rectangle).getDataBuffer();
+            ProductData productDataCtp = getRaster(targetRaster.getRasterDataNode(), rectangle).getDataBuffer();
             float[] ctp = (float[]) productDataCtp.getElems();
 
             final double[] nnIn = new double[7];

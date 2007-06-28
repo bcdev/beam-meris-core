@@ -125,12 +125,12 @@ public class AerosolMergerOp extends MerisBasisOp {
 
     private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
 
-        modAot = (float[]) getTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getDataBuffer().getElems();
-        modAng = (float[]) getTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle).getDataBuffer().getElems();
-        modFlag = (byte[]) getTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle).getDataBuffer().getElems();
+        modAot = (float[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getDataBuffer().getElems();
+        modAng = (float[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle).getDataBuffer().getElems();
+        modFlag = (byte[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle).getDataBuffer().getElems();
 
-        l2Aot = (float[]) getTile(l2Product.getBand("aero_opt_thick_443"), rectangle).getDataBuffer().getElems();
-        l2Ang = (float[]) getTile(l2Product.getBand("aero_alpha"), rectangle).getDataBuffer().getElems();
+        l2Aot = (float[]) getRaster(l2Product.getBand("aero_opt_thick_443"), rectangle).getDataBuffer().getElems();
+        l2Ang = (float[]) getRaster(l2Product.getBand("aero_alpha"), rectangle).getDataBuffer().getElems();
     }
 
     @Override
@@ -141,9 +141,9 @@ public class AerosolMergerOp extends MerisBasisOp {
         try {
             loadSourceTiles(rectangle);
 
-            aot470 = (float[]) getTile(aot470Band, rectangle).getDataBuffer().getElems();
-            ang = (float[]) getTile(angstrBand, rectangle).getDataBuffer().getElems();
-            flag = (byte[]) getTile(flagBand, rectangle).getDataBuffer().getElems();
+            aot470 = (float[]) getRaster(aot470Band, rectangle).getDataBuffer().getElems();
+            ang = (float[]) getRaster(angstrBand, rectangle).getDataBuffer().getElems();
+            flag = (byte[]) getRaster(flagBand, rectangle).getDataBuffer().getElems();
 
             for (int i = 0; i < size; i++) {
                 if (l2Aot[i] >= 0 && l2Ang[i] >= 0) {

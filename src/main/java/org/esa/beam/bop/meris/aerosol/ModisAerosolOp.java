@@ -134,10 +134,10 @@ public class ModisAerosolOp extends MerisBasisOp {
         final PixelPos pixelPos = new PixelPos();
         final FractIndex[] indexes = FractIndex.createArray(3);
 
-        Raster aot470Raster = getTile(_aot470Band, rectangle);
-        Raster aot660Raster = getTile(_aot660Band, rectangle);
-        Raster angRaster = getTile(_angstrBand, rectangle);
-        Raster flagRaster = getTile(_flagsBand, rectangle);
+        Raster aot470Raster = getRaster(_aot470Band, rectangle);
+        Raster aot660Raster = getRaster(_aot660Band, rectangle);
+        Raster angRaster = getRaster(_angstrBand, rectangle);
+        Raster flagRaster = getRaster(_flagsBand, rectangle);
 
         final double time = getSceneRasterMeanTime(sourceProduct).getMJD();
         final double logWavelengthDiff = Math.log(AOT_660_WAVELENGTH) - Math.log(AOT_470_WAVELENGTH);

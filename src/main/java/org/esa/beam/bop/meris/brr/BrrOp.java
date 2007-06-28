@@ -185,14 +185,14 @@ public class BrrOp extends MerisBasisOp {
     protected void getSourceTiles(Rectangle rect) throws OperatorException {
     	l1bTiePointScans = new float[tpGrids.length][0];
         for (int i = 0; i < tpGrids.length; i++) {
-            l1bTiePointScans[i] = (float[]) getTile(tpGrids[i], rect).getDataBuffer().getElems();
+            l1bTiePointScans[i] = (float[]) getRaster(tpGrids[i], rect).getDataBuffer().getElems();
         }
         l1bRadianceScans = new float[l1bRadiance.length][0];
         for (int i = 0; i < l1bRadiance.length; i++) {
-            l1bRadianceScans[i] = (float[]) getTile(l1bRadiance[i], rect).getDataBuffer().getElems();
+            l1bRadianceScans[i] = (float[]) getRaster(l1bRadiance[i], rect).getDataBuffer().getElems();
         }
-        l1bDetectorIndexScan = (short[]) getTile(detectorIndex, rect).getDataBuffer().getElems();
-        l1bFlagsScan = (byte[]) getTile(l1bFlags, rect).getDataBuffer().getElems();
+        l1bDetectorIndexScan = (short[]) getRaster(detectorIndex, rect).getDataBuffer().getElems();
+        l1bFlagsScan = (byte[]) getRaster(l1bFlags, rect).getDataBuffer().getElems();
 
     }
 
@@ -244,7 +244,7 @@ public class BrrOp extends MerisBasisOp {
 
         for (int bandIndex = 0; bandIndex < brrReflecBands.length; bandIndex++) {
             if (AlbedoUtils.isValidRhoSpectralIndex(bandIndex)) {
-                ProductData data = getTile(brrReflecBands[bandIndex], targetTileRectangle).getDataBuffer();
+                ProductData data = getRaster(brrReflecBands[bandIndex], targetTileRectangle).getDataBuffer();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectW * rectH; iP++) {
                     ddata[iP] = (float) frame[iP].rho_top[bandIndex];
@@ -253,22 +253,22 @@ public class BrrOp extends MerisBasisOp {
         }
         if (outputToar) {
             for (int bandIndex = 0; bandIndex < toaReflecBands.length; bandIndex++) {
-                ProductData data = getTile(toaReflecBands[bandIndex], targetTileRectangle).getDataBuffer();
+                ProductData data = getRaster(toaReflecBands[bandIndex], targetTileRectangle).getDataBuffer();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectW * rectH; iP++) {
                     ddata[iP] = (float) frame[iP].rho_toa[bandIndex];
                 }
             }
         }
-        ProductData flagData = getTile(l2FlagsP1, targetTileRectangle).getDataBuffer();
+        ProductData flagData = getRaster(l2FlagsP1, targetTileRectangle).getDataBuffer();
         int[] intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP1Frame, 0, intFlag, 0, rectW * rectH);
 
-        flagData = getTile(l2FlagsP2, targetTileRectangle).getDataBuffer();
+        flagData = getRaster(l2FlagsP2, targetTileRectangle).getDataBuffer();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP2Frame, 0, intFlag, 0, rectW * rectH);
 
-        flagData = getTile(l2FlagsP3, targetTileRectangle).getDataBuffer();
+        flagData = getRaster(l2FlagsP3, targetTileRectangle).getDataBuffer();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP3Frame, 0, intFlag, 0, rectW * rectH);
     }
