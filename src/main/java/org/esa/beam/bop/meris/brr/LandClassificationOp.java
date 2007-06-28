@@ -122,19 +122,19 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
     }
 
     private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
-    	sza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        saa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vaa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        windu = (float[]) getTile(l1bProduct.getTiePointGrid("zonal_wind"), rectangle).getDataBuffer().getElems();
-        windv = (float[]) getTile(l1bProduct.getTiePointGrid("merid_wind"), rectangle).getDataBuffer().getElems();
-        l1Flags = new FlagWrapper.Byte((byte[])getTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getDataBuffer().getElems());
+    	sza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        saa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vaa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        windu = (float[]) getRaster(l1bProduct.getTiePointGrid("zonal_wind"), rectangle).getDataBuffer().getElems();
+        windv = (float[]) getRaster(l1bProduct.getTiePointGrid("merid_wind"), rectangle).getDataBuffer().getElems();
+        l1Flags = new FlagWrapper.Byte((byte[])getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getDataBuffer().getElems());
 
         
         for (int i = 0; i < rhoNg.length; i++) {
-            rhoNg[i] = (float[]) getTile(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
+            rhoNg[i] = (float[]) getRaster(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
         }
-        gasFlags = new FlagWrapper.Byte((byte[]) getTile(gasCorProduct.getBand(GaseousCorrectionOp.GAS_FLAGS), rectangle).getDataBuffer().getElems());
+        gasFlags = new FlagWrapper.Byte((byte[]) getRaster(gasCorProduct.getBand(GaseousCorrectionOp.GAS_FLAGS), rectangle).getDataBuffer().getElems());
     }
 
     @Override

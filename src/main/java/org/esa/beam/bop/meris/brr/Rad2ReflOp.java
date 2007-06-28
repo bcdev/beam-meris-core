@@ -116,17 +116,17 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
         try {
         	ProductData[] radiance = new ProductData[radianceBands.length];
         	for (int i = 0; i < radiance.length; i++) {
-        		radiance[i] = getTile(radianceBands[i], targetTileRectangle).getDataBuffer();
+        		radiance[i] = getRaster(radianceBands[i], targetTileRectangle).getDataBuffer();
             }
-        	ProductData detectorIndex = getTile(detectorIndexBand, targetTileRectangle).getDataBuffer();
-        	ProductData sza = getTile(sunZenihTPG, targetTileRectangle).getDataBuffer();
+        	ProductData detectorIndex = getRaster(detectorIndexBand, targetTileRectangle).getDataBuffer();
+        	ProductData sza = getRaster(sunZenihTPG, targetTileRectangle).getDataBuffer();
         	boolean[] isInvalid = new boolean[size];
         	sourceProduct.readBitmask(targetTileRectangle.x, targetTileRectangle.y,
         			targetTileRectangle.width, targetTileRectangle.height, invalidTerm, isInvalid, new SubProgressMonitor(pm, 1));
 
             ProductData[] rhoToa = new ProductData[rhoToaBands.length];
             for (int i = 0; i < rhoToaBands.length; i++) {
-                rhoToa[i] = getTile(rhoToaBands[i], targetTileRectangle).getDataBuffer();
+                rhoToa[i] = getRaster(rhoToaBands[i], targetTileRectangle).getDataBuffer();
             }
 
             for (int i = 0; i < size; i++) {

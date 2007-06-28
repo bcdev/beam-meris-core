@@ -118,16 +118,16 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-        	detectorIndex = (short[]) getTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
+        	detectorIndex = (short[]) getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
             for (int i = 0; i < rhoCorectedBands.length; i++) {
-                rho[i] = (float[]) getTile(gascorProduct.getBand(rhoCorectedBands[i].getName()), rectangle).getDataBuffer().getElems();
+                rho[i] = (float[]) getRaster(gascorProduct.getBand(rhoCorectedBands[i].getName()), rectangle).getDataBuffer().getElems();
             }
             boolean[] isLandCons = new boolean[size];
             landProduct.readBitmask(rectangle.x, rectangle.y,
             		rectangle.width, rectangle.height, isLandTerm, isLandCons, ProgressMonitor.NULL);
             
             for (int i = 0; i < rhoCorectedBands.length; i++) {
-                rhoCorrected[i] = (float[]) getTile(rhoCorectedBands[i], rectangle).getDataBuffer().getElems();
+                rhoCorrected[i] = (float[]) getRaster(rhoCorectedBands[i], rectangle).getDataBuffer().getElems();
             }
 
             for (int i = 0; i < size; i++) {

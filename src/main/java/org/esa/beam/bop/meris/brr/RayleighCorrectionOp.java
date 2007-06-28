@@ -151,18 +151,18 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     protected void loadSourceTiles(Rectangle rectangle) throws OperatorException {
         
-        sza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        saa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vaa = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        altitude = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
-        ecmwfPressure = (float[]) getTile(l1bProduct.getTiePointGrid("atm_press"), rectangle).getDataBuffer().getElems();
+        sza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        saa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vaa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        altitude = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
+        ecmwfPressure = (float[]) getRaster(l1bProduct.getTiePointGrid("atm_press"), rectangle).getDataBuffer().getElems();
 
         for (int i = 0; i < rhoNg.length; i++) {
             if (i == bb11 || i == bb15) {
                 continue;
             }
-            rhoNg[i] = (float[]) getTile(gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
+            rhoNg[i] = (float[]) getRaster(gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
         }
         final int size = rectangle.height * rectangle.width;
         isLandCons = new boolean[size];
@@ -181,11 +181,11 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         try {
             loadSourceTiles(rectangle);
 
-            brrFlags = new FlagWrapper.Short((short[]) getTile(flagBand, rectangle).getDataBuffer().getElems());
+            brrFlags = new FlagWrapper.Short((short[]) getRaster(flagBand, rectangle).getDataBuffer().getElems());
             for (int i = 0; i < brrBands.length; i++) {
                 Band band = brrBands[i];
                 if (band != null) {
-                    brr[i] = (float[]) getTile(band, rectangle).getDataBuffer().getElems();
+                    brr[i] = (float[]) getRaster(band, rectangle).getDataBuffer().getElems();
                 }
             }
 

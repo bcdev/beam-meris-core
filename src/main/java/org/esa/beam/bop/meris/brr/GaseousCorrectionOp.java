@@ -140,20 +140,20 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 
     private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
         
-        detectorIndex = (short[]) getTile(
+        detectorIndex = (short[]) getRaster(
                 l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
-        sza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vza = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        altitude = (float[]) getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
-        ecmwfOzone = (float[]) getTile(l1bProduct.getTiePointGrid("ozone"), rectangle).getDataBuffer().getElems();
-        l1Flags = new FlagWrapper.Byte((byte[]) getTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getDataBuffer().getElems());
+        sza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        vza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
+        altitude = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
+        ecmwfOzone = (float[]) getRaster(l1bProduct.getTiePointGrid("ozone"), rectangle).getDataBuffer().getElems();
+        l1Flags = new FlagWrapper.Byte((byte[]) getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getDataBuffer().getElems());
 
         
         for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
-            rhoToa[i] = (float[]) getTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
+            rhoToa[i] = (float[]) getRaster(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
         }
 
-        cloudFlags = new FlagWrapper.Short((short[])getTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle).getDataBuffer().getElems());
+        cloudFlags = new FlagWrapper.Short((short[])getRaster(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle).getDataBuffer().getElems());
     }
 
     @Override
@@ -163,9 +163,9 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
         try {
             loadSourceTiles(rectangle);
 
-            gasFlags = new FlagWrapper.Byte((byte[]) getTile(flagBand, rectangle).getDataBuffer().getElems());
+            gasFlags = new FlagWrapper.Byte((byte[]) getRaster(flagBand, rectangle).getDataBuffer().getElems());
             for (int i = 0; i < rhoNgBands.length; i++) {
-                rhoNg[i] = (float[]) getTile(rhoNgBands[i], rectangle).getDataBuffer().getElems();
+                rhoNg[i] = (float[]) getRaster(rhoNgBands[i], rectangle).getDataBuffer().getElems();
             }
 
             for (int iPL1 = rectangle.y; iPL1 < rectangle.y + rectangle.height; iPL1 += Constants.SUBWIN_HEIGHT) {
