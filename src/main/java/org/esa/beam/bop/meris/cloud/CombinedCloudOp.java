@@ -10,7 +10,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -73,10 +73,10 @@ public class CombinedCloudOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Tile targetTile,
+    public void computeBand(Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
 
-    	Rectangle rectangle = targetTile.getRectangle();
+    	Rectangle rectangle = targetRaster.getRectangle();
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {

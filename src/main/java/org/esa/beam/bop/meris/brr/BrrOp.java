@@ -197,7 +197,7 @@ public class BrrOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTiles(Rectangle targetTileRectangle,
+    public void computeAllBands(Rectangle targetTileRectangle,
             ProgressMonitor pm) throws OperatorException {
 
         createScanLines(targetTileRectangle);

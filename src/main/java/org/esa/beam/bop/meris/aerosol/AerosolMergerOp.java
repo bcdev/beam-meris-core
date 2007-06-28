@@ -134,7 +134,7 @@ public class AerosolMergerOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTiles(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeAllBands(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", 1 + size);

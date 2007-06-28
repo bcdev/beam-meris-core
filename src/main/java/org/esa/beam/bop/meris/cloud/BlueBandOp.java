@@ -28,7 +28,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -133,15 +133,15 @@ public class BlueBandOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Tile targetTile,
+    public void computeBand(Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
     	
-    	Rectangle rect = targetTile.getRectangle();
+    	Rectangle rect = targetRaster.getRectangle();
         final int size = rect.height * rect.width;
         pm.beginTask("Processing frame...", size);
         try {
             getSourceTiles(rect);
-            byte[] cloudFlagScanLine = (byte[]) targetTile.getDataBuffer().getElems();
+            byte[] cloudFlagScanLine = (byte[]) targetRaster.getDataBuffer().getElems();
 
             boolean isSnowPlausible;
             boolean isBrightLand;

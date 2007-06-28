@@ -29,7 +29,7 @@ import org.esa.beam.framework.datamodel.TiePointGrid;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -92,41 +92,41 @@ public class CloudShadowOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Tile targetTile,
+    public void computeBand(Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
     	
-    	Rectangle targetRectangle = targetTile.getRectangle();
+    	Rectangle targetRectangle = targetRaster.getRectangle();
         Rectangle sourceRectangle = rectCalculator.computeSourceRectangle(targetRectangle);
         final int size = sourceRectangle.height * sourceRectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-            Tile szaTile = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle);
-            Tile saaTile = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle);
-            Tile vzaTile = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), sourceRectangle);
-            Tile vaaTile = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle);
-            Tile cloudTile = getTile(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle);
-            Tile ctpTile = getTile(ctpProduct.getBand("cloud_top_press"), sourceRectangle);
+        	Raster szaRaster = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle);
+        	Raster saaRaster = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle);
+        	Raster vzaRaster = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), sourceRectangle);
+        	Raster vaaRaster = getTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle);
+        	Raster cloudRaster = getTile(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle);
+        	Raster ctpRaster = getTile(ctpProduct.getBand("cloud_top_press"), sourceRectangle);
 
-            Tile cloudTargetTile = getTile(targetTile.getRasterDataNode(), targetRectangle);
+        	Raster cloudTargetRaster = getTile(targetRaster.getRasterDataNode(), targetRectangle);
 
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
                 for (int x = targetRectangle.x; x < targetRectangle.x + targetRectangle.width; x++) {
-                    cloudTargetTile.setInt(x, y, cloudTile.getInt(x, y));
+                    cloudTargetRaster.setInt(x, y, cloudRaster.getInt(x, y));
                 }
             }
 
             int sourceIndex = 0;
             for (int y = sourceRectangle.y; y < sourceRectangle.y + sourceRectangle.height; y++) {
                 for (int x = sourceRectangle.x; x < sourceRectangle.x + sourceRectangle.width; x++) {
-                    if (cloudTile.getInt(x, y) == CombinedCloudOp.FLAG_CLOUD) {
-                        final float sza = szaTile.getFloat(x, y) * MathUtils.DTOR_F;
-                        final float saa = saaTile.getFloat(x, y) * MathUtils.DTOR_F;
-                        final float vza = vzaTile.getFloat(x, y) * MathUtils.DTOR_F;
-                        final float vaa = vaaTile.getFloat(x, y) * MathUtils.DTOR_F;
+                    if (cloudRaster.getInt(x, y) == CombinedCloudOp.FLAG_CLOUD) {
+                        final float sza = szaRaster.getFloat(x, y) * MathUtils.DTOR_F;
+                        final float saa = saaRaster.getFloat(x, y) * MathUtils.DTOR_F;
+                        final float vza = vzaRaster.getFloat(x, y) * MathUtils.DTOR_F;
+                        final float vaa = vaaRaster.getFloat(x, y) * MathUtils.DTOR_F;
 
                         PixelPos pixelPos = new PixelPos(x, y);
                         final GeoPos geoPos = geoCoding.getGeoPos(pixelPos, null);
-                        float cloudAlt = computeHeightFromPressure(ctpTile.getFloat(x, y));
+                        float cloudAlt = computeHeightFromPressure(ctpRaster.getFloat(x, y));
                         GeoPos shadowPos = getCloudShadow2(sza, saa, vza, vaa, cloudAlt, geoPos);
                         if (shadowPos != null) {
                             pixelPos = geoCoding.getPixelPos(shadowPos, pixelPos);
@@ -134,10 +134,10 @@ public class CloudShadowOp extends MerisBasisOp {
                             if (targetRectangle.contains(pixelPos)) {
                                 final int pixelX = (int) Math.floor(pixelPos.x);
                                 final int pixelY = (int) Math.floor(pixelPos.y);
-                                int flagValue = cloudTile.getInt(pixelX, pixelY);
+                                int flagValue = cloudRaster.getInt(pixelX, pixelY);
                                 if ((flagValue & CombinedCloudOp.FLAG_CLOUD_SHADOW) == 0) {
                                     flagValue += CombinedCloudOp.FLAG_CLOUD_SHADOW;
-                                    cloudTargetTile.setInt(pixelX, pixelY, flagValue);
+                                    cloudTargetRaster.setInt(pixelX, pixelY, flagValue);
                                 }
                             }
                         }

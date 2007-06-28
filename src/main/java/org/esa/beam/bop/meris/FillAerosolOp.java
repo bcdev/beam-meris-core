@@ -33,7 +33,6 @@ import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.ParameterConverter;
 import org.esa.beam.framework.gpf.Raster;
-import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -129,11 +128,11 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     }
 
     @Override
-    public void computeTile(Tile targetTile,
+    public void computeBand(Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
 
-    	RasterDataNode targetBand = targetTile.getRasterDataNode();
-    	Rectangle targetRect = targetTile.getRectangle();
+    	RasterDataNode targetBand = targetRaster.getRasterDataNode();
+    	Rectangle targetRect = targetRaster.getRectangle();
         Rectangle sourceRect = rectCalculator.computeSourceRectangle(targetRect);
         pm.beginTask("Processing frame...", sourceRect.height + 1);
         try {
@@ -151,7 +150,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
                 for (int x = targetRect.x; x < targetRect.x + targetRect.width; x++) {
                     sourceIndex++;
                     if (isValid[sourceIndex]) {
-                        targetTile.setFloat(x, y, values.getFloat(x, y));
+                    	targetRaster.setFloat(x, y, values.getFloat(x, y));
                     } else {
                         double weigthSum = 0;
 						double weigthSumTotal = 0;
@@ -180,9 +179,9 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
 							final double tauTemp = tauSum/weigthSum;
 							final double ww = weigthSum/weigthSumTotal;
 							final double tau = ww * tauTemp + (1.0 - ww)* defaultValues.getFloat(x, y);
-							targetTile.setFloat(x, y, (float) tau);
+							targetRaster.setFloat(x, y, (float) tau);
                         } else {
-							targetTile.setFloat(x, y, defaultValues.getFloat(x, y));
+                        	targetRaster.setFloat(x, y, defaultValues.getFloat(x, y));
                         }
                     }
                 }

@@ -294,7 +294,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
     }
     
     @Override
-    public void computeTiles(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeAllBands(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final int size = rectangle.height * rectangle.width;
         final double[] cloudIn = new double[15];

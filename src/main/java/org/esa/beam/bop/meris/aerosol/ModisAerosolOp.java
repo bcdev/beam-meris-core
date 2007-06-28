@@ -127,7 +127,7 @@ public class ModisAerosolOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTiles(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeAllBands(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final GeoCoding geoCoding = sourceProduct.getGeoCoding();
         final GeoPos geoPos = new GeoPos();

@@ -32,7 +32,7 @@ import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.ParameterConverter;
-import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -104,13 +104,13 @@ public class FillBandOp extends MerisBasisOp implements ParameterConverter {
 	}
 	
 	@Override
-    public void computeTile(Tile targetTile,
+    public void computeBand(Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
 		
 		pm.beginTask("Processing frame...", 1);
 		try {
-			RasterDataNode targetNode = targetTile.getRasterDataNode();
-			Rectangle targetRect = targetTile.getRectangle();
+			RasterDataNode targetNode = targetRaster.getRasterDataNode();
+			Rectangle targetRect = targetRaster.getRectangle();
 			float[] outValues = (float[]) getTile(targetNode, targetRect).getDataBuffer().getElems();
 			final float defaultValue = defaultMap.get(targetNode);
 			

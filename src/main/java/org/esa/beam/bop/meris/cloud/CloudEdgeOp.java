@@ -24,7 +24,7 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -78,16 +78,16 @@ public class CloudEdgeOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Tile targetTile,
+    public void computeBand(Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
 
-        Rectangle targetRectangle = targetTile.getRectangle();
+        Rectangle targetRectangle = targetRaster.getRectangle();
 		Rectangle sourceRectangle = rectCalculator.computeSourceRectangle(targetRectangle);
         final int size = sourceRectangle.height * sourceRectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-            Tile cloudSource = getTile(sourceBand, sourceRectangle);
-            Tile cloudTarget = getTile(targetBand, targetRectangle);
+            Raster cloudSource = getTile(sourceBand, sourceRectangle);
+            Raster cloudTarget = getTile(targetBand, targetRectangle);
 
             int i = 0;
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
@@ -111,7 +111,7 @@ public class CloudEdgeOp extends MerisBasisOp {
         }
     }
 
-    private void markEdgeAround(int xi, int yi, Tile cloudSource, Tile cloudTarget) {
+    private void markEdgeAround(int xi, int yi, Raster cloudSource, Raster cloudTarget) {
     	Rectangle targetRectangle = cloudTarget.getRectangle();
         int xStart = xi - cloudWidth;
         if (xStart < targetRectangle.x) {
