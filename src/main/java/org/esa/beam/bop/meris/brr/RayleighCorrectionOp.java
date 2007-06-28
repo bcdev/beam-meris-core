@@ -175,7 +175,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     }
 
     @Override
-    public void computeTiles(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeAllBands(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {

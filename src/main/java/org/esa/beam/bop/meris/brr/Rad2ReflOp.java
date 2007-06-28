@@ -108,7 +108,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
     }
 
     @Override
-    public void computeTiles(Rectangle targetTileRectangle,
+    public void computeAllBands(Rectangle targetTileRectangle,
             ProgressMonitor pm) throws OperatorException {
 
         final int size = targetTileRectangle.height * targetTileRectangle.width;

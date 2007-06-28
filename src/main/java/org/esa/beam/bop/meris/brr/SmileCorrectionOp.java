@@ -112,7 +112,7 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
     }
 
     @Override
-    public void computeTiles(Rectangle rectangle,
+    public void computeAllBands(Rectangle rectangle,
             ProgressMonitor pm) throws OperatorException {
 
         final int size = rectangle.height * rectangle.width;
