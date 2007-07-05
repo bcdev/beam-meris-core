@@ -67,8 +67,8 @@ public class CloudTopPressureOp extends MerisBasisOp {
     private float[] vaa;
     private float[] lon;
     private float[] lat;
-    private float[] toar10;
-    private float[] toar11;
+    private Raster toar10;
+    private Raster toar11;
     private boolean[] isInvalid;
     private L2AuxData auxData;
     private JnnNet neuralNet;
@@ -152,8 +152,8 @@ public class CloudTopPressureOp extends MerisBasisOp {
         lat = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle).getDataBuffer().getElems();
         lon = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle).getDataBuffer().getElems();
 
-        toar10 = (float[]) getRaster(sourceProduct.getBand("radiance_10"), rectangle).getDataBuffer().getElems();
-        toar11 = (float[]) getRaster(sourceProduct.getBand("radiance_11"), rectangle).getDataBuffer().getElems();
+        toar10 = getRaster(sourceProduct.getBand("radiance_10"), rectangle);
+        toar11 = getRaster(sourceProduct.getBand("radiance_11"), rectangle);
 
         final int size = rectangle.height * rectangle.width;
         isInvalid = new boolean[size];
@@ -170,8 +170,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
             ProgressMonitor pm) throws OperatorException {
     	
     	Rectangle rectangle = targetRaster.getRectangle();
-        final int size = rectangle.height * rectangle.width;
-        pm.beginTask("Processing frame...", size);
+        pm.beginTask("Processing frame...", rectangle.height);
         try {
         	loadSourceTiles(rectangle);
 
@@ -181,37 +180,43 @@ public class CloudTopPressureOp extends MerisBasisOp {
             final double[] nnIn = new double[7];
             final double[] nnOut = new double[1];
 
-            for (int i = 0; i < size; i++) {
-                if (pm.isCanceled()) {
-                    break;
-                }
-                if (isInvalid[i]) {
-                    ctp[i] = 0;
-                } else {
-                    double szaRad = sza[i] * MathUtils.DTOR;
-                    double vzaRad = vza[i] * MathUtils.DTOR;
-                    nnIn[0] = computeSurfAlbedo(lat[i], lon[i]); // albedo
-                    nnIn[1] = toar10[i];
-                    nnIn[2] = toar11[i] / toar10[i];
-                    nnIn[3] = Math.cos(szaRad);
-                    nnIn[4] = Math.cos(vzaRad);
-                    nnIn[5] = Math.sin(vzaRad)
-                            * Math.cos(MathUtils.DTOR * (vaa[i] - saa[i]));
-                    nnIn[6] = auxData.central_wavelength[BB760][detector[i]];
+            int i = 0;
+			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+					if (pm.isCanceled()) {
+						break;
+					}
+					if (isInvalid[i]) {
+						ctp[i] = 0;
+					} else {
+						double szaRad = sza[i] * MathUtils.DTOR;
+						double vzaRad = vza[i] * MathUtils.DTOR;
+						nnIn[0] = computeSurfAlbedo(lat[i], lon[i]); // albedo
+						nnIn[1] = toar10.getDouble(x, y);
+						nnIn[2] = toar11.getDouble(x, y)
+								/ toar10.getDouble(x, y);
+						nnIn[3] = Math.cos(szaRad);
+						nnIn[4] = Math.cos(vzaRad);
+						nnIn[5] = Math.sin(vzaRad)
+								* Math.cos(MathUtils.DTOR * (vaa[i] - saa[i]));
+						nnIn[6] = auxData.central_wavelength[BB760][detector[i]];
 
-                    neuralNet.process(nnIn, nnOut);
-                    ctp[i] = (float) nnOut[0];
-                }
-                pm.worked(1);
-            }
+						neuralNet.process(nnIn, nnOut);
+						ctp[i] = (float) nnOut[0];
+					}
+					i++;
+				}
+				pm.worked(1);
+			}
         } finally {
             pm.done();
         }
     }
 
     private double computeSurfAlbedo(float latitude, float longitude) {
-//	    if  ( (cloudAuxData.surfAlb.Surfalb.tab2[0] >= 0.0) && pPixel->lon < 0.0) lon += 360.0; 
-        /* a priori tab values in 0-360 deg*/
+// if ( (cloudAuxData.surfAlb.Surfalb.tab2[0] >= 0.0) && pPixel->lon < 0.0) lon
+// += 360.0;
+        /* a priori tab values in 0-360 deg */
         /* Note that it is also assumed that longitude tab values are increasing */
         FractIndex[] SaIndex = FractIndex.createArray(2);
         Interp.interpCoord(latitude, cloudAuxData.surfAlb.getTab(0), SaIndex[0]);

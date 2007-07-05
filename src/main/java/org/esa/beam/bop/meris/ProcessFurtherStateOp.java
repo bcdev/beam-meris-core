@@ -17,21 +17,24 @@
 package org.esa.beam.bop.meris;
 
 import java.awt.Rectangle;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
+import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.jexp.ParseException;
-import com.bc.jexp.Term;
 
 /**
  * Created by marcoz.
@@ -44,19 +47,24 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     private static final String PROCESS_FURTHER_BAND_NAME = "process_further_state";
 
     private static final String[] EXPRESSIONS = {
-            "not (combined_cloud.cloud or combined_cloud.cloud_edge or combined_cloud.cloud_shadow) and l2_flags_p1.F_LANDCONS",
+            "not ($cloud.combined_cloud.cloud or $cloud.combined_cloud.cloud_edge or " +
+            "$cloud.combined_cloud.cloud_shadow) and $brr.l2_flags_p1.F_LANDCONS",
             // TODO: remove L1 land flag from process further
-            "l1_flags.LAND_OCEAN and not l2_flags_p1.F_LANDCONS",
-            "combined_cloud.cloud_edge or combined_cloud.cloud_shadow",
-            "combined_cloud.cloud",
-            "not l1_flags.LAND_OCEAN and not l2_flags_p1.F_LANDCONS",
-            "combined_cloud.snow",
-            "l1_flags.INVALID"};
+            "$l1b.l1_flags.LAND_OCEAN and not $brr.l2_flags_p1.F_LANDCONS",
+            "$cloud.combined_cloud.cloud_edge or $cloud.combined_cloud.cloud_shadow",
+            "$cloud.combined_cloud.cloud",
+            "not $l1b.l1_flags.LAND_OCEAN and not $brr.l2_flags_p1.F_LANDCONS",
+            "$cloud.combined_cloud.snow",
+            "$l1b.l1_flags.INVALID"};
 
-    private Term[] terms;
+    private Band[] bands;
     
-    @SourceProduct(alias="input")
-    private Product sourceProduct;
+    @SourceProduct(alias="l1b")
+    private Product l1bProduct;
+    @SourceProduct(alias="brr")
+    private Product brrProduct;
+    @SourceProduct(alias="cloud")
+    private Product cloudProduct;
     @TargetProduct
     private Product targetProduct;
 
@@ -66,22 +74,34 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
 
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
-        targetProduct = createCompatibleProduct(sourceProduct, "MER", "MER_L2");
+        targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
         Band processFurtherBand = targetProduct.addBand(PROCESS_FURTHER_BAND_NAME, ProductData.TYPE_INT8);
         processFurtherBand.setDescription("process further state");
 
-        terms = new Term[EXPRESSIONS.length];
+        Map<String, Object> parameters = new HashMap<String, Object>();
+        BandArithmeticOp.BandDescriptor[] bandDescriptions = new BandArithmeticOp.BandDescriptor[EXPRESSIONS.length];
+        for (int i = 0; i < EXPRESSIONS.length; i++) {
+        	BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+			bandDescriptor.name = "b"+i;
+			bandDescriptor.expression = EXPRESSIONS[i];
+			bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
+			bandDescriptions[i] = bandDescriptor;
+    	}
+		parameters.put("bandDescriptors", bandDescriptions);
+		
+		Map<String, Product> products = new HashMap<String, Product>();
+		products.put(getContext().getIdForSourceProduct(l1bProduct), l1bProduct);
+		products.put(getContext().getIdForSourceProduct(brrProduct), brrProduct);
+		products.put(getContext().getIdForSourceProduct(cloudProduct), cloudProduct);
+		Product expressionProduct = GPF.createProduct("BandArithmetic", parameters, products);
+		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
+		context.addSourceProduct("x", expressionProduct);
+		
+		bands = expressionProduct.getBands();
         
-        try {
-        	for (int i = 0; i < EXPRESSIONS.length; i++) {
-        		terms[i] = sourceProduct.createTerm(EXPRESSIONS[i]);	
-    		}
-		} catch (ParseException e) {
-			throw new OperatorException("Could not create Term for expression.", e);
-		}
         return targetProduct;
     }
-
+    
     @Override
     public void computeBand(Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
@@ -90,23 +110,20 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-        	boolean[][] isValid = new boolean[EXPRESSIONS.length][0];
+        	Raster[] isValid = new Raster[EXPRESSIONS.length];
         	for (int i = 0; i < isValid.length; i++) {
-        		isValid[i] = new boolean[size];
-        		sourceProduct.readBitmask(rectangle.x, rectangle.y,
-    	    			rectangle.width, rectangle.height, terms[i], isValid[i], ProgressMonitor.NULL);
+        		isValid[i] = getRaster(bands[i], rectangle);
+        	}
+
+        	for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+					for (int j = 0; j < EXPRESSIONS.length; j++) {
+						if (isValid[j].getBoolean(x, y)) {
+							targetRaster.setInt(x, y, j);
+						}
+					}
+				}
 			}
-
-            ProductData flagData = targetRaster.getDataBuffer();
-            byte[] processfurther = (byte[]) flagData.getElems();
-
-            for (int i = 0; i < size; i++) {
-                for (int j = 0; j < EXPRESSIONS.length; j++) {
-                    if (isValid[j][i]) {
-                        processfurther[i] = (byte) j;
-                    }
-                }
-            }
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {

@@ -25,6 +25,7 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
+import org.esa.beam.framework.gpf.annotations.SourceProducts;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
@@ -87,6 +88,8 @@ public class SdrOp extends MerisBasisOp {
     private Product aerosolProduct;
     @SourceProduct(alias="cloud")
     private Product cloudProduct;
+    @SourceProducts
+    private Product[] sourceProducts;
     @TargetProduct
     private Product targetProduct;
     @Parameter
@@ -163,16 +166,16 @@ public class SdrOp extends MerisBasisOp {
 
 	private Band createBooleanBandForExpression(String expression) throws OperatorException {
 		Map<String, Object> parameters = new HashMap<String, Object>();
-        BandArithmeticOp.BandDescription[] bandDescriptions = new BandArithmeticOp.BandDescription[1];
-        BandArithmeticOp.BandDescription bandDescription = new BandArithmeticOp.BandDescription();
-		bandDescription.name = "bBand";
-		bandDescription.expression = expression;
-		bandDescription.type = ProductData.TYPESTRING_BOOLEAN;
-		bandDescriptions[0] = bandDescription;
-		parameters.put("bandDescriptions", bandDescriptions);
+        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
+        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+		bandDescriptor.name = "bBand";
+		bandDescriptor.expression = expression;
+		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
+		bandDescriptors[0] = bandDescriptor;
+		parameters.put("bandDescriptors", bandDescriptors);
 		
 		Map<String, Product> products = new HashMap<String, Product>();
-		for (Product product : getSourceProducts()) {
+		for (Product product : sourceProducts) {
 			products.put(getContext().getIdForSourceProduct(product), product);
 		}
 		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, products);
