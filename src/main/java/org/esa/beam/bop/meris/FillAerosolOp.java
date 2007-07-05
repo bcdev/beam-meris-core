@@ -92,13 +92,17 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         config = new Configuration();
     }
 
-    public void setParameterValues(Operator operator, Xpp3Dom parameterDom) throws OperatorException {
+    public void getParameterValues(Operator operator, Xpp3Dom configuration) throws OperatorException {
+        // todo - implement
+    }
+
+    public void setParameterValues(Operator operator, Xpp3Dom configuration) throws OperatorException {
         XStream xStream = new XStream();
         xStream.setClassLoader(this.getClass().getClassLoader());
-        xStream.alias(parameterDom.getName(), Configuration.class);
+        xStream.alias(configuration.getName(), Configuration.class);
         xStream.alias("band", BandDesc.class);
         xStream.addImplicitCollection(Configuration.class, "bands");
-        xStream.unmarshal(new XppDomReader(parameterDom), config);
+        xStream.unmarshal(new XppDomReader(configuration), config);
     }
 
     @Override
