@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.esa.beam.bop.meris.AlbedoUtils;
 import org.esa.beam.bop.meris.AlbedomapConstants;
@@ -17,11 +19,15 @@ import org.esa.beam.framework.datamodel.MetadataAttribute;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.GPF;
+import org.esa.beam.framework.gpf.OperatorContext;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
+import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.framework.gpf.support.Auxdata;
 import org.esa.beam.util.ProductUtils;
@@ -29,8 +35,6 @@ import org.esa.beam.util.StringUtils;
 import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.jexp.ParseException;
-import com.bc.jexp.Term;
 import com.bc.jnn.Jnn;
 import com.bc.jnn.JnnException;
 import com.bc.jnn.JnnNet;
@@ -69,11 +73,9 @@ public class SdrOp extends MerisBasisOp {
     private float[] vaa;
     private short[] sdrFlag;
 
-    private Term validLandTerm;
-	private Term cloudFreeTerm;
-    private boolean[] isValidLand;
-    private boolean[] isCloudFree;
-
+    private Band validBand;
+    private boolean[] isValidPixel;
+    
     private float[] aot470;
     private float[] ang;
 
@@ -90,9 +92,7 @@ public class SdrOp extends MerisBasisOp {
     @Parameter
     private String neuralNetFile;
     @Parameter
-    private String cloudFreeExpression;
-    @Parameter
-    private String validLandExpression;
+    private String validExpression;
     @Parameter
     private String aot470Name;
     @Parameter
@@ -108,11 +108,8 @@ public class SdrOp extends MerisBasisOp {
         if (StringUtils.isNullOrEmpty(neuralNetFile)) {
             throw new OperatorException("No neural net specified.");
         }
-        if (StringUtils.isNullOrEmpty(cloudFreeExpression)) {
-            throw new OperatorException("No cloudFree expression specified.");
-        }
-        if (StringUtils.isNullOrEmpty(validLandExpression)) {
-            throw new OperatorException("No validLand expression specified.");
+        if (StringUtils.isNullOrEmpty(validExpression)) {
+            throw new OperatorException("No validExpression specified.");
         }
         if (StringUtils.isNullOrEmpty(aot470Name)) {
             throw new OperatorException("No aot470 band specified.");
@@ -139,11 +136,11 @@ public class SdrOp extends MerisBasisOp {
             final Band band = l1bProduct.getBand("radiance_" + Integer.toString(sdrBandNo[i]));
 
             final Band sdrOutputBand = targetProduct.addBand(SDR_BAND_NAME_PREFIX + Integer.toString(sdrBandNo[i]),
-                                                ProductData.TYPE_INT16);
+                                                ProductData.TYPE_FLOAT32);
             sdrOutputBand.setDescription(
                     "Surface directional reflectance at " + band.getSpectralWavelength() + " nm");
             sdrOutputBand.setUnit("1");
-            sdrOutputBand.setScalingFactor(SCALING_FACTOR);
+//            sdrOutputBand.setScalingFactor(SCALING_FACTOR);
             ProductUtils.copySpectralAttributes(band, sdrOutputBand);
             sdrOutputBand.setNoDataValueUsed(true);
             sdrOutputBand.setGeophysicalNoDataValue(-1);
@@ -159,15 +156,30 @@ public class SdrOp extends MerisBasisOp {
         sdrFlagBand.setDescription("SDR specific flags");
         sdrFlagBand.setFlagCoding(sdiFlagCoding);
 
-        try {
-			validLandTerm = brrProduct.createTerm(validLandExpression);
-			cloudFreeTerm = cloudProduct.createTerm(cloudFreeExpression);
-		} catch (ParseException e) {
-			throw new OperatorException("Could not create Term for expression.", e);
-		}
-		
-        return targetProduct;
+		validBand = createBooleanBandForExpression(validExpression);
+
+		return targetProduct;
     }
+
+	private Band createBooleanBandForExpression(String expression) throws OperatorException {
+		Map<String, Object> parameters = new HashMap<String, Object>();
+        BandArithmeticOp.BandDescription[] bandDescriptions = new BandArithmeticOp.BandDescription[1];
+        BandArithmeticOp.BandDescription bandDescription = new BandArithmeticOp.BandDescription();
+		bandDescription.name = "bBand";
+		bandDescription.expression = expression;
+		bandDescription.type = ProductData.TYPESTRING_BOOLEAN;
+		bandDescriptions[0] = bandDescription;
+		parameters.put("bandDescriptions", bandDescriptions);
+		
+		Map<String, Product> products = new HashMap<String, Product>();
+		for (Product product : getSourceProducts()) {
+			products.put(getContext().getIdForSourceProduct(product), product);
+		}
+		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, products);
+		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
+		context.addSourceProduct("x", validLandProduct);
+		return validLandProduct.getBand("bBand");
+	}
 
     private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
 
@@ -186,18 +198,7 @@ public class SdrOp extends MerisBasisOp {
         for (int i = 0; i < sdrBandNo.length; i++) {
             reflectance[i] = (float[]) getRaster(reflectanceBands[i], rectangle).getDataBuffer().getElems();
         }
-        
-        final int size = rectangle.height * rectangle.width;
-        isValidLand = new boolean[size];
-        isCloudFree = new boolean[size];
-    	try {
-    		brrProduct.readBitmask(rectangle.x, rectangle.y,
-					rectangle.width, rectangle.height, validLandTerm, isValidLand, ProgressMonitor.NULL);
-    		cloudProduct.readBitmask(rectangle.x, rectangle.y,
-	    			rectangle.width, rectangle.height, cloudFreeTerm, isCloudFree, ProgressMonitor.NULL);
-		} catch (IOException e) {
-			throw new OperatorException("Couldn't load bitmasks", e);
-		}
+        isValidPixel = (boolean[]) getRaster(validBand, rectangle).getDataBuffer().getElems();
     }
 
     @Override
@@ -220,7 +221,7 @@ public class SdrOp extends MerisBasisOp {
 
             // process the complete rect
             for (int i = 0; i < size; i++) {
-                if (isValidLand[i] && isCloudFree[i]) {
+                if (isValidPixel[i]) {
                     double t_sza = sza[i] * MathUtils.DTOR;
                     double t_vza = vza[i] * MathUtils.DTOR;
                     double ada = AlbedoUtils.computeAzimuthDifference(vaa[i],
