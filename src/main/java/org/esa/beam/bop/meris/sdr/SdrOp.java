@@ -20,9 +20,9 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
-import org.esa.beam.framework.gpf.OperatorContext;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -65,19 +65,19 @@ public class SdrOp extends MerisBasisOp {
     private Band[] sdrBands;
     private Band sdrFlagBand;
 
-    private float[][] reflectance;
-    private float[][] sdr;
-    private float[] sza;
-    private float[] saa;
-    private float[] vza;
-    private float[] vaa;
-    private short[] sdrFlag;
+    private Raster[] reflectance;
+    private Raster[] sdr;
+    private Raster sza;
+    private Raster saa;
+    private Raster vza;
+    private Raster vaa;
+    private Raster sdrFlag;
 
     private Band validBand;
-    private boolean[] isValidPixel;
+    private Raster isValidPixel;
     
-    private float[] aot470;
-    private float[] ang;
+    private Raster aot470;
+    private Raster ang;
 
     @SourceProduct(alias="l1b")
     private Product l1bProduct;
@@ -136,11 +136,11 @@ public class SdrOp extends MerisBasisOp {
             final Band band = l1bProduct.getBand("radiance_" + Integer.toString(sdrBandNo[i]));
 
             final Band sdrOutputBand = targetProduct.addBand(SDR_BAND_NAME_PREFIX + Integer.toString(sdrBandNo[i]),
-                                                ProductData.TYPE_FLOAT32);
+                                                ProductData.TYPE_INT16);
             sdrOutputBand.setDescription(
                     "Surface directional reflectance at " + band.getSpectralWavelength() + " nm");
             sdrOutputBand.setUnit("1");
-//            sdrOutputBand.setScalingFactor(SCALING_FACTOR);
+            sdrOutputBand.setScalingFactor(SCALING_FACTOR);
             ProductUtils.copySpectralAttributes(band, sdrOutputBand);
             sdrOutputBand.setNoDataValueUsed(true);
             sdrOutputBand.setGeophysicalNoDataValue(-1);
@@ -183,102 +183,96 @@ public class SdrOp extends MerisBasisOp {
 
     private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
 
-        sza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        saa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vaa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
+        sza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+        saa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
+        vza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+        vaa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
 
-        ang = (float[]) getRaster(aerosolProduct.getBand(angName), rectangle).getDataBuffer().getElems();
-        aot470 = (float[]) getRaster(aerosolProduct.getBand(aot470Name), rectangle).getDataBuffer().getElems();
+        ang = getRaster(aerosolProduct.getBand(angName), rectangle);
+        aot470 = getRaster(aerosolProduct.getBand(aot470Name), rectangle);
 
 
-        reflectance = new float[sdrBandNo.length][0];
-        sdr = new float[sdrBandNo.length][0];
+        reflectance = new Raster[sdrBandNo.length];
+        sdr = new Raster[sdrBandNo.length];
         
         for (int i = 0; i < sdrBandNo.length; i++) {
-            reflectance[i] = (float[]) getRaster(reflectanceBands[i], rectangle).getDataBuffer().getElems();
+            reflectance[i] = getRaster(reflectanceBands[i], rectangle);
         }
-        isValidPixel = (boolean[]) getRaster(validBand, rectangle).getDataBuffer().getElems();
+        isValidPixel = getRaster(validBand, rectangle);
     }
 
     @Override
     public void computeAllBands(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
-        final int size = rectangle.height * rectangle.width;
         final double[] sdrAlgoInput = new double[9];
         final double[] sdrAlgoOutput = new double[1];
 
-        pm.beginTask("Processing frame...", size);
+        pm.beginTask("Processing frame...", rectangle.height);
         try {
             loadSourceTiles(rectangle);
 
             for (int i = 0; i < sdrBands.length; i++) {
-                ProductData data = getRaster(sdrBands[i], rectangle).getDataBuffer();
-                sdr[i] = (float[]) data.getElems();
+            	sdr[i] = getRaster(sdrBands[i], rectangle);
+//	            sdr[i] = (float[]) data.getElems();
             }
-            ProductData data = getRaster(sdrFlagBand, rectangle).getDataBuffer();
-            sdrFlag = (short[]) data.getElems();
+            sdrFlag = getRaster(sdrFlagBand, rectangle);
+			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+				for (int x = rectangle.x; x < rectangle.x+rectangle.width; x++) {
+	                if (isValidPixel.getBoolean(x, y)) {
+	                    double t_sza = sza.getDouble(x, y) * MathUtils.DTOR;
+	                    double t_vza = vza.getDouble(x, y) * MathUtils.DTOR;
+	                    double ada = AlbedoUtils.computeAzimuthDifference(vaa.getDouble(x, y), saa.getDouble(x, y)) * MathUtils.DTOR;
+	                    double rhoNorm;
+	                    double wavelength;
+	                    double mueSun = Math.cos(t_sza);
+	                    double geomX = Math.sin(t_vza) * Math.cos(ada);
+	                    double geomY = Math.sin(t_vza) * Math.sin(ada);
+	                    double geomZ = Math.cos(t_vza);
 
+	                    double t_sdr;
+	                    short sdrFlags = 0;
+	                    for (int bandId = 0; bandId < reflectanceBands.length; bandId++) {
+	                        final Band reflInputBand = reflectanceBands[bandId];
+	                        rhoNorm = reflectance[bandId].getDouble(x, y) / Math.PI;
+	                        wavelength = reflInputBand.getSpectralWavelength();
+	                        sdrAlgoInput[0] = rhoNorm;
+	                        sdrAlgoInput[1] = wavelength;
+	                        sdrAlgoInput[2] = mueSun;
+	                        sdrAlgoInput[3] = geomX;
+	                        sdrAlgoInput[4] = geomY;
+	                        sdrAlgoInput[5] = geomZ;
+	                        sdrAlgoInput[6] = aot470.getDouble(x, y);
+	                        sdrAlgoInput[7] = 0; // aot 660; usage discontinued
+	                        sdrAlgoInput[8] = ang.getDouble(x, y);
+	                        algorithm.computeSdr(sdrAlgoInput, sdrAlgoOutput);
+	                        t_sdr = sdrAlgoOutput[0];
+	                        if (Double.isInfinite(t_sdr) || Double.isNaN(t_sdr)) {
+	                            t_sdr = 0.0;
+	                            sdrFlags |= 1 << (reflInputBand.getSpectralBandIndex() + 1);
+	                        } else if (t_sdr < 0.0) {
+	                            t_sdr = 0.0;
+	                            sdrFlags |= 1 << (reflInputBand.getSpectralBandIndex() + 1);
+	                        } else if (t_sdr > 1.0) {
+	                            t_sdr = 1.0;
+	                            sdrFlags |= 1 << (reflInputBand.getSpectralBandIndex() + 1);
+	                        }
+//	                        sdr[bandId][i] = (short) (t_sdr / SCALING_FACTOR);
+	                        sdr[bandId].setFloat(x, y, (float) t_sdr);
+	                    }
+	                    sdrFlags |= (sdrFlags == 0 ? 0 : 1); // Combine SDR-Flags
+	                    // to single INVALID
+	                    // Flag
+	                    sdrFlag.setInt(x, y, sdrFlags);
+	                } else {
+	                    for (int j = 0; j < reflectanceBands.length; j++) {
+	                        sdr[j].setDouble(x, y, -1);
+	                    }
+	                    sdrFlag.setInt(x, y, SDR_INVALID_FLAG_VALUE);
+	                }
+				}
+			}
             // process the complete rect
-            for (int i = 0; i < size; i++) {
-                if (isValidPixel[i]) {
-                    double t_sza = sza[i] * MathUtils.DTOR;
-                    double t_vza = vza[i] * MathUtils.DTOR;
-                    double ada = AlbedoUtils.computeAzimuthDifference(vaa[i],
-                                                                      saa[i])
-                            * MathUtils.DTOR;
-                    double rhoNorm;
-                    double wavelength;
-                    double mueSun = Math.cos(t_sza);
-                    double geomX = Math.sin(t_vza) * Math.cos(ada);
-                    double geomY = Math.sin(t_vza) * Math.sin(ada);
-                    double geomZ = Math.cos(t_vza);
-
-                    double t_sdr;
-                    short sdrFlags = 0;
-                    for (int bandId = 0; bandId < reflectanceBands.length; bandId++) {
-                        final Band reflInputBand = reflectanceBands[bandId];
-                        rhoNorm = reflectance[bandId][i] / Math.PI;
-                        wavelength = reflInputBand.getSpectralWavelength();
-                        sdrAlgoInput[0] = rhoNorm;
-                        sdrAlgoInput[1] = wavelength;
-                        sdrAlgoInput[2] = mueSun;
-                        sdrAlgoInput[3] = geomX;
-                        sdrAlgoInput[4] = geomY;
-                        sdrAlgoInput[5] = geomZ;
-                        sdrAlgoInput[6] = aot470[i];
-                        sdrAlgoInput[7] = 0; // aot 660; usage discontinued
-                        sdrAlgoInput[8] = ang[i];
-                        algorithm.computeSdr(sdrAlgoInput, sdrAlgoOutput);
-                        t_sdr = sdrAlgoOutput[0];
-                        if (Double.isInfinite(t_sdr) || Double.isNaN(t_sdr)) {
-                            t_sdr = 0.0;
-                            sdrFlags |= 1 << (reflInputBand
-                                    .getSpectralBandIndex() + 1);
-                        } else if (t_sdr < 0.0) {
-                            t_sdr = 0.0;
-                            sdrFlags |= 1 << (reflInputBand
-                                    .getSpectralBandIndex() + 1);
-                        } else if (t_sdr > 1.0) {
-                            t_sdr = 1.0;
-                            sdrFlags |= 1 << (reflInputBand
-                                    .getSpectralBandIndex() + 1);
-                        }
-//                        sdr[bandId][i] = (short) (t_sdr / SCALING_FACTOR);
-                        sdr[bandId][i] = (float) t_sdr;
-                    }
-                    sdrFlags |= (sdrFlags == 0 ? 0 : 1); // Combine SDR-Flags
-                    // to single INVALID
-                    // Flag
-                    sdrFlag[i] = sdrFlags;
-                } else {
-                    for (int j = 0; j < reflectanceBands.length; j++) {
-                        sdr[j][i] = -1;
-                    }
-                    sdrFlag[i] = SDR_INVALID_FLAG_VALUE;
-                }
                 pm.worked(1);
-            }
         } finally {
             pm.done();
         }

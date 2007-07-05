@@ -36,6 +36,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -68,7 +69,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
     private static final String DEFAULT_CONFIG_FILE = "cloud_config.txt";
     private static final String DEFAULT_VALID_LAND_EXP = "not l1_flags.INVALID and dem_alt > -50";
     private static final String DEFAULT_VALID_OCEAN_EXP = "not l1_flags.INVALID and dem_alt <= -50";
-    private static final float SCALING_FACTOR = 0.0001f;
+    private static final float SCALING_FACTOR = 0.001f;
 
     private static final String PRESS_SCALE_HEIGHT_KEY = "press_scale_height";
 
@@ -86,7 +87,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
     private float[] centralWavelenth;
     private CentralWavelengthProvider centralWavelengthProvider;
 
-    private float[][] radiance;
+    private Raster[] radiance;
     private boolean[] isValidLand;
     private boolean[] isValidOcean;
     private boolean[] isLand;
@@ -153,7 +154,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
         
         String[] radianceBandNames = EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES;
         radianceBands = new Band[radianceBandNames.length];
-        radiance = new float[radianceBandNames.length][0];
+        radiance = new Raster[radianceBandNames.length];
         
         for (int bandIndex = 0; bandIndex < radianceBandNames.length; bandIndex++) {
             String bandName = radianceBandNames[bandIndex];
@@ -263,7 +264,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
     private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
 
         for (int i = 0; i < radianceBands.length; i++) {
-            radiance[i] = (float[]) getRaster(radianceBands[i], rectangle).getDataBuffer().getElems();
+            radiance[i] = getRaster(radianceBands[i], rectangle);
         }
 
         detector = (short[]) getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
@@ -296,63 +297,84 @@ public class CloudProbabilityOp extends MerisBasisOp {
     @Override
     public void computeAllBands(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
-        final int size = rectangle.height * rectangle.width;
         final double[] cloudIn = new double[15];
 
-        pm.beginTask("Processing frame...", size);
+        pm.beginTask("Processing frame...", rectangle.height);
         try {
             loadSourceTiles(rectangle);
 
-//            short[] cloudScanLine = (short[]) getTile(cloudBand, rectangle).getDataBuffer().getElems();
-            float[] cloudScanLine = (float[]) getRaster(cloudBand, rectangle).getDataBuffer().getElems();
+            Raster cloudScanLine = getRaster(cloudBand, rectangle);
             byte[] flagScanLine = (byte[]) getRaster(cloudFlagBand, rectangle).getDataBuffer().getElems();
 
-            for (int i = 0; i < size; i++) {
-                if (pm.isCanceled()) {
-                    break;
-                }
-                flagScanLine[i] = 0;
-                if (!isValidLand[i] && !isValidOcean[i]) {
-                    cloudScanLine[i] = -1;
-                } else {
-                    final double aziDiff = AlbedoUtils.computeAzimuthDifference(vaa[i], saa[i]) * MathUtils.DTOR;
-                    final double szaCos = Math.cos(sza[i] * MathUtils.DTOR);
-                    cloudIn[0] = calculateI(radiance[0][i], radianceBands[0].getSolarFlux(), szaCos);
-                    cloudIn[1] = calculateI(radiance[1][i], radianceBands[1].getSolarFlux(), szaCos);
-                    cloudIn[2] = calculateI(radiance[2][i], radianceBands[2].getSolarFlux(), szaCos);
-                    cloudIn[3] = calculateI(radiance[3][i], radianceBands[3].getSolarFlux(), szaCos);
-                    cloudIn[4] = calculateI(radiance[4][i], radianceBands[4].getSolarFlux(), szaCos);
-                    cloudIn[5] = calculateI(radiance[5][i], radianceBands[5].getSolarFlux(), szaCos);
-                    cloudIn[6] = calculateI(radiance[8][i], radianceBands[8].getSolarFlux(), szaCos);
-                    cloudIn[7] = calculateI(radiance[9][i], radianceBands[9].getSolarFlux(), szaCos);
-                    cloudIn[8] = calculateI(radiance[12][i], radianceBands[12].getSolarFlux(), szaCos);
-                    cloudIn[9] = (radiance[10][i] * radianceBands[9].getSolarFlux()) / (radiance[9][i] * radianceBands[10].getSolarFlux());
-                    cloudIn[10] = altitudeCorrectedPressure(pressure[i], altitude[i], isLand[i]);
-                    cloudIn[11] = centralWavelenth[detector[i]]; // central-wavelength channel 11
-                    cloudIn[12] = szaCos;
-                    cloudIn[13] = Math.cos(vza[i] * MathUtils.DTOR);
-                    cloudIn[14] = Math.cos(aziDiff) * Math.sin(vza[i] * MathUtils.DTOR);
+            int i = 0;
+			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+					if (pm.isCanceled()) {
+						break;
+					}
+					flagScanLine[i] = 0;
+					if (!isValidLand[i] && !isValidOcean[i]) {
+						cloudScanLine.setInt(x, y, -1);
+					} else {
+						final double aziDiff = AlbedoUtils
+								.computeAzimuthDifference(vaa[i], saa[i])
+								* MathUtils.DTOR;
+						final double szaCos = Math.cos(sza[i] * MathUtils.DTOR);
+						cloudIn[0] = calculateI(radiance[0].getDouble(x, y),
+								radianceBands[0].getSolarFlux(), szaCos);
+						cloudIn[1] = calculateI(radiance[1].getDouble(x, y),
+								radianceBands[1].getSolarFlux(), szaCos);
+						cloudIn[2] = calculateI(radiance[2].getDouble(x, y),
+								radianceBands[2].getSolarFlux(), szaCos);
+						cloudIn[3] = calculateI(radiance[3].getDouble(x, y),
+								radianceBands[3].getSolarFlux(), szaCos);
+						cloudIn[4] = calculateI(radiance[4].getDouble(x, y),
+								radianceBands[4].getSolarFlux(), szaCos);
+						cloudIn[5] = calculateI(radiance[5].getDouble(x, y),
+								radianceBands[5].getSolarFlux(), szaCos);
+						cloudIn[6] = calculateI(radiance[8].getDouble(x, y),
+								radianceBands[8].getSolarFlux(), szaCos);
+						cloudIn[7] = calculateI(radiance[9].getDouble(x, y),
+								radianceBands[9].getSolarFlux(), szaCos);
+						cloudIn[8] = calculateI(radiance[12].getDouble(x, y),
+								radianceBands[12].getSolarFlux(), szaCos);
+						cloudIn[9] = (radiance[10].getDouble(x, y) * radianceBands[9]
+								.getSolarFlux())
+								/ (radiance[9].getDouble(x, y) * radianceBands[10]
+										.getSolarFlux());
+						cloudIn[10] = altitudeCorrectedPressure(pressure[i],
+								altitude[i], isLand[i]);
+						cloudIn[11] = centralWavelenth[detector[i]]; // central-wavelength
+																		// channel
+																		// 11
+						cloudIn[12] = szaCos;
+						cloudIn[13] = Math.cos(vza[i] * MathUtils.DTOR);
+						cloudIn[14] = Math.cos(aziDiff)
+								* Math.sin(vza[i] * MathUtils.DTOR);
 
-                    double cloudProbability = 0;
-                    if (isValidLand[i]) {
-                        cloudProbability = landAlgo.computeCloudProbability(cloudIn);
-                    } else if (isValidOcean[i]) {
-                        cloudProbability = oceanAlgo.computeCloudProbability(cloudIn);
-                    }
-                    short cloudProbabilityScaled = (short) (cloudProbability / SCALING_FACTOR);
+						double cloudProbability = 0;
+						if (isValidLand[i]) {
+							cloudProbability = landAlgo
+									.computeCloudProbability(cloudIn);
+						} else if (isValidOcean[i]) {
+							cloudProbability = oceanAlgo
+									.computeCloudProbability(cloudIn);
+						}
 
-                    if (cloudProbabilityScaled > 8000) {
-                        flagScanLine[i] = FLAG_CLOUDY;
-                    } else if (cloudProbabilityScaled < 2000) {
-                        flagScanLine[i] = FLAG_CLOUDFREE;
-                    } else if (cloudProbabilityScaled >= 2000 && cloudProbabilityScaled <= 8000) {
-                        flagScanLine[i] = FLAG_UNCERTAIN;
-                    }
-//                    cloudScanLine[i] = cloudProbabilityScaled;
-                    cloudScanLine[i] = (float) cloudProbability;
-                }
-                pm.worked(1);
-            }
+						if (cloudProbability > 0.8) {
+							flagScanLine[i] = FLAG_CLOUDY;
+						} else if (cloudProbability < 0.2) {
+							flagScanLine[i] = FLAG_CLOUDFREE;
+						} else if (cloudProbability >= 0.2
+								&& cloudProbability <= 0.8) {
+							flagScanLine[i] = FLAG_UNCERTAIN;
+						}
+						cloudScanLine.setDouble(x, y, cloudProbability);
+					}
+					i++;
+				}
+				pm.worked(1);
+			}
         } finally {
             pm.done();
         }
@@ -365,7 +387,8 @@ public class CloudProbabilityOp extends MerisBasisOp {
     protected double altitudeCorrectedPressure(double press, double alt, boolean isLandPixel) {
         double correctedPressure;
         if (isLandPixel) {
-            // ECMWF pressure is only corrected for positive altitudes and only for land pixels */
+            // ECMWF pressure is only corrected for positive altitudes and only
+			// for land pixels */
             double f = Math.exp(-Math.max(0.0, alt) / pressScaleHeight);
             correctedPressure = press * f;
         } else {

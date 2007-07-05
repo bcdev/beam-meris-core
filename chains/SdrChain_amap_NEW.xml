@@ -55,7 +55,7 @@
             <blueBand>blue</blueBand>
         </sources>
     </node>
-    
+    <!-- 
     <node>
       <id>cloudEdge</id>
       <operator>org.esa.beam.bop.meris.cloud.CloudEdgeOp$Spi</operator>
@@ -83,7 +83,7 @@
         </sources>
     </node>    
     
-    <!-- 
+    
     <node>
       <id>mergedFlags</id>
       <operator>org.esa.beam.framework.gpf.operators.common.ProductMergeOp$Spi</operator>
@@ -132,7 +132,7 @@
           <angName>aero_alpha</angName>
       </configuration>
     </node>
-            
+<!-- 
     <node>
       <id>mergedSDR</id>
       <operator>org.esa.beam.framework.gpf.operators.common.ProductMergeOp$Spi</operator>
@@ -141,9 +141,7 @@
             <brr>brr</brr>
             <sdr>sdr</sdr>
             <cloud>cloudShadow</cloud>
-            <!-- 
             <processFurther>processFurther</processFurther>
-             -->
         </sources>
       <configuration>
            <productType>MER_L2_SDR</productType>
@@ -164,20 +162,18 @@
               <product>cloud</product>
               <nameExp>combined_cloud</nameExp>
           </band>
-          <!-- 
           <band>
               <product>processFurther</product>
               <nameExp>process_further_state</nameExp>
           </band>
-           -->
       </configuration>
-    </node>            
-        
+    </node>
+     -->            
     <node>
       <id>write</id>
       <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
         <sources>
-            <input>mergedSDR</input>
+            <input>sdr</input>
         </sources>
       <configuration>
           <filePath>${outputFile1}</filePath>

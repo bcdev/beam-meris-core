@@ -26,6 +26,7 @@ import org.esa.beam.framework.datamodel.TiePointGrid;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -54,10 +55,10 @@ public class BrrOp extends MerisBasisOp {
     protected int scanLineSize;
 
     // data
-    protected float[][] l1bTiePointScans;
-    protected float[][] l1bRadianceScans;
-    protected short[] l1bDetectorIndexScan;
-    protected byte[] l1bFlagsScan;
+    protected Raster[] l1bTiePointScans;
+    protected Raster[] l1bRadianceScans;
+    protected Raster l1bDetectorIndexScan;
+    protected Raster l1bFlagsScan;
 
     // source product
     private RasterDataNode[] tpGrids;
@@ -183,16 +184,16 @@ public class BrrOp extends MerisBasisOp {
     }
     
     protected void getSourceTiles(Rectangle rect) throws OperatorException {
-    	l1bTiePointScans = new float[tpGrids.length][0];
+    	l1bTiePointScans = new Raster[tpGrids.length];
         for (int i = 0; i < tpGrids.length; i++) {
-            l1bTiePointScans[i] = (float[]) getRaster(tpGrids[i], rect).getDataBuffer().getElems();
+            l1bTiePointScans[i] = getRaster(tpGrids[i], rect);
         }
-        l1bRadianceScans = new float[l1bRadiance.length][0];
+        l1bRadianceScans = new Raster[l1bRadiance.length];
         for (int i = 0; i < l1bRadiance.length; i++) {
-            l1bRadianceScans[i] = (float[]) getRaster(l1bRadiance[i], rect).getDataBuffer().getElems();
+            l1bRadianceScans[i] = getRaster(l1bRadiance[i], rect);
         }
-        l1bDetectorIndexScan = (short[]) getRaster(detectorIndex, rect).getDataBuffer().getElems();
-        l1bFlagsScan = (byte[]) getRaster(l1bFlags, rect).getDataBuffer().getElems();
+        l1bDetectorIndexScan = getRaster(detectorIndex, rect);
+        l1bFlagsScan = getRaster(l1bFlags, rect);
 
     }
 
@@ -213,7 +214,6 @@ public class BrrOp extends MerisBasisOp {
             extdatl1.l1_extract_pixbloc(pixel,
                                         rectX + pixel.i,
                                         rectY + pixel.j,
-                                        iP,
                                         l1bTiePointScans,
                                         l1bRadianceScans,
                                         l1bDetectorIndexScan,
