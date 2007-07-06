@@ -89,7 +89,6 @@
       </configuration>
     </node>
 
-        
     <node>
       <id>write</id>
       <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>

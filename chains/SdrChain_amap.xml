@@ -84,37 +84,15 @@
     </node>    
     
     <node>
-      <id>mergedFlags</id>
-      <operator>org.esa.beam.framework.gpf.operators.common.ProductMergeOp$Spi</operator>
+      <id>processFurther</id>
+      <operator>org.esa.beam.bop.meris.ProcessFurtherStateOp$Spi</operator>
         <sources>
             <l1b>l1b</l1b>
             <brr>brr</brr>
             <cloud>cloudShadow</cloud>
         </sources>
-      <configuration>
-          <band>
-              <product>l1b</product>
-              <nameExp>l1_flags</nameExp>
-          </band>
-          <band>
-              <product>brr</product>
-              <nameExp>l2_flags_p1</nameExp>
-          </band>
-          <band>
-              <product>cloud</product>
-              <nameExp>combined_cloud</nameExp>
-          </band>
-      </configuration>
     </node>
     
-    <node>
-      <id>processFurther</id>
-      <operator>org.esa.beam.bop.meris.ProcessFurtherStateOp$Spi</operator>
-        <sources>
-            <input>mergedFlags</input>
-        </sources>
-    </node>    
-            
     <node>
       <id>sdr</id>
       <operator>org.esa.beam.bop.meris.sdr.SdrOp$Spi</operator>
@@ -126,8 +104,7 @@
         </sources>
       <configuration>
           <neuralNetFile>fub_aerosol_16.10.2006.nna</neuralNetFile>
-          <cloudFreeExpression>not (combined_cloud.cloud or combined_cloud.cloud_edge or combined_cloud.cloud_shadow or combined_cloud.snow)</cloudFreeExpression>
-          <validLandExpression>l2_flags_p1.F_LANDCONS</validLandExpression>
+          <validExpression>$brr.l2_flags_p1.F_LANDCONS AND (not ($cloud.combined_cloud.cloud or $cloud.combined_cloud.cloud_edge or $cloud.combined_cloud.cloud_shadow or $cloud.combined_cloud.snow))</validExpression>
           <aot470Name>aero_opt_thick_443</aot470Name>
           <angName>aero_alpha</angName>
       </configuration>
