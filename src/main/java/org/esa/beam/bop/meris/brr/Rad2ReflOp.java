@@ -17,6 +17,8 @@
 package org.esa.beam.bop.meris.brr;
 
 import java.awt.Rectangle;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
@@ -24,19 +26,20 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
+import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.ceres.core.SubProgressMonitor;
-import com.bc.jexp.ParseException;
-import com.bc.jexp.Term;
 
 /**
  * Created by marcoz.
@@ -54,9 +57,9 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
     private transient L2AuxData auxData;
     
     private transient Band[] radianceBands;
+    private transient Band invalidBand;
     private transient RasterDataNode detectorIndexBand;
     private transient RasterDataNode sunZenihTPG;
-    private transient Term invalidTerm;
     
     private transient Band[] rhoToaBands;
     
@@ -99,53 +102,66 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
         detectorIndexBand = sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME);
         sunZenihTPG = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
         
-        try {
-			invalidTerm = sourceProduct.createTerm("l1_flags.INVALID");
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
+		invalidBand = createBooleanBandForExpression("l1_flags.INVALID");
         return targetProduct;
     }
+    
+    private Band createBooleanBandForExpression(String expression) throws OperatorException {
+		Map<String, Object> parameters = new HashMap<String, Object>();
+        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
+        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+		bandDescriptor.name = "bBand";
+		bandDescriptor.expression = expression;
+		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
+		bandDescriptors[0] = bandDescriptor;
+		parameters.put("bandDescriptors", bandDescriptors);
+		
+		Product invalidProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
+		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
+		context.addSourceProduct("x", invalidProduct);
+		return invalidProduct.getBand("bBand");
+	}
+
 
     @Override
-    public void computeAllBands(Rectangle targetTileRectangle,
+    public void computeAllBands(Rectangle rectangle,
             ProgressMonitor pm) throws OperatorException {
 
-        final int size = targetTileRectangle.height * targetTileRectangle.width;
-        pm.beginTask("Processing frame...", size + 1);
+        pm.beginTask("Processing frame...", rectangle.height);
         try {
-        	ProductData[] radiance = new ProductData[radianceBands.length];
+        	Raster[] radiance = new Raster[radianceBands.length];
         	for (int i = 0; i < radiance.length; i++) {
-        		radiance[i] = getRaster(radianceBands[i], targetTileRectangle).getDataBuffer();
+        		radiance[i] = getRaster(radianceBands[i], rectangle);
             }
-        	ProductData detectorIndex = getRaster(detectorIndexBand, targetTileRectangle).getDataBuffer();
-        	ProductData sza = getRaster(sunZenihTPG, targetTileRectangle).getDataBuffer();
-        	boolean[] isInvalid = new boolean[size];
-        	sourceProduct.readBitmask(targetTileRectangle.x, targetTileRectangle.y,
-        			targetTileRectangle.width, targetTileRectangle.height, invalidTerm, isInvalid, new SubProgressMonitor(pm, 1));
+        	Raster detectorIndex = getRaster(detectorIndexBand, rectangle);
+        	Raster sza = getRaster(sunZenihTPG, rectangle);
+        	Raster isInvalid = getRaster(invalidBand, rectangle);
 
-            ProductData[] rhoToa = new ProductData[rhoToaBands.length];
+            Raster[] rhoToa = new Raster[rhoToaBands.length];
             for (int i = 0; i < rhoToaBands.length; i++) {
-                rhoToa[i] = getRaster(rhoToaBands[i], targetTileRectangle).getDataBuffer();
+                rhoToa[i] = getRaster(rhoToaBands[i], rectangle);
             }
 
-            for (int i = 0; i < size; i++) {
-                if (isInvalid[i]) {
-                    for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
-                        rhoToa[bandId].setElemFloatAt(i, BAD_VALUE);
-                    }
-                } else {
-                	final double constantTerm = (Math.PI / Math.cos(sza.getElemFloatAt(i) * MathUtils.DTOR)) * auxData.seasonal_factor;
-                    for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
-                    	// DPM #2.1.4-1
-						final float aRhoToa = (float) ((radiance[bandId].getElemFloatAt(i) * constantTerm)
-								/ auxData.detector_solar_irradiance[bandId][detectorIndex.getElemIntAt(i)]);
-						
-						rhoToa[bandId].setElemFloatAt(i, aRhoToa);
+            for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+					if (isInvalid.getBoolean(x, y)) {
+						for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
+							rhoToa[bandId].setFloat(x, y, BAD_VALUE);
+						}
+					} else {
+						final double constantTerm = (Math.PI / Math.cos(sza
+								.getFloat(x, y) * MathUtils.DTOR)) * auxData.seasonal_factor;
+						for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
+							// DPM #2.1.4-1
+							final float aRhoToa = (float) ((radiance[bandId]
+									.getFloat(x, y) * constantTerm) / auxData.detector_solar_irradiance[bandId][detectorIndex
+									.getInt(x, y)]);
+							rhoToa[bandId].setFloat(x, y, aRhoToa);
+						}
 					}
-                }
-                pm.worked(1);
-            }
+				}
+				pm.worked(1);
+			}
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {

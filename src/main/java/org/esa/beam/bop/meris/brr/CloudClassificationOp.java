@@ -68,7 +68,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     private L2AuxData auxData;
 
     private float[][] rhoToa;
-    private float[][] radiance;
+    private Raster[] radiance;
     private short[] detectorIndex;
     private float[] sza;
     private float[] vza;
@@ -110,7 +110,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
             throw new OperatorException("could not load L2Auxdata", e);
         }
         rhoToa = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
-        radiance = new float[3][0];
+        radiance = new Raster[3];
         return createTargetProduct();
     }
 
@@ -144,15 +144,15 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
             rhoToa[i] = (float[]) getRaster(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
         }
-        radiance[BAND_BRIGHT_N] = (float[]) getRaster(
+        radiance[BAND_BRIGHT_N] = getRaster(
 				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_bright_n]),
-				rectangle).getDataBuffer().getElems();
-		radiance[BAND_SLOPE_N_1] = (float[]) getRaster(
+				rectangle);
+		radiance[BAND_SLOPE_N_1] = getRaster(
 				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_slope_n_1]),
-				rectangle).getDataBuffer().getElems();
-		radiance[BAND_SLOPE_N_2] = (float[]) getRaster(
+				rectangle);
+		radiance[BAND_SLOPE_N_2] = getRaster(
 				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_slope_n_2]),
-				rectangle).getDataBuffer().getElems();
+				rectangle);
 		detectorIndex = (short[]) getRaster(
 				l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME),
 				rectangle).getDataBuffer().getElems();
@@ -169,28 +169,37 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     public void computeBand(Raster targetRaster, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle rectangle = targetRaster.getRectangle();
-        final int size = rectangle.height * rectangle.width;
-        pm.beginTask("Processing frame...", size + 1);
+        pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
             loadSourceTiles(rectangle);
             cloudFlags = new FlagWrapper.Short((short[]) targetRaster.getDataBuffer().getElems());
 
             PixelInfo pixelInfo = new PixelInfo();
-            for (int i = 0; i < size; i++) {
-                if (!l1Flags.isSet(i, L1_F_INVALID)) {
-                    pixelInfo.index = i;
-                    pixelInfo.airMass = HelperFunctions.calculateAirMass(vza[i], sza[i]);
-                    if (l1Flags.isSet(i, L1_F_LAND)) {
-                        //ECMWF pressure is only corrected for positive altitudes and only for land pixels
-                        pixelInfo.ecmwfPressure = HelperFunctions.correctEcmwfPressure(
-                                ecmwfPressure[i], altitude[i], auxData.press_scale_height);
-                    } else {
-                        pixelInfo.ecmwfPressure = ecmwfPressure[i];
-                    }
-                    classifyCloud(pixelInfo);
-                }
-                pm.worked(1);
-            }
+			int i = 0;
+			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+				pixelInfo.y = y;
+				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+					if (!l1Flags.isSet(i, L1_F_INVALID)) {
+						pixelInfo.x = x;
+						pixelInfo.index = i;
+						pixelInfo.airMass = HelperFunctions.calculateAirMass(
+								vza[i], sza[i]);
+						if (l1Flags.isSet(i, L1_F_LAND)) {
+							// ECMWF pressure is only corrected for positive
+							// altitudes and only for land pixels
+							pixelInfo.ecmwfPressure = HelperFunctions
+									.correctEcmwfPressure(ecmwfPressure[i],
+											altitude[i],
+											auxData.press_scale_height);
+						} else {
+							pixelInfo.ecmwfPressure = ecmwfPressure[i];
+						}
+						classifyCloud(pixelInfo);
+					}
+					i++;
+				}
+				pm.worked(1);
+			}
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {
@@ -464,7 +473,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
         boolean bright_f, slope1_f, slope2_f;
         bright_f = (rhoAg[auxData.band_bright_n] >= rhorc_442_thr)
-                || isSaturated(pixelInfo.index, BAND_BRIGHT_N, auxData.band_bright_n);
+                || isSaturated(pixelInfo.x, pixelInfo.y, BAND_BRIGHT_N, auxData.band_bright_n);
 
         /* Spectral slope processor.brr 1 */
         if (rhoAg[auxData.band_slope_d_1] <= 0.0) {
@@ -474,7 +483,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
             /* DPM #2.1.7-5 */
             slope1 = rhoAg[auxData.band_slope_n_1] / rhoAg[auxData.band_slope_d_1];
             slope1_f = ((slope1 >= auxData.slope_1_low_thr) && (slope1 <= auxData.slope_1_high_thr))
-                    || isSaturated(pixelInfo.index, BAND_SLOPE_N_1, auxData.band_slope_n_1);
+                    || isSaturated(pixelInfo.x, pixelInfo.y, BAND_SLOPE_N_1, auxData.band_slope_n_1);
         }
 
         /* Spectral slope processor.brr 2 */
@@ -485,7 +494,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
             /* DPM #2.1.7-7 */
             slope2 = rhoAg[auxData.band_slope_n_2] / rhoAg[auxData.band_slope_d_2];
             slope2_f = ((slope2 >= auxData.slope_2_low_thr) && (slope2 <= auxData.slope_2_high_thr))
-                    || isSaturated(pixelInfo.index, BAND_SLOPE_N_2, auxData.band_slope_n_2);
+                    || isSaturated(pixelInfo.x, pixelInfo.y, BAND_SLOPE_N_2, auxData.band_slope_n_2);
         }
 
         result_flags[0] = bright_f;
@@ -538,12 +547,14 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         return is_cloud;
     }
 
-    private boolean isSaturated(int index, int radianceBandId, int bandId) {
-        return radiance[radianceBandId][index] > auxData.Saturation_L[bandId];
+    private boolean isSaturated(int x, int y, int radianceBandId, int bandId) {
+        return radiance[radianceBandId].getFloat(x, y) > auxData.Saturation_L[bandId];
     }
 
     private static class PixelInfo {
         int index;
+        int x;
+        int y;
         double airMass;
         float ecmwfPressure;
     }

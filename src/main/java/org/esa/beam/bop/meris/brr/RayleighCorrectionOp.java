@@ -113,10 +113,10 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
             if (i == bb11 || i == bb15) {
                 continue;
             }
-            Band rhoToaBand = l1bProduct.getBandAt(i);
+            Band radianceBand = l1bProduct.getBandAt(i);
 
             brrBands[i] = targetProduct.addBand(BRR_BAND_PREFIX + "_" + (i + 1), ProductData.TYPE_FLOAT32);
-            ProductUtils.copySpectralAttributes(rhoToaBand, brrBands[i]);
+            ProductUtils.copySpectralAttributes(radianceBand, brrBands[i]);
             brrBands[i].setNoDataValueUsed(true);
             brrBands[i].setNoDataValue(BAD_VALUE);
         }

@@ -28,7 +28,7 @@
 
     <node>
         <id>gascor</id>
-        <operator>org.esa.beam.bop.meris.brr.CloudClassificationOp$Spi</operator>
+        <operator>org.esa.beam.bop.meris.brr.GaseousCorrectionOp$Spi</operator>
         <sources>
             <l1b>l1b</l1b>
             <rhotoa>refl</rhotoa>
