@@ -17,7 +17,6 @@
 package org.esa.beam.bop.meris;
 
 import java.awt.Rectangle;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +27,7 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
@@ -35,12 +35,12 @@ import org.esa.beam.framework.gpf.ParameterConverter;
 import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
+import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.framework.gpf.support.TileRectCalculator;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.jexp.ParseException;
-import com.bc.jexp.Term;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.XppDomReader;
 import com.thoughtworks.xstream.io.xml.xppdom.Xpp3Dom;
@@ -56,7 +56,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     private TileRectCalculator rectCalculator;
     private Map<Band, Band> sourceBands;
     private Map<Band, Band> defaultBands;
-    private Map<Band, Term> validTerms;
+    private Product validProduct;
     
     @SourceProduct(alias="input")
     private Product sourceProduct;
@@ -110,7 +110,10 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         targetProduct = createCompatibleProduct(sourceProduct, "fill_aerosol", "MER_L2");
         sourceBands = new HashMap<Band, Band>(config.bands.size());
         defaultBands = new HashMap<Band, Band>(config.bands.size());
-        validTerms = new HashMap<Band, Term>(config.bands.size());
+        
+        Map<String, Object> parameters = new HashMap<String, Object>();
+        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[config.bands.size()];
+        int i = 0;
         for (BandDesc bandDesc : config.bands) {
             Band srcBand = sourceProduct.getBand(bandDesc.name);
             Band targetBand = targetProduct.addBand(srcBand.getName(), ProductData.TYPE_FLOAT32);
@@ -120,17 +123,24 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
             sourceBands.put(targetBand, srcBand);
             Band defaultBand = defaultProduct.getBand(bandDesc.defaultBand);
             defaultBands.put(targetBand, defaultBand);
-            try {
-            	Term valid = sourceProduct.createTerm(bandDesc.validExp);
-            	validTerms.put(targetBand, valid);
-    		} catch (ParseException e) {
-    			throw new OperatorException("Could not create Term for expression.", e);
-    		}
+            
+            BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+    		bandDescriptor.name = srcBand.getName();
+    		bandDescriptor.expression = bandDesc.validExp;
+    		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
+    		bandDescriptors[i] = bandDescriptor;
+            
+    		i++;
         }
+        parameters.put("bandDescriptors", bandDescriptors);
+        validProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
+		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
+		context.addSourceProduct("x", validProduct);
+		
         rectCalculator = new TileRectCalculator(sourceProduct, config.pixelWidth, config.pixelWidth);
         return targetProduct;
     }
-
+    
     @Override
     public void computeBand(Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
@@ -142,18 +152,11 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         try {
             Raster values = getRaster(sourceBands.get(targetBand), sourceRect);
             Raster defaultValues = getRaster(defaultBands.get(targetBand), sourceRect);
-            
-            final int size = sourceRect.height * sourceRect.width;
-            boolean[] isValid = new boolean[size];
-            Term validTerm = validTerms.get(targetBand);
-            sourceProduct.readBitmask(sourceRect.x, sourceRect.y,
-            		sourceRect.width, sourceRect.height, validTerm, isValid, ProgressMonitor.NULL);
+            Raster valid = getRaster(validProduct.getBand(targetBand.getName()), sourceRect);
 			
             for (int y = targetRect.y; y < targetRect.y + targetRect.height; y++) {
-            	int sourceIndex = TileRectCalculator.convertToIndex(targetRect.x, y, sourceRect)-1;
                 for (int x = targetRect.x; x < targetRect.x + targetRect.width; x++) {
-                    sourceIndex++;
-                    if (isValid[sourceIndex]) {
+                    if (valid.getBoolean(x, y)) {
                     	targetRaster.setFloat(x, y, values.getFloat(x, y));
                     } else {
                         double weigthSum = 0;
@@ -172,8 +175,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
 								}
 								final double weight = 1.0 / (xDist * xDist + yDist * yDist);
 								weigthSumTotal += weight;
-								final int internalIndex = TileRectCalculator.convertToIndex(ix, iy, sourceRect);
-								if (isValid[internalIndex]) {
+								if (valid.getBoolean(ix, iy)) {
 									weigthSum += weight;
 									tauSum += values.getFloat(ix, iy) * weight;
                                 }
@@ -191,8 +193,6 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
                 }
                 pm.worked(1);
             }
-        } catch (IOException e) {
-        	throw new OperatorException("Couldn't load bitmasks", e);
         } finally {
             pm.done();
         }

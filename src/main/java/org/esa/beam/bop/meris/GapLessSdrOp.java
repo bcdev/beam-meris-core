@@ -17,24 +17,25 @@
 package org.esa.beam.bop.meris;
 
 import java.awt.Rectangle;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
+import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
+import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.ProductUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.jexp.ParseException;
-import com.bc.jexp.Term;
 
 /**
  * Created by marcoz.
@@ -46,7 +47,7 @@ public class GapLessSdrOp extends MerisBasisOp {
 
     private Map<Band, Band> sdrBands;
     private Map<Band, Band> toarBands;
-    private Term invalidTerm;
+    private Band invalidBand;
     
     @SourceProduct(alias="sdr")
     private Product sdrProduct;
@@ -79,45 +80,51 @@ public class GapLessSdrOp extends MerisBasisOp {
                 toarBands.put(targetBand, toarBand);
             }
         }
-        
-        try {
-			invalidTerm = toarProduct.createTerm("l2_flags_p1.F_INVALID");
-		} catch (ParseException e) {
-			throw new OperatorException("Could not create Term for expression.", e);
-		}
-		
+        invalidBand = createBooleanBandForExpression("l2_flags_p1.F_INVALID");
         return targetProduct;
     }
+    
+    private Band createBooleanBandForExpression(String expression) throws OperatorException {
+		Map<String, Object> parameters = new HashMap<String, Object>();
+        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
+        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+		bandDescriptor.name = "bBand";
+		bandDescriptor.expression = expression;
+		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
+		bandDescriptors[0] = bandDescriptor;
+		parameters.put("bandDescriptors", bandDescriptors);
+		
+		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, toarProduct);
+		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
+		context.addSourceProduct("x", validLandProduct);
+		return validLandProduct.getBand("bBand");
+	}
 
     @Override
     public void computeBand(Raster targetRaster, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle rectangle = targetRaster.getRectangle();
-        final int size = rectangle.height * rectangle.width;
-        pm.beginTask("Processing frame...", size + 1);
+        pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
         	Band targetBand = (Band) targetRaster.getRasterDataNode();
-        	float sdr[] = (float[]) getRaster(sdrBands.get(targetBand), rectangle).getDataBuffer().getElems();
-        	float toar[] = (float[]) getRaster(toarBands.get(targetBand), rectangle).getDataBuffer().getElems();
-        	
-        	boolean[] invalid = new boolean[size];
-        	toarProduct.readBitmask(rectangle.x, rectangle.y,
-    	    			rectangle.width, rectangle.height, invalidTerm, invalid, ProgressMonitor.NULL);
-        	
-        	float target[] = (float[]) targetRaster.getDataBuffer().getElems();
+        	Raster sdrRaster = getRaster(sdrBands.get(targetBand), rectangle);
+        	Raster toarRaster = getRaster(toarBands.get(targetBand), rectangle);
+        	Raster invalid = getRaster(invalidBand, rectangle);
         	
         	pm.worked(1);
 
-            for (int i = 0; i < size; i++) {
-                if (invalid[i] || (sdr[i] != -1 && sdr[i] != 0)) {
-                	target[i] = sdr[i];
-                } else {
-                	sdr[i] = toar[i];
-                }
-                pm.worked(1);
-            }
-        } catch (IOException e) {
-            throw new OperatorException(e);
+        	for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+					final float sdr = sdrRaster.getFloat(x, y);
+					if (invalid.getBoolean(x, y) || (sdr != -1 && sdr != 0)) {
+						targetRaster.setFloat(x, y, sdr);
+					} else {
+						targetRaster.setFloat(x, y, toarRaster.getFloat(x, y));
+
+					}
+				}
+				pm.worked(1);
+			}
         } finally {
             pm.done();
         }
