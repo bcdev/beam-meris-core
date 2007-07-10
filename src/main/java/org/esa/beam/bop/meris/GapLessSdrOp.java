@@ -80,11 +80,11 @@ public class GapLessSdrOp extends MerisBasisOp {
                 toarBands.put(targetBand, toarBand);
             }
         }
-        invalidBand = createBooleanBandForExpression("l2_flags_p1.F_INVALID");
+        invalidBand = createBooleanBandForExpression("l2_flags_p1.F_INVALID", pm);
         return targetProduct;
     }
     
-    private Band createBooleanBandForExpression(String expression) throws OperatorException {
+    private Band createBooleanBandForExpression(String expression, ProgressMonitor pm) throws OperatorException {
 		Map<String, Object> parameters = new HashMap<String, Object>();
         BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
         BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
@@ -94,7 +94,7 @@ public class GapLessSdrOp extends MerisBasisOp {
 		bandDescriptors[0] = bandDescriptor;
 		parameters.put("bandDescriptors", bandDescriptors);
 		
-		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, toarProduct);
+		Product validLandProduct = GPF.createProduct(pm, "BandArithmetic", parameters, toarProduct);
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", validLandProduct);
 		return validLandProduct.getBand("bBand");

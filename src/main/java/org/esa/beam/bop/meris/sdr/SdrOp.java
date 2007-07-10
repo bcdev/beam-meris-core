@@ -125,10 +125,10 @@ public class SdrOp extends MerisBasisOp {
         } catch (Exception e) {
             throw new OperatorException("Failed to load neural net " + neuralNetFile + ":\n" + e.getMessage());
         }
-        return createTargetProduct();
+        return createTargetProduct(pm);
     }
 
-    private Product createTargetProduct() throws OperatorException {
+    private Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
         targetProduct = createCompatibleProduct(l1bProduct, DEFAULT_OUTPUT_PRODUCT_NAME, SDR_PRODUCT_TYPE);
         
         reflectanceBands = new Band[sdrBandNo.length];
@@ -159,12 +159,12 @@ public class SdrOp extends MerisBasisOp {
         sdrFlagBand.setDescription("SDR specific flags");
         sdrFlagBand.setFlagCoding(sdiFlagCoding);
 
-		validBand = createBooleanBandForExpression(validExpression);
+		validBand = createBooleanBandForExpression(validExpression, pm);
 
 		return targetProduct;
     }
 
-	private Band createBooleanBandForExpression(String expression) throws OperatorException {
+	private Band createBooleanBandForExpression(String expression, ProgressMonitor pm) throws OperatorException {
 		Map<String, Object> parameters = new HashMap<String, Object>();
         BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
         BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
@@ -178,7 +178,7 @@ public class SdrOp extends MerisBasisOp {
 		for (Product product : sourceProducts) {
 			products.put(getContext().getIdForSourceProduct(product), product);
 		}
-		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, products);
+		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, products, pm);
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", validLandProduct);
 		return validLandProduct.getBand("bBand");
