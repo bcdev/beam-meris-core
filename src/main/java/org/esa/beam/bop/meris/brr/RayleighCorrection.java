@@ -231,7 +231,7 @@ public class RayleighCorrection implements Constants {
  *    GenericInterp
 \*-----------------------------------------------------------------------------*/
 
-    public void sphalb_rayleigh(double[] tauRayl, double[] sphalbRayl) {
+    public void sphAlb_rayleigh(double[] tauRayl, double[] sphalbRayl) {
 
         for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
             switch (bandId) {

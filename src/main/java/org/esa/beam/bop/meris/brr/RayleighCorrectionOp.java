@@ -71,6 +71,16 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     protected float[][] brr;
     protected FlagWrapper brrFlags;
     protected RayleighCorrection rayleighCorrection;
+    
+    private Band[] transRvBands;
+    private Band[] transRsBands;
+    private Band[] tauRBands;
+    private Band[] sphAlbRBands;
+
+    private float[][] transRvData;
+    private float[][] transRsData;
+    private float[][] tauRData;
+    private float[][] sphAlbRData;
 
     @SourceProduct(alias="l1b")
     private Product l1bProduct;
@@ -84,7 +94,10 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     private String configFile = MERIS_L2_CONF;
     @Parameter
     boolean correctWater = false;
-
+    @Parameter
+    boolean exportRayCoeffs = false;
+    
+    
     public RayleighCorrectionOp(OperatorSpi spi) {
         super(spi);
     }
@@ -108,32 +121,42 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     protected Product createTargetProduct() throws OperatorException {
     	targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
-        brrBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
-        for (int i = 0; i < brrBands.length; i++) {
-            if (i == bb11 || i == bb15) {
-                continue;
-            }
-            Band radianceBand = l1bProduct.getBandAt(i);
-
-            brrBands[i] = targetProduct.addBand(BRR_BAND_PREFIX + "_" + (i + 1), ProductData.TYPE_FLOAT32);
-            ProductUtils.copySpectralAttributes(radianceBand, brrBands[i]);
-            brrBands[i].setNoDataValueUsed(true);
-            brrBands[i].setNoDataValue(BAD_VALUE);
-        }
+    	brrBands = addBandGroup(BRR_BAND_PREFIX);
 
         flagBand = targetProduct.addBand(RAY_CORR_FLAGS, ProductData.TYPE_INT16);
         FlagCoding flagCoding = createFlagCoding();
         flagBand.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
-
+        
+        if (exportRayCoeffs) {
+	        transRvBands = addBandGroup("transRv");
+    	    transRsBands = addBandGroup("transRs");
+        	tauRBands = addBandGroup("tauR");
+	        sphAlbRBands = addBandGroup("sphAlbR");
+		}
         try {
         	isLandTerm = landProduct.createTerm(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS");
 		} catch (ParseException e) {
 			throw new OperatorException("Could not create Term for expression.", e);
 		}
 		rhoNg = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
-		brr = new float[rhoNg.length][0];
         return targetProduct;
+    }
+    
+    private Band[] addBandGroup(String prefix) {
+        Band[] bands = new Band[L1_BAND_NUM];
+        for (int i = 0; i < bands.length; i++) {
+            if (i == bb11 || i == bb15) {
+                continue;
+            }
+            final Band inBand = l1bProduct.getBandAt(i);
+
+            bands[i] = targetProduct.addBand(prefix + "_" + (i + 1), ProductData.TYPE_FLOAT32);
+            ProductUtils.copySpectralAttributes(inBand, bands[i]);
+            bands[i].setNoDataValueUsed(true);
+            bands[i].setNoDataValue(BAD_VALUE);
+        }
+        return bands;
     }
 
     protected FlagCoding createFlagCoding() {
@@ -181,14 +204,15 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         try {
             loadSourceTiles(rectangle);
 
-            brrFlags = new FlagWrapper.Short((short[]) getRaster(flagBand, rectangle).getDataBuffer().getElems());
-            for (int i = 0; i < brrBands.length; i++) {
-                Band band = brrBands[i];
-                if (band != null) {
-                    brr[i] = (float[]) getRaster(band, rectangle).getDataBuffer().getElems();
-                }
+            if (true) {
+            	transRvData = getTargetRasterGroup(transRvBands, rectangle);
+            	transRsData = getTargetRasterGroup(transRsBands, rectangle);
+            	tauRData = getTargetRasterGroup(tauRBands, rectangle);
+            	sphAlbRData = getTargetRasterGroup(sphAlbRBands, rectangle);
             }
-
+            brr = getTargetRasterGroup(brrBands, rectangle);
+            brrFlags = new FlagWrapper.Short((short[]) getRaster(flagBand, rectangle).getDataBuffer().getElems());
+            
             for (int iPL1 = rectangle.y; iPL1 < rectangle.y + rectangle.height; iPL1 += Constants.SUBWIN_HEIGHT) {
                 for (int iPC1 = rectangle.x; iPC1 < rectangle.x + rectangle.width; iPC1 += Constants.SUBWIN_WIDTH) {
                     final int iPC2 = Math.min(rectangle.x + rectangle.width, iPC1 + Constants.SUBWIN_WIDTH) - 1;
@@ -202,6 +226,17 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         } finally {
             pm.done();
         }
+    }
+    
+    private float[][] getTargetRasterGroup(Band[] bands, Rectangle rectangle) throws OperatorException {
+        final float[][] bandData = new float[L1_BAND_NUM][0];
+        for (int i = 0; i < bands.length; i++) {
+            Band band = bands[i];
+            if (band != null) {
+                bandData[i] = (float[]) getRaster(band, rectangle).getDataBuffer().getElems();
+            }
+        }
+        return bandData;
     }
 
     protected void landAtmCor(int ic0, int ic1, int il0, int il1, Rectangle rectangle) {
@@ -268,7 +303,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
             rayleighCorrection.trans_rayleigh(muv, tauR, transRv);
 
             /* Rayleigh spherical albedo */
-            rayleighCorrection.sphalb_rayleigh(tauR, sphAlbR);
+            rayleighCorrection.sphAlb_rayleigh(tauR, sphAlbR);
 
             /* process each pixel */
             for (int il = il0; il <= il1; il++) {
@@ -303,6 +338,17 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
                                 default:
                                     break;
                             }
+                        }
+                        if (exportRayCoeffs) {
+                        	for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
+                        		if (bandId == bb11 || bandId == bb15) {
+                        			continue;
+                        		}
+                        		transRvData[bandId][index] = (float) transRv[bandId];
+                        		transRsData[bandId][index] = (float) transRs[bandId];
+                        		tauRData[bandId][index] = (float) tauR[bandId];
+                        		sphAlbRData[bandId][index] = (float) sphAlbR[bandId];
+                        	}
                         }
                     }
                 }
