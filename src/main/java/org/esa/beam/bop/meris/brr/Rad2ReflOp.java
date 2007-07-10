@@ -102,11 +102,11 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
         detectorIndexBand = sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME);
         sunZenihTPG = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
         
-		invalidBand = createBooleanBandForExpression("l1_flags.INVALID");
+		invalidBand = createBooleanBandForExpression("l1_flags.INVALID", pm);
         return targetProduct;
     }
     
-    private Band createBooleanBandForExpression(String expression) throws OperatorException {
+    private Band createBooleanBandForExpression(String expression, ProgressMonitor pm) throws OperatorException {
 		Map<String, Object> parameters = new HashMap<String, Object>();
         BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
         BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
@@ -116,7 +116,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 		bandDescriptors[0] = bandDescriptor;
 		parameters.put("bandDescriptors", bandDescriptors);
 		
-		Product invalidProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
+		Product invalidProduct = GPF.createProduct(pm, "BandArithmetic", parameters, sourceProduct);
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", invalidProduct);
 		return invalidProduct.getBand("bBand");
