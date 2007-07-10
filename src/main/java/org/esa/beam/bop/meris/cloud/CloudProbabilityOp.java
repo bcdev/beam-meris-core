@@ -22,6 +22,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.esa.beam.bop.meris.AlbedoUtils;
@@ -34,20 +36,21 @@ import org.esa.beam.framework.datamodel.MetadataAttribute;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
+import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.framework.gpf.support.Auxdata;
 import org.esa.beam.util.StringUtils;
 import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.jexp.ParseException;
-import com.bc.jexp.Term;
 
 /**
  * A processing node to compute a cloud_probability mask using a neural network.
@@ -96,9 +99,9 @@ public class CloudProbabilityOp extends MerisBasisOp {
     private Band cloudFlagBand;
     private Band[] radianceBands;
     
-    private Term validLandTerm;
-    private Term validOceanTerm;
-    private Term landTerm;
+    private Band validLandBand;
+	private Band validOceanBand;
+	private Band landBand;
 
     private CloudAlgorithm landAlgo;
     private CloudAlgorithm oceanAlgo;
@@ -119,6 +122,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
     private String validLandExpression = DEFAULT_VALID_LAND_EXP;
     @Parameter
     private String validOceanExpression = DEFAULT_VALID_OCEAN_EXP;
+	
 
     public CloudProbabilityOp(OperatorSpi spi) {
         super(spi);
@@ -163,18 +167,41 @@ public class CloudProbabilityOp extends MerisBasisOp {
                 throw new IllegalArgumentException("Source product does not contain band " + bandName);
             }
         }
+        createBooleanBands(pm);
         
-        try {
-			validLandTerm = l1bProduct.createTerm(validLandExpression);
-			validOceanTerm = l1bProduct.createTerm(validOceanExpression);
-			landTerm = l1bProduct.createTerm("l1_flags.LAND_OCEAN");
-		} catch (ParseException e) {
-			throw new OperatorException("Could not create Term for expression.", e);
-		}
-        
-
         return targetProduct;
     }
+    
+    private void createBooleanBands(ProgressMonitor pm) throws OperatorException {
+    	
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[3];
+		
+		bandDescriptors[0] = new BandArithmeticOp.BandDescriptor();
+		bandDescriptors[0].name = "validLand";
+		bandDescriptors[0].expression = validLandExpression;
+		bandDescriptors[0].type = ProductData.TYPESTRING_BOOLEAN;
+		
+		bandDescriptors[1] = new BandArithmeticOp.BandDescriptor();
+		bandDescriptors[1].name = "validOcean";
+		bandDescriptors[1].expression = validOceanExpression;
+		bandDescriptors[1].type = ProductData.TYPESTRING_BOOLEAN;
+		
+		bandDescriptors[2] = new BandArithmeticOp.BandDescriptor();
+		bandDescriptors[2].name = "land";
+		bandDescriptors[2].expression = "l1_flags.LAND_OCEAN";
+		bandDescriptors[2].type = ProductData.TYPESTRING_BOOLEAN;
+		
+		parameters.put("bandDescriptors", bandDescriptors);
+
+		Product expProduct = GPF.createProduct(pm, "BandArithmetic", parameters, l1bProduct);
+		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
+		context.addSourceProduct("x", expProduct);
+		
+		validLandBand = expProduct.getBand("validLand");
+		validOceanBand = expProduct.getBand("validOcean");
+		landBand = expProduct.getBand("land");
+	}
 
     private void loadAuxdata() throws IOException {
         Auxdata auxdata = new Auxdata(AlbedomapConstants.SYMBOLIC_NAME, "cloudprob");
@@ -276,22 +303,9 @@ public class CloudProbabilityOp extends MerisBasisOp {
         pressure = (float[]) getRaster(l1bProduct.getTiePointGrid("atm_press"), rectangle).getDataBuffer().getElems();
         altitude = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
 
-        final int size = rectangle.height * rectangle.width;
-        if (isValidLand == null ||isValidLand.length != size) {
-        	isValidLand = new boolean[size];
-        	isValidOcean = new boolean[size];
-        	isLand = new boolean[size];
-        }
-    	try {
-			l1bProduct.readBitmask(rectangle.x, rectangle.y,
-					rectangle.width, rectangle.height, validLandTerm, isValidLand, ProgressMonitor.NULL);
-			l1bProduct.readBitmask(rectangle.x, rectangle.y,
-	    			rectangle.width, rectangle.height, validOceanTerm, isValidOcean, ProgressMonitor.NULL);
-	    	l1bProduct.readBitmask(rectangle.x, rectangle.y,
-	    			rectangle.width, rectangle.height, landTerm, isLand, ProgressMonitor.NULL);
-		} catch (IOException e) {
-			throw new OperatorException("Couldn't load bitmasks", e);
-		}
+        isValidLand = (boolean[]) getRaster(validLandBand, rectangle).getDataBuffer().getElems();
+        isValidOcean = (boolean[]) getRaster(validOceanBand, rectangle).getDataBuffer().getElems();
+        isLand = (boolean[]) getRaster(landBand, rectangle).getDataBuffer().getElems();
     }
     
     @Override

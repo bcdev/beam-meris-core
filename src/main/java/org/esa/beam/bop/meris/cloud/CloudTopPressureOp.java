@@ -22,19 +22,25 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.esa.beam.bop.meris.AlbedomapConstants;
 import org.esa.beam.bop.meris.brr.dpm.DpmConfig;
 import org.esa.beam.bop.meris.brr.dpm.L2AuxData;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
+import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
+import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.framework.gpf.support.Auxdata;
 import org.esa.beam.util.math.FractIndex;
@@ -42,8 +48,6 @@ import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.jexp.ParseException;
-import com.bc.jexp.Term;
 import com.bc.jnn.Jnn;
 import com.bc.jnn.JnnException;
 import com.bc.jnn.JnnNet;
@@ -73,12 +77,13 @@ public class CloudTopPressureOp extends MerisBasisOp {
     private L2AuxData auxData;
     private JnnNet neuralNet;
     private L2CloudAuxData cloudAuxData;
-    private Term term;
+    private Band invalidBand;
     
     @SourceProduct(alias="input")
     private Product sourceProduct;
     @TargetProduct
     private Product targetProduct;
+	
 
     public CloudTopPressureOp(OperatorSpi spi) {
         super(spi);
@@ -92,7 +97,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
             throw new OperatorException("Failed to load neural net ctp.nna:\n" + e.getMessage());
         }
         initAuxData();
-        return createTargetProduct();
+        return createTargetProduct(pm);
     }
 
     private void loadNeuralNet() throws IOException, JnnException {
@@ -110,18 +115,33 @@ public class CloudTopPressureOp extends MerisBasisOp {
         }
     }
 
-    private Product createTargetProduct() throws OperatorException {
+    private Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "MER_CTP", "MER_L2");
         targetProduct.addBand("cloud_top_press", ProductData.TYPE_FLOAT32);
 
-        try {
-			term = sourceProduct.createTerm(INVALID_EXPRESSION);
-		} catch (ParseException e) {
-			throw new OperatorException("Could not create Term for expression.", e);
-		}
+        invalidBand = createBooleanBandForExpression(INVALID_EXPRESSION, sourceProduct, pm);
         
         return targetProduct;
     }
+    
+    private Band createBooleanBandForExpression(String expression,
+			Product product, ProgressMonitor pm) throws OperatorException {
+    	
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
+		BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+		bandDescriptor.name = "bBand";
+		bandDescriptor.expression = expression;
+		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
+		bandDescriptors[0] = bandDescriptor;
+		parameters.put("bandDescriptors", bandDescriptors);
+
+		Product expProduct = GPF.createProduct(pm, "BandArithmetic",
+				parameters, product);
+		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
+		context.addSourceProduct("x", expProduct);
+		return expProduct.getBand("bBand");
+	}
 
     private void initAuxData() throws OperatorException {
         String configFile = "meris_l2_config.xml";
@@ -155,14 +175,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
         toar10 = getRaster(sourceProduct.getBand("radiance_10"), rectangle);
         toar11 = getRaster(sourceProduct.getBand("radiance_11"), rectangle);
 
-        final int size = rectangle.height * rectangle.width;
-        isInvalid = new boolean[size];
-    	try {
-	    	sourceProduct.readBitmask(rectangle.x, rectangle.y,
-	    			rectangle.width, rectangle.height, term, isInvalid, ProgressMonitor.NULL);
-		} catch (IOException e) {
-			throw new OperatorException("Couldn't load bitmasks", e);
-		}
+        isInvalid = (boolean[]) getRaster(invalidBand, rectangle).getDataBuffer().getElems();
     }
 
     @Override
