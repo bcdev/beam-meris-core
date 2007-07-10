@@ -17,24 +17,26 @@
 package org.esa.beam.bop.meris.brr;
 
 import java.awt.Rectangle;
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
+import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
+import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.ProductUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.bc.jexp.ParseException;
-import com.bc.jexp.Term;
 
 /**
  * Created by marcoz.
@@ -51,7 +53,7 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 
     private float[][] rho;
     private short[] detectorIndex;
-    private Term isLandTerm;
+    private Band isLandBand;
 
     private Band[] rhoCorectedBands;
     private float[][] rhoCorrected;
@@ -66,6 +68,8 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
     private Product targetProduct;
     @Parameter
     private String configFile = MERIS_L2_CONF;
+
+	
 
     public SmileCorrectionOp(OperatorSpi spi) {
         super(spi);
@@ -84,10 +88,10 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
             throw new OperatorException("could not load L2Auxdata", e);
         }
         
-        return createTargetProduct();
+        return createTargetProduct(pm);
     }
 
-    private Product createTargetProduct() throws OperatorException {
+    private Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
         targetProduct = createCompatibleProduct(gascorProduct, "MER", "MER_L2");
         rhoCorectedBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
         for (int i = 0; i < rhoCorectedBands.length; i++) {
@@ -101,15 +105,29 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
         
         rhoCorrected = new float[rhoCorectedBands.length][0];
         rho = new float[rhoCorectedBands.length][0];
+        isLandBand = createBooleanBandForExpression(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct, pm);
         
-        try {
-        	isLandTerm = landProduct.createTerm(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS");
-		} catch (ParseException e) {
-			throw new OperatorException("Could not create Term for expression.", e);
-		}
-		
         return targetProduct;
     }
+    
+    private Band createBooleanBandForExpression(String expression,
+			Product product, ProgressMonitor pm) throws OperatorException {
+    	
+		Map<String, Object> parameters = new HashMap<String, Object>();
+		BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
+		BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+		bandDescriptor.name = "bBand";
+		bandDescriptor.expression = expression;
+		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
+		bandDescriptors[0] = bandDescriptor;
+		parameters.put("bandDescriptors", bandDescriptors);
+
+		Product expProduct = GPF.createProduct(pm, "BandArithmetic",
+				parameters, product);
+		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
+		context.addSourceProduct("x", expProduct);
+		return expProduct.getBand("bBand");
+	}
 
     @Override
     public void computeAllBands(Rectangle rectangle,
@@ -122,9 +140,7 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
             for (int i = 0; i < rhoCorectedBands.length; i++) {
                 rho[i] = (float[]) getRaster(gascorProduct.getBand(rhoCorectedBands[i].getName()), rectangle).getDataBuffer().getElems();
             }
-            boolean[] isLandCons = new boolean[size];
-            landProduct.readBitmask(rectangle.x, rectangle.y,
-            		rectangle.width, rectangle.height, isLandTerm, isLandCons, ProgressMonitor.NULL);
+            boolean[] isLandCons = (boolean[]) getRaster(isLandBand, rectangle).getDataBuffer().getElems();
             
             for (int i = 0; i < rhoCorectedBands.length; i++) {
                 rhoCorrected[i] = (float[]) getRaster(rhoCorectedBands[i], rectangle).getDataBuffer().getElems();
@@ -142,8 +158,6 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
                 }
                 pm.worked(1);
             }
-        } catch (IOException e) {
-        	throw new OperatorException("Couldn't load bitmasks", e);
 		} finally {
             pm.done();
         }
