@@ -215,7 +215,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         try {
             loadSourceTiles(rectangle);
 
-            if (true) {
+            if (exportRayCoeffs) {
             	transRvData = getTargetRasterGroup(transRvBands, rectangle);
             	transRsData = getTargetRasterGroup(transRsBands, rectangle);
             	tauRData = getTargetRasterGroup(tauRBands, rectangle);
