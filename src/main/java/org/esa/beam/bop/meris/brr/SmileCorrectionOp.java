@@ -122,8 +122,7 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 		bandDescriptors[0] = bandDescriptor;
 		parameters.put("bandDescriptors", bandDescriptors);
 
-		Product expProduct = GPF.createProduct(pm, "BandArithmetic",
-				parameters, product);
+		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product, pm);
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", expProduct);
 		return expProduct.getBand("bBand");
