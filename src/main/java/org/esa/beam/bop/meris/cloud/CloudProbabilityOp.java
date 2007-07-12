@@ -194,7 +194,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
 		
 		parameters.put("bandDescriptors", bandDescriptors);
 
-		Product expProduct = GPF.createProduct(pm, "BandArithmetic", parameters, l1bProduct);
+		Product expProduct = GPF.createProduct("BandArithmetic", parameters, l1bProduct, pm);
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", expProduct);
 		

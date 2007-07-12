@@ -94,7 +94,7 @@ public class GapLessSdrOp extends MerisBasisOp {
 		bandDescriptors[0] = bandDescriptor;
 		parameters.put("bandDescriptors", bandDescriptors);
 		
-		Product validLandProduct = GPF.createProduct(pm, "BandArithmetic", parameters, toarProduct);
+		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, toarProduct, pm);
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", validLandProduct);
 		return validLandProduct.getBand("bBand");
