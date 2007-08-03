@@ -87,7 +87,7 @@ public class SdrOp extends MerisBasisOp {
     @SourceProduct(alias="aerosol")
     private Product aerosolProduct;
     @SourceProduct(alias="cloud")
-    private Product cloudProduct;
+    private Product cloudProduct;//for expression only
     @SourceProducts
     private Product[] sourceProducts;
     @TargetProduct
@@ -100,6 +100,8 @@ public class SdrOp extends MerisBasisOp {
     private String aot470Name;
     @Parameter
     private String angName;
+    @Parameter
+    private double angValue;
 	
 
     public SdrOp(OperatorSpi spi) {
@@ -116,9 +118,6 @@ public class SdrOp extends MerisBasisOp {
         }
         if (StringUtils.isNullOrEmpty(aot470Name)) {
             throw new OperatorException("No aot470 band specified.");
-        }
-        if (StringUtils.isNullOrEmpty(angName)) {
-            throw new OperatorException("No ang bandt specified.");
         }
         try {
             loadNeuralNet();
@@ -191,7 +190,9 @@ public class SdrOp extends MerisBasisOp {
         vza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
         vaa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
 
-        ang = getRaster(aerosolProduct.getBand(angName), rectangle);
+        if (StringUtils.isNotNullAndNotEmpty(angName)) {
+        	ang = getRaster(aerosolProduct.getBand(angName), rectangle);
+        }
         aot470 = getRaster(aerosolProduct.getBand(aot470Name), rectangle);
 
 
@@ -216,7 +217,6 @@ public class SdrOp extends MerisBasisOp {
 
             for (int i = 0; i < sdrBands.length; i++) {
             	sdr[i] = getRaster(sdrBands[i], rectangle);
-//	            sdr[i] = (float[]) data.getElems();
             }
             sdrFlag = getRaster(sdrFlagBand, rectangle);
 			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
@@ -246,7 +246,11 @@ public class SdrOp extends MerisBasisOp {
 	                        sdrAlgoInput[5] = geomZ;
 	                        sdrAlgoInput[6] = aot470.getDouble(x, y);
 	                        sdrAlgoInput[7] = 0; // aot 660; usage discontinued
-	                        sdrAlgoInput[8] = ang.getDouble(x, y);
+	                        if (ang != null) {
+	                        	sdrAlgoInput[8] = ang.getDouble(x, y);
+	                        } else {
+	                        	sdrAlgoInput[8] = angValue;
+	                        }
 	                        algorithm.computeSdr(sdrAlgoInput, sdrAlgoOutput);
 	                        t_sdr = sdrAlgoOutput[0];
 	                        if (Double.isInfinite(t_sdr) || Double.isNaN(t_sdr)) {
