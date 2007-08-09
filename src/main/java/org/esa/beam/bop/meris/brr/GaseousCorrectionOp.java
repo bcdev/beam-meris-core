@@ -47,6 +47,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 
     public static final String RHO_NG_BAND_PREFIX = "rho_ng";
     public static final String GAS_FLAGS = "gas_flags";
+    public static final String TG_BAND_PREFIX = "tg";
     private static final String MERIS_L2_CONF = "meris_l2_config.xml";
 
     public static final int F_DO_CORRECT = 0;
@@ -69,7 +70,9 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     private Band flagBand;
     private FlagWrapper gasFlags;
     private Band[] rhoNgBands;
+    private Band[] tgBands;
     private float[][] rhoNg;
+    private float[][] tg;
 
     private GaseousAbsorptionCorrection gasCor;
 
@@ -85,6 +88,8 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     private String configFile = MERIS_L2_CONF;
     @Parameter
     boolean correctWater = false;
+    @Parameter
+    boolean exportTg = false;
 
     public GaseousCorrectionOp(OperatorSpi spi) {
         super(spi);
@@ -107,14 +112,12 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     }
 
     private Product createTargetProduct() {
-        rhoNgBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
-        
     	targetProduct = createCompatibleProduct(rhoToaProduct, "MER", "MER_L2");
+    	
+    	rhoNgBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
         for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
-            Band rhoToaBand = rhoToaProduct.getBandAt(i);
-
             rhoNgBands[i] = targetProduct.addBand(RHO_NG_BAND_PREFIX + "_" + (i + 1), ProductData.TYPE_FLOAT32);
-            ProductUtils.copySpectralAttributes(rhoToaBand, rhoNgBands[i]);
+            ProductUtils.copySpectralAttributes(rhoToaProduct.getBandAt(i), rhoNgBands[i]);
             rhoNgBands[i].setNoDataValueUsed(true);
             rhoNgBands[i].setNoDataValue(BAD_VALUE);
         }
@@ -123,6 +126,16 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
         FlagCoding flagCoding = createFlagCoding();
         flagBand.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
+        
+        if (exportTg) {
+        	tgBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
+        	for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
+                tgBands[i] = targetProduct.addBand(TG_BAND_PREFIX + "_" + (i + 1), ProductData.TYPE_FLOAT32);
+                tgBands[i].setNoDataValueUsed(true);
+                tgBands[i].setNoDataValue(BAD_VALUE);
+            }
+        	tg = new float[tgBands.length][0];
+        }
         
         rhoToa = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
         rhoNg = new float[rhoNgBands.length][0];
@@ -166,6 +179,9 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
             gasFlags = new FlagWrapper.Byte((byte[]) getRaster(flagBand, rectangle).getDataBuffer().getElems());
             for (int i = 0; i < rhoNgBands.length; i++) {
                 rhoNg[i] = (float[]) getRaster(rhoNgBands[i], rectangle).getDataBuffer().getElems();
+                if (exportTg) {
+                	tg[i] = (float[]) getRaster(tgBands[i], rectangle).getDataBuffer().getElems();
+                }
             }
 
             for (int iPL1 = rectangle.y; iPL1 < rectangle.y + rectangle.height; iPL1 += Constants.SUBWIN_HEIGHT) {
@@ -279,6 +295,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
                                                        rhoToa,
                                                        detectorIndex[index],
                                                        rhoNg,
+                                                       tg,
                                                        cloudFlags.isSet(index, CloudClassificationOp.F_PCD_POL_P));
 
                         /* exception handling */

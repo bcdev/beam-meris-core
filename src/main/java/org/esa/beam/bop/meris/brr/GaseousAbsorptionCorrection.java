@@ -40,7 +40,7 @@ public class GaseousAbsorptionCorrection implements Constants {
      * @return success code (1: out or range output)
      */
     public int gas_correction(int index, double[] T_o3, double eta, double x2, float[][] rhoToa, int detector,
-                              float[][] rhoNg, boolean PCD_POL_F) {
+                              float[][] rhoNg, float[][] tgt, boolean PCD_POL_F) {
         int status = 0;
         double T_o2;  /* o2 transmission */
         double T_h2o; /* h2o transmission */
@@ -85,10 +85,12 @@ public class GaseousAbsorptionCorrection implements Constants {
             tg = T_o3[bandId] * T_h2o * T_o2; /* DPM #2.6.12.4-2 */
             if (tg > 1.e-6 && tg <= 1.) {
                 rhoNg[bandId][index] = (float) (rhoToa[bandId][index] / tg);              /* DPM #2.6.12.4-3 */
+                tgt[bandId][index] = (float) tg;
             } else {
                 /* exception handling */
                 rhoNg[bandId][index] = rhoToa[bandId][index];
                 status = 1;
+                tgt[bandId][index] = 1;
             }
         }  /* end loop on bands */
 
