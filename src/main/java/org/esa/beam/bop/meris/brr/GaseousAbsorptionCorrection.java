@@ -85,12 +85,16 @@ public class GaseousAbsorptionCorrection implements Constants {
             tg = T_o3[bandId] * T_h2o * T_o2; /* DPM #2.6.12.4-2 */
             if (tg > 1.e-6 && tg <= 1.) {
                 rhoNg[bandId][index] = (float) (rhoToa[bandId][index] / tg);              /* DPM #2.6.12.4-3 */
-                tgt[bandId][index] = (float) tg;
+                if (tgt != null) {
+                	tgt[bandId][index] = (float) tg;
+                }
             } else {
                 /* exception handling */
                 rhoNg[bandId][index] = rhoToa[bandId][index];
                 status = 1;
-                tgt[bandId][index] = 1;
+                if (tgt != null) {
+                	tgt[bandId][index] = 1;
+                }
             }
         }  /* end loop on bands */
 
