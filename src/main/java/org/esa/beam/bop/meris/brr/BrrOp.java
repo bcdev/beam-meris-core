@@ -164,7 +164,7 @@ public class BrrOp extends MerisBasisOp {
 
     protected void prepareSourceProducts() {
         final int numTPGrids = EnvisatConstants.MERIS_TIE_POINT_GRID_NAMES.length;
-        tpGrids = new TiePointGrid[numTPGrids];
+        tpGrids = new RasterDataNode[numTPGrids];
         for (int i = 0; i < numTPGrids; i++) {
             tpGrids[i] = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_TIE_POINT_GRID_NAMES[i]);
         }
