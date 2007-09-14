@@ -55,8 +55,8 @@ public class BlueBandOp extends MerisBasisOp {
     private float[] toar14;
 
     // for plausibility test
-    private float[] latitude;
-    private float[] altitude;
+    private Raster latitude;
+    private Raster altitude;
     
     private static final float D_BBT = 0.25f;
     private static final float D_ASS = 0.4f;
@@ -124,11 +124,11 @@ public class BlueBandOp extends MerisBasisOp {
 
         if (l1bProduct.getProductType().equals(
                 EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
-            latitude = (float[]) getRaster(l1bProduct.getBand("corr_latitude"), rect).getDataBuffer().getElems();
-            altitude = (float[]) getRaster(l1bProduct.getBand("altitude"), rect).getDataBuffer().getElems();
+            latitude = getRaster(l1bProduct.getBand("corr_latitude"), rect);
+            altitude = getRaster(l1bProduct.getBand("altitude"), rect);
         } else {
-            latitude = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect).getDataBuffer().getElems();
-            altitude = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect).getDataBuffer().getElems();
+            latitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect);
+            altitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect);
         }
     }
 
@@ -137,64 +137,66 @@ public class BlueBandOp extends MerisBasisOp {
             ProgressMonitor pm) throws OperatorException {
     	
     	Rectangle rect = targetRaster.getRectangle();
-        final int size = rect.height * rect.width;
-        pm.beginTask("Processing frame...", size);
+        pm.beginTask("Processing frame...", rect.height);
         try {
             getSourceTiles(rect);
             byte[] cloudFlagScanLine = (byte[]) targetRaster.getDataBuffer().getElems();
 
             boolean isSnowPlausible;
             boolean isBrightLand;
-            for (int i = 0; i < size; i++) {
-                final float po2 = toar11[i] / toar10[i];
+            int i = 0;
+            for (int y = rect.y; y < rect.y+rect.height; y++) {
+            	for (int x = rect.x; x < rect.x+rect.width; x++, i++) {
+            		final float po2 = toar11[i] / toar10[i];
 
-                isSnowPlausible = isSnowPlausible(latitude[i], altitude[i]);
-                isBrightLand = isBrightLand(toar9[i], toar14[i]);
+            		isSnowPlausible = isSnowPlausible(latitude.getFloat(x, y), altitude.getFloat(x, y));
+            		isBrightLand = isBrightLand(toar9[i], toar14[i]);
 
-                // blue band test
-                if (toar1[i] >= D_BBT) {
-                    final float ndvi = (toar13[i] - toar7[i])
-                            / (toar13[i] + toar7[i]);
-                    final float ndsi = (toar10[i] - toar13[i])
-                            / (toar10[i] + toar13[i]);
-                    // snow cover
-                    if (((ndvi <= R1_BBT * ndsi + R2_BBT) || // snow test 1
-                            (ndsi >= R3_BBT))
-                            && (po2 <= R7_BBT)) {
-                        cloudFlagScanLine[i] = FLAG_SNOW;
-                    } else {
-                        if ((toar13[i] <= R4_BBT * toar7[i] + R5_BBT) && // snow test 2
-                                (toar13[i] <= R6_BBT) && (po2 <= R7_BBT)) {
-                            cloudFlagScanLine[i] = FLAG_SNOW;
-                        } else {
-                            cloudFlagScanLine[i] = FLAG_DENSE_CLOUD;
-                        }
-                    }
-                } else {
-                    // altitude of scattering surface
-                    // ToDo: introduce RR/FR specific altitude
-                    if ((altitude[i] < 1700 && po2 >= D_ASS)
-                            || (altitude[i] >= 1700 && po2 > 0.04 + (0.31746 + 0.00003814 * altitude[i]))) {
-                        // snow cover
-                        if ((toar13[i] <= R1_ASS * toar7[i] + R2_ASS) && // snow test 3
-                                (toar13[i] <= R3_ASS)) {
-                            if ((toar13[i] >= R4_ASS) && // snow test 4
-                                    (toar7[i] >= R5_ASS)) {
-                                cloudFlagScanLine[i] = FLAG_SNOW;
-                            } else {
-                                cloudFlagScanLine[i] = FLAG_CLEAR;
-                            }
-                        } else {
-                            cloudFlagScanLine[i] = FLAG_THIN_CLOUD;
-                        }
-                    } else {
-                        cloudFlagScanLine[i] = FLAG_CLEAR;
-                    }
-                }
-                if (cloudFlagScanLine[i] == FLAG_SNOW
-                        && (!isSnowPlausible || isBrightLand)) {
-                    cloudFlagScanLine[i] = FLAG_CLEAR;
-                }
+            		// blue band test
+            		if (toar1[i] >= D_BBT) {
+            			final float ndvi = (toar13[i] - toar7[i])
+            					/ (toar13[i] + toar7[i]);
+            			final float ndsi = (toar10[i] - toar13[i])
+            					/ (toar10[i] + toar13[i]);
+            			// snow cover
+            			if (((ndvi <= R1_BBT * ndsi + R2_BBT) || // snow test 1
+            					(ndsi >= R3_BBT))
+            					&& (po2 <= R7_BBT)) {
+            				cloudFlagScanLine[i] = FLAG_SNOW;
+            			} else {
+            				if ((toar13[i] <= R4_BBT * toar7[i] + R5_BBT) && // snow test 2
+            						(toar13[i] <= R6_BBT) && (po2 <= R7_BBT)) {
+            					cloudFlagScanLine[i] = FLAG_SNOW;
+            				} else {
+            					cloudFlagScanLine[i] = FLAG_DENSE_CLOUD;
+            				}
+            			}
+            		} else {
+            			// altitude of scattering surface
+            			// ToDo: introduce RR/FR specific altitude
+            			if ((altitude.getFloat(x, y) < 1700 && po2 >= D_ASS)
+            					|| (altitude.getFloat(x, y) >= 1700 && po2 > 0.04 + (0.31746 + 0.00003814 * altitude.getFloat(x, y)))) {
+            				// snow cover
+            				if ((toar13[i] <= R1_ASS * toar7[i] + R2_ASS) && // snow test 3
+            						(toar13[i] <= R3_ASS)) {
+            					if ((toar13[i] >= R4_ASS) && // snow test 4
+            							(toar7[i] >= R5_ASS)) {
+            						cloudFlagScanLine[i] = FLAG_SNOW;
+            					} else {
+            						cloudFlagScanLine[i] = FLAG_CLEAR;
+            					}
+            				} else {
+            					cloudFlagScanLine[i] = FLAG_THIN_CLOUD;
+            				}
+            			} else {
+            				cloudFlagScanLine[i] = FLAG_CLEAR;
+            			}
+            		}
+            		if (cloudFlagScanLine[i] == FLAG_SNOW
+            				&& (!isSnowPlausible || isBrightLand)) {
+            			cloudFlagScanLine[i] = FLAG_CLEAR;
+            		}
+            	}
                 pm.worked(1);
             }
         } finally {
