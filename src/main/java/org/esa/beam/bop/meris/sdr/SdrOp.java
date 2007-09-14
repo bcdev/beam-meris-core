@@ -86,16 +86,16 @@ public class SdrOp extends MerisBasisOp {
     private Product brrProduct;
     @SourceProduct(alias="aerosol")
     private Product aerosolProduct;
-    @SourceProduct(alias="cloud")
-    private Product cloudProduct;//for expression only
-    @SourceProducts
-    private Product[] sourceProducts;
+    @SourceProduct(alias="mask")
+    private Product maskProduct;//for expression only
+//    @SourceProducts
+//    private Product[] sourceProducts;
     @TargetProduct
     private Product targetProduct;
     @Parameter
     private String neuralNetFile;
     @Parameter
-    private String validExpression;
+    private String validBandName;
     @Parameter
     private String aot470Name;
     @Parameter
@@ -113,9 +113,9 @@ public class SdrOp extends MerisBasisOp {
         if (StringUtils.isNullOrEmpty(neuralNetFile)) {
             throw new OperatorException("No neural net specified.");
         }
-        if (StringUtils.isNullOrEmpty(validExpression)) {
-            throw new OperatorException("No validExpression specified.");
-        }
+//        if (StringUtils.isNullOrEmpty(validExpression)) {
+//            throw new OperatorException("No validExpression specified.");
+//        }
         if (StringUtils.isNullOrEmpty(aot470Name)) {
             throw new OperatorException("No aot470 band specified.");
         }
@@ -158,30 +158,30 @@ public class SdrOp extends MerisBasisOp {
         sdrFlagBand.setDescription("SDR specific flags");
         sdrFlagBand.setFlagCoding(sdiFlagCoding);
 
-		validBand = createBooleanBandForExpression(validExpression, pm);
-
+//		validBand = createBooleanBandForExpression(validExpression, pm);
+        validBand = maskProduct.getBand(validBandName);
 		return targetProduct;
     }
 
-	private Band createBooleanBandForExpression(String expression, ProgressMonitor pm) throws OperatorException {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
-        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
-		bandDescriptor.name = "bBand";
-		bandDescriptor.expression = expression;
-		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
-		bandDescriptors[0] = bandDescriptor;
-		parameters.put("bandDescriptors", bandDescriptors);
-		
-		Map<String, Product> products = new HashMap<String, Product>();
-		for (Product product : sourceProducts) {
-			products.put(getContext().getIdForSourceProduct(product), product);
-		}
-		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, products, pm);
-		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
-		context.addSourceProduct("x", validLandProduct);
-		return validLandProduct.getBand("bBand");
-	}
+//	private Band createBooleanBandForExpression(String expression, ProgressMonitor pm) throws OperatorException {
+//		Map<String, Object> parameters = new HashMap<String, Object>();
+//        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
+//        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+//		bandDescriptor.name = "bBand";
+//		bandDescriptor.expression = expression;
+//		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
+//		bandDescriptors[0] = bandDescriptor;
+//		parameters.put("bandDescriptors", bandDescriptors);
+//		
+//		Map<String, Product> products = new HashMap<String, Product>();
+//		for (Product product : sourceProducts) {
+//			products.put(getContext().getIdForSourceProduct(product), product);
+//		}
+//		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, products, pm);
+//		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
+//		context.addSourceProduct("x", validLandProduct);
+//		return validLandProduct.getBand("bBand");
+//	}
 
     private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
 
