@@ -101,14 +101,13 @@ public class GapLessSdrOp extends MerisBasisOp {
 	}
 
     @Override
-    public void computeBand(Raster targetRaster, ProgressMonitor pm) throws OperatorException {
+    public void computeBand(Band band, Raster targetRaster, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle rectangle = targetRaster.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-        	Band targetBand = (Band) targetRaster.getRasterDataNode();
-        	Raster sdrRaster = getRaster(sdrBands.get(targetBand), rectangle);
-        	Raster toarRaster = getRaster(toarBands.get(targetBand), rectangle);
+        	Raster sdrRaster = getRaster(sdrBands.get(band), rectangle);
+        	Raster toarRaster = getRaster(toarBands.get(band), rectangle);
         	Raster invalid = getRaster(invalidBand, rectangle);
         	
         	pm.worked(1);

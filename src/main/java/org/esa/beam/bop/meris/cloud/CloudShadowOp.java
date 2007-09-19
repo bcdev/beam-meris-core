@@ -92,7 +92,7 @@ public class CloudShadowOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeBand(Raster targetRaster,
+    public void computeBand(Band band, Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
     	
     	Rectangle targetRectangle = targetRaster.getRectangle();

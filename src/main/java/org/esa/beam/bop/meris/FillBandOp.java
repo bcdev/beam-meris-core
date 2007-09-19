@@ -26,7 +26,6 @@ import java.util.Map;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
@@ -108,15 +107,14 @@ public class FillBandOp extends MerisBasisOp implements ParameterConverter {
 	}
 	
 	@Override
-    public void computeBand(Raster targetRaster,
+    public void computeBand(Band band, Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
 		
 		pm.beginTask("Processing frame...", 1);
 		try {
-			RasterDataNode targetNode = targetRaster.getRasterDataNode();
 			Rectangle targetRect = targetRaster.getRectangle();
-			float[] outValues = (float[]) getRaster(targetNode, targetRect).getDataBuffer().getElems();
-			final float defaultValue = defaultMap.get(targetNode);
+			float[] outValues = (float[]) getRaster(band, targetRect).getDataBuffer().getElems();
+			final float defaultValue = defaultMap.get(band);
 			
 			Arrays.fill(outValues, defaultValue);
 			

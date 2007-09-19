@@ -133,7 +133,7 @@ public class BlueBandOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeBand(Raster targetRaster,
+    public void computeBand(Band band, Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
     	
     	Rectangle rect = targetRaster.getRectangle();

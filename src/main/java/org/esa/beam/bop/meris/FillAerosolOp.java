@@ -304,10 +304,9 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     }
     
     @Override
-    public void computeBand(Raster targetRaster,
+    public void computeBand(Band band, Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
 
-    	RasterDataNode targetBand = targetRaster.getRasterDataNode();
     	Rectangle targetRect = targetRaster.getRectangle();
         Rectangle sourceRect = rectCalculator.computeSourceRectangle(targetRect);
         
@@ -319,9 +318,9 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
             	maskRaster = getRaster(maskProduct.getBand(config.maskBand), sourceRect);
             	useMask = true;
             }
-            Raster defaultRaster = getRaster(defaultBands.get(targetBand), sourceRect);
-            Raster validDataRaster = getRaster(validProduct.getBand(targetBand.getName()), sourceRect);
-            Raster dataRaster = getRaster(sourceBands.get(targetBand), sourceRect);
+            Raster defaultRaster = getRaster(defaultBands.get(band), sourceRect);
+            Raster validDataRaster = getRaster(validProduct.getBand(band.getName()), sourceRect);
+            Raster dataRaster = getRaster(sourceBands.get(band), sourceRect);
             
             if (!config.frs) {
             	float[] scaledData = getScaledArrayFromRaster(dataRaster);
