@@ -166,7 +166,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     }
 
     @Override
-    public void computeBand(Raster targetRaster, ProgressMonitor pm) throws OperatorException {
+    public void computeBand(Band band, Raster targetRaster, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle rectangle = targetRaster.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height + 1);
