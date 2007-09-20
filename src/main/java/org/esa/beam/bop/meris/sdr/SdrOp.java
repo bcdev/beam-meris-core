@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.esa.beam.bop.meris.AlbedoUtils;
@@ -19,16 +18,12 @@ import org.esa.beam.framework.datamodel.MetadataAttribute;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
-import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
-import org.esa.beam.framework.gpf.annotations.SourceProducts;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
-import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.framework.gpf.support.Auxdata;
 import org.esa.beam.util.ProductUtils;
@@ -65,20 +60,7 @@ public class SdrOp extends MerisBasisOp {
     private Band[] reflectanceBands;
     private Band[] sdrBands;
     private Band sdrFlagBand;
-
-    private Raster[] reflectance;
-    private Raster[] sdr;
-    private Raster sza;
-    private Raster saa;
-    private Raster vza;
-    private Raster vaa;
-    private Raster sdrFlag;
-
     private Band validBand;
-    private Raster isValidPixel;
-    
-    private Raster aot470;
-    private Raster ang;
 
     @SourceProduct(alias="l1b")
     private Product l1bProduct;
@@ -113,9 +95,6 @@ public class SdrOp extends MerisBasisOp {
         if (StringUtils.isNullOrEmpty(neuralNetFile)) {
             throw new OperatorException("No neural net specified.");
         }
-//        if (StringUtils.isNullOrEmpty(validExpression)) {
-//            throw new OperatorException("No validExpression specified.");
-//        }
         if (StringUtils.isNullOrEmpty(aot470Name)) {
             throw new OperatorException("No aot470 band specified.");
         }
@@ -124,10 +103,10 @@ public class SdrOp extends MerisBasisOp {
         } catch (Exception e) {
             throw new OperatorException("Failed to load neural net " + neuralNetFile + ":\n" + e.getMessage());
         }
-        return createTargetProduct(pm);
+        return createTargetProduct();
     }
 
-    private Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
+    private Product createTargetProduct() {
         targetProduct = createCompatibleProduct(l1bProduct, DEFAULT_OUTPUT_PRODUCT_NAME, SDR_PRODUCT_TYPE);
         
         reflectanceBands = new Band[sdrBandNo.length];
@@ -158,67 +137,43 @@ public class SdrOp extends MerisBasisOp {
         sdrFlagBand.setDescription("SDR specific flags");
         sdrFlagBand.setFlagCoding(sdiFlagCoding);
 
-//		validBand = createBooleanBandForExpression(validExpression, pm);
         validBand = maskProduct.getBand(validBandName);
 		return targetProduct;
     }
 
-//	private Band createBooleanBandForExpression(String expression, ProgressMonitor pm) throws OperatorException {
-//		Map<String, Object> parameters = new HashMap<String, Object>();
-//        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
-//        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
-//		bandDescriptor.name = "bBand";
-//		bandDescriptor.expression = expression;
-//		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
-//		bandDescriptors[0] = bandDescriptor;
-//		parameters.put("bandDescriptors", bandDescriptors);
-//		
-//		Map<String, Product> products = new HashMap<String, Product>();
-//		for (Product product : sourceProducts) {
-//			products.put(getContext().getIdForSourceProduct(product), product);
-//		}
-//		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, products, pm);
-//		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
-//		context.addSourceProduct("x", validLandProduct);
-//		return validLandProduct.getBand("bBand");
-//	}
-
-    private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
-
-        sza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
-        saa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
-        vza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
-        vaa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
-
-        if (StringUtils.isNotNullAndNotEmpty(angName)) {
-        	ang = getRaster(aerosolProduct.getBand(angName), rectangle);
-        }
-        aot470 = getRaster(aerosolProduct.getBand(aot470Name), rectangle);
-
-
-        reflectance = new Raster[sdrBandNo.length];
-        sdr = new Raster[sdrBandNo.length];
-        
-        for (int i = 0; i < sdrBandNo.length; i++) {
-            reflectance[i] = getRaster(reflectanceBands[i], rectangle);
-        }
-        isValidPixel = getRaster(validBand, rectangle);
-    }
-
     @Override
-    public void computeAllBands(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final double[] sdrAlgoInput = new double[9];
         final double[] sdrAlgoOutput = new double[1];
 
         pm.beginTask("Processing frame...", rectangle.height);
         try {
-            loadSourceTiles(rectangle);
+            Raster sza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+            Raster saa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
+            Raster vza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+            Raster vaa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
+
+            Raster ang = null;
+            if (StringUtils.isNotNullAndNotEmpty(angName)) {
+            	ang = getRaster(aerosolProduct.getBand(angName), rectangle);
+            }
+            Raster aot470 = getRaster(aerosolProduct.getBand(aot470Name), rectangle);
+
+
+            Raster[] reflectance = new Raster[sdrBandNo.length];
+            Raster[] sdr = new Raster[sdrBandNo.length];
+            
+            for (int i = 0; i < sdrBandNo.length; i++) {
+                reflectance[i] = getRaster(reflectanceBands[i], rectangle);
+            }
+            Raster isValidPixel = getRaster(validBand, rectangle);
 
             for (int i = 0; i < sdrBands.length; i++) {
-            	sdr[i] = getRaster(sdrBands[i], rectangle);
+            	sdr[i] = targetRasters.get(sdrBands[i]);
             }
-            sdrFlag = getRaster(sdrFlagBand, rectangle);
+            Raster sdrFlag = targetRasters.get(sdrFlagBand);
+            
 			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x+rectangle.width; x++) {
 	                if (isValidPixel.getBoolean(x, y)) {
@@ -263,12 +218,10 @@ public class SdrOp extends MerisBasisOp {
 	                            t_sdr = 1.0;
 	                            sdrFlags |= 1 << (reflInputBand.getSpectralBandIndex() + 1);
 	                        }
-//	                        sdr[bandId][i] = (short) (t_sdr / SCALING_FACTOR);
 	                        sdr[bandId].setFloat(x, y, (float) t_sdr);
 	                    }
-	                    sdrFlags |= (sdrFlags == 0 ? 0 : 1); // Combine SDR-Flags
-	                    // to single INVALID
-	                    // Flag
+	                    // Combine SDR-Flags to single INVALID Flag
+	                    sdrFlags |= (sdrFlags == 0 ? 0 : 1); 
 	                    sdrFlag.setInt(x, y, sdrFlags);
 	                } else {
 	                    for (int j = 0; j < reflectanceBands.length; j++) {
@@ -278,8 +231,7 @@ public class SdrOp extends MerisBasisOp {
 	                }
 				}
 			}
-            // process the complete rect
-                pm.worked(1);
+			pm.worked(1);
         } finally {
             pm.done();
         }

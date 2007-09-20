@@ -2,6 +2,7 @@ package org.esa.beam.bop.meris.brr;
 
 import java.awt.Color;
 import java.awt.Rectangle;
+import java.util.Map;
 
 import org.esa.beam.bop.meris.AlbedoUtils;
 import org.esa.beam.bop.meris.brr.dpm.AtmosphericCorrectionLand;
@@ -198,9 +199,10 @@ public class BrrOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeAllBands(Rectangle targetTileRectangle,
+    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle targetTileRectangle,
             ProgressMonitor pm) throws OperatorException {
 
+    	//FIXME  !!!!!!
         createScanLines(targetTileRectangle);
         final int rectX = targetTileRectangle.x;
         final int rectY = targetTileRectangle.y;
@@ -244,7 +246,7 @@ public class BrrOp extends MerisBasisOp {
 
         for (int bandIndex = 0; bandIndex < brrReflecBands.length; bandIndex++) {
             if (AlbedoUtils.isValidRhoSpectralIndex(bandIndex)) {
-                ProductData data = getRaster(brrReflecBands[bandIndex], targetTileRectangle).getDataBuffer();
+                ProductData data = targetRasters.get(brrReflecBands[bandIndex]).getDataBuffer();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectW * rectH; iP++) {
                     ddata[iP] = (float) frame[iP].rho_top[bandIndex];
@@ -253,22 +255,22 @@ public class BrrOp extends MerisBasisOp {
         }
         if (outputToar) {
             for (int bandIndex = 0; bandIndex < toaReflecBands.length; bandIndex++) {
-                ProductData data = getRaster(toaReflecBands[bandIndex], targetTileRectangle).getDataBuffer();
+                ProductData data = targetRasters.get(toaReflecBands[bandIndex]).getDataBuffer();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectW * rectH; iP++) {
                     ddata[iP] = (float) frame[iP].rho_toa[bandIndex];
                 }
             }
         }
-        ProductData flagData = getRaster(l2FlagsP1, targetTileRectangle).getDataBuffer();
+        ProductData flagData = targetRasters.get(l2FlagsP1).getDataBuffer();
         int[] intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP1Frame, 0, intFlag, 0, rectW * rectH);
 
-        flagData = getRaster(l2FlagsP2, targetTileRectangle).getDataBuffer();
+        flagData = targetRasters.get(l2FlagsP2).getDataBuffer();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP2Frame, 0, intFlag, 0, rectW * rectH);
 
-        flagData = getRaster(l2FlagsP3, targetTileRectangle).getDataBuffer();
+        flagData = targetRasters.get(l2FlagsP3).getDataBuffer();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP3Frame, 0, intFlag, 0, rectW * rectH);
     }

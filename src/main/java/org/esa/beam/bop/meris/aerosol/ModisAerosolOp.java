@@ -11,6 +11,7 @@ import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Map;
 
 import ncsa.hdf.hdflib.HDFConstants;
 import ncsa.hdf.hdflib.HDFException;
@@ -127,17 +128,17 @@ public class ModisAerosolOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeAllBands(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final GeoCoding geoCoding = sourceProduct.getGeoCoding();
         final GeoPos geoPos = new GeoPos();
         final PixelPos pixelPos = new PixelPos();
         final FractIndex[] indexes = FractIndex.createArray(3);
 
-        Raster aot470Raster = getRaster(_aot470Band, rectangle);
-        Raster aot660Raster = getRaster(_aot660Band, rectangle);
-        Raster angRaster = getRaster(_angstrBand, rectangle);
-        Raster flagRaster = getRaster(_flagsBand, rectangle);
+        Raster aot470Raster = targetRasters.get(_aot470Band);
+        Raster aot660Raster = targetRasters.get(_aot660Band);
+        Raster angRaster = targetRasters.get(_angstrBand);
+        Raster flagRaster = targetRasters.get(_flagsBand);
 
         final double time = getSceneRasterMeanTime(sourceProduct).getMJD();
         final double logWavelengthDiff = Math.log(AOT_660_WAVELENGTH) - Math.log(AOT_470_WAVELENGTH);

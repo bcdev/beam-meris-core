@@ -18,6 +18,7 @@ package org.esa.beam.bop.meris.aerosol;
 
 import java.awt.Color;
 import java.awt.Rectangle;
+import java.util.Map;
 
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.BitmaskDef;
@@ -28,6 +29,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -52,14 +54,6 @@ public class AerosolMergerOp extends MerisBasisOp {
     private Band aot470Band;
     private Band angstrBand;
     private Band flagBand;
-    private float[] modAot;
-    private float[] modAng;
-    private byte[] modFlag;
-    private float[] l2Aot;
-    private float[] l2Ang;
-    private float[] aot470;
-    private float[] ang;
-    private byte[] flag;
 
     @SourceProduct(alias="l2")
     private Product l2Product;
@@ -123,27 +117,22 @@ public class AerosolMergerOp extends MerisBasisOp {
         return flagCoding;
     }
 
-    private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
-
-        modAot = (float[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getDataBuffer().getElems();
-        modAng = (float[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle).getDataBuffer().getElems();
-        modFlag = (byte[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle).getDataBuffer().getElems();
-
-        l2Aot = (float[]) getRaster(l2Product.getBand("aero_opt_thick_443"), rectangle).getDataBuffer().getElems();
-        l2Ang = (float[]) getRaster(l2Product.getBand("aero_alpha"), rectangle).getDataBuffer().getElems();
-    }
-
     @Override
-    public void computeAllBands(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", 1 + size);
         try {
-            loadSourceTiles(rectangle);
+            float[] modAot = (float[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getDataBuffer().getElems();
+			float[] modAng = (float[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle).getDataBuffer().getElems();
+			byte[] modFlag = (byte[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle).getDataBuffer().getElems();
+			
+			float[] l2Aot = (float[]) getRaster(l2Product.getBand("aero_opt_thick_443"), rectangle).getDataBuffer().getElems();
+			float[] l2Ang = (float[]) getRaster(l2Product.getBand("aero_alpha"), rectangle).getDataBuffer().getElems();
 
-            aot470 = (float[]) getRaster(aot470Band, rectangle).getDataBuffer().getElems();
-            ang = (float[]) getRaster(angstrBand, rectangle).getDataBuffer().getElems();
-            flag = (byte[]) getRaster(flagBand, rectangle).getDataBuffer().getElems();
+            float[] aot470 = (float[]) targetRasters.get(aot470Band).getDataBuffer().getElems();
+            float[] ang = (float[]) targetRasters.get(angstrBand).getDataBuffer().getElems();
+            byte[] flag = (byte[]) targetRasters.get(flagBand).getDataBuffer().getElems();
 
             for (int i = 0; i < size; i++) {
                 if (l2Aot[i] >= 0 && l2Ang[i] >= 0) {
