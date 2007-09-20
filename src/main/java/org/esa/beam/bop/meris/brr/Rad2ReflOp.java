@@ -124,7 +124,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 
 
     @Override
-    public void computeAllBands(Rectangle rectangle,
+    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle,
             ProgressMonitor pm) throws OperatorException {
 
         pm.beginTask("Processing frame...", rectangle.height);
@@ -139,7 +139,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 
             Raster[] rhoToa = new Raster[rhoToaBands.length];
             for (int i = 0; i < rhoToaBands.length; i++) {
-                rhoToa[i] = getRaster(rhoToaBands[i], rectangle);
+                rhoToa[i] = targetRasters.get(rhoToaBands[i]);
             }
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {

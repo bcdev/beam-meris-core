@@ -17,6 +17,7 @@
 package org.esa.beam.bop.meris.brr;
 
 import java.awt.Rectangle;
+import java.util.Map;
 
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
@@ -26,6 +27,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -58,12 +60,6 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     private DpmConfig dpmConfig;
     private L2AuxData auxData;
 
-    private float[][] rhoToa;
-    private short[] detectorIndex;
-    private float[] sza;
-    private float[] vza;
-    private float[] altitude;
-    private float[] ecmwfOzone;
     private FlagWrapper cloudFlags;
     private FlagWrapper l1Flags;
 
@@ -71,8 +67,6 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     private FlagWrapper gasFlags;
     private Band[] rhoNgBands;
     private Band[] tgBands;
-    private float[][] rhoNg;
-    private float[][] tg;
 
     private GaseousAbsorptionCorrection gasCor;
 
@@ -134,15 +128,11 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
                 tgBands[i].setNoDataValueUsed(true);
                 tgBands[i].setNoDataValue(BAD_VALUE);
             }
-        	tg = new float[tgBands.length][0];
         }
-        
-        rhoToa = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
-        rhoNg = new float[rhoNgBands.length][0];
         return targetProduct;
     }
 
-    protected static FlagCoding createFlagCoding() {
+    private static FlagCoding createFlagCoding() {
         FlagCoding flagCoding = new FlagCoding(GAS_FLAGS);
         flagCoding.addFlag("F_DO_CORRECT", FlagWrapper.setFlag(0, F_DO_CORRECT), null);
         flagCoding.addFlag("F_SUN70", FlagWrapper.setFlag(0, F_SUN70), null);
@@ -151,44 +141,144 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
         return flagCoding;
     }
 
-    private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
-        
-        detectorIndex = (short[]) getRaster(
-                l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
-        sza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        altitude = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
-        ecmwfOzone = (float[]) getRaster(l1bProduct.getTiePointGrid("ozone"), rectangle).getDataBuffer().getElems();
-        l1Flags = new FlagWrapper.Byte((byte[]) getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getDataBuffer().getElems());
-
-        
-        for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
-            rhoToa[i] = (float[]) getRaster(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
-        }
-
-        cloudFlags = new FlagWrapper.Short((short[])getRaster(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle).getDataBuffer().getElems());
-    }
-
     @Override
-    public void computeAllBands(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            loadSourceTiles(rectangle);
+            Raster detectorIndex = getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
+			Raster sza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+			Raster vza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+			Raster altitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle);
+			Raster ecmwfOzone = getRaster(l1bProduct.getTiePointGrid("ozone"), rectangle);
+			l1Flags = new FlagWrapper.Byte((byte[]) getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getDataBuffer().getElems());
+			
+			Raster[] rhoToa = new Raster[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
+			for (int i1 = 0; i1 < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i1++) {
+			    rhoToa[i1] = getRaster(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i1 + 1)), rectangle);
+			}
+			
+			cloudFlags = new FlagWrapper.Short((short[])getRaster(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle).getDataBuffer().getElems());
 
-            gasFlags = new FlagWrapper.Byte((byte[]) getRaster(flagBand, rectangle).getDataBuffer().getElems());
+            gasFlags = new FlagWrapper.Byte((byte[]) targetRasters.get(flagBand).getDataBuffer().getElems());
+            Raster[] rhoNg = new Raster[rhoNgBands.length];
+            Raster[] tg = new Raster[tgBands.length];
             for (int i = 0; i < rhoNgBands.length; i++) {
-                rhoNg[i] = (float[]) getRaster(rhoNgBands[i], rectangle).getDataBuffer().getElems();
+                rhoNg[i] = targetRasters.get(rhoNgBands[i]);
                 if (exportTg) {
-                	tg[i] = (float[]) getRaster(tgBands[i], rectangle).getDataBuffer().getElems();
+                	tg[i] = targetRasters.get(tgBands[i]);
                 }
             }
 
-            for (int iPL1 = rectangle.y; iPL1 < rectangle.y + rectangle.height; iPL1 += Constants.SUBWIN_HEIGHT) {
-                for (int iPC1 = rectangle.x; iPC1 < rectangle.x + rectangle.width; iPC1 += Constants.SUBWIN_WIDTH) {
-                    final int iPC2 = Math.min(rectangle.x + rectangle.width, iPC1 + Constants.SUBWIN_WIDTH) - 1;
-                    final int iPL2 = Math.min(rectangle.y + rectangle.height, iPL1 + Constants.SUBWIN_HEIGHT) - 1;
-                    gaseousCorrection(iPC1, iPC2, iPL1, iPL2, rectangle);
+            for (int y = rectangle.y; y < rectangle.y + rectangle.height; y += Constants.SUBWIN_HEIGHT) {
+                for (int x = rectangle.x; x < rectangle.x + rectangle.width; x += Constants.SUBWIN_WIDTH) {
+                    final int xWinEnd = Math.min(rectangle.x + rectangle.width, x + Constants.SUBWIN_WIDTH) - 1;
+                    final int yWinEnd = Math.min(rectangle.y + rectangle.height, y + Constants.SUBWIN_HEIGHT) - 1;
+                    boolean correctPixel = false;
+					boolean correctWaterPixel = false;
+					double[] dSumrho = new double[L1_BAND_NUM]; /* accumulator for rho above water */
+					
+					for (int iy = y; iy <= yWinEnd; iy++) {
+					    for (int ix = x; ix <= xWinEnd; ix++) {
+					        int index = TileRectCalculator.convertToIndex(ix, iy, rectangle);
+					
+					        if (!l1Flags.isSet(index, L1_F_INVALID) &&
+					                !cloudFlags.isSet(index, CloudClassificationOp.F_CLOUD) &&
+					                (correctWater || altitude.getFloat(ix, iy) >= -50.0 || l1Flags.isSet(index, L1_F_LAND))) {
+					
+					            correctPixel = true;
+					            gasFlags.set(index, F_DO_CORRECT);
+					
+					            /* v4.2: average radiances for water pixels */
+					            if (!l1Flags.isSet(index, L1_F_LAND)) {
+					                correctWaterPixel = true;
+					                for (int bandId = bb753; bandId <= bb900; bandId++) {
+					                    dSumrho[bandId] += rhoToa[bandId].getFloat(ix, iy);
+					                }
+					            }
+					        } else {
+					        	writeBadValue(rhoNg, ix, iy);
+					        }
+					    }
+					}
+					
+					if (correctPixel) {
+					    /* v4.2 average TOA radiance */
+					    double etaAverageForWater = 0.;
+					    double x2AverageForWater = 0.;
+					    boolean iOrinp0 = false;
+					    if (correctWaterPixel) {
+					        if ((dSumrho[bb753] > 0.) && (dSumrho[bb760] > 0.)) {
+					            etaAverageForWater = dSumrho[bb760] / dSumrho[bb753];
+					        } else {
+					            iOrinp0 = true;
+					            etaAverageForWater = 1.;
+					        }
+					
+					        if ((dSumrho[bb890] > 0.) && (dSumrho[bb900] > 0.)) {
+					            x2AverageForWater = dSumrho[bb900] / dSumrho[bb890];
+					        } else {
+					            iOrinp0 = true;
+					            x2AverageForWater = 1.;
+					        }
+					    }
+					
+					    /* V.2 APPLY GASEOUS ABSORPTION CORRECTION - DPM Step 2.6.12 */
+					
+					    /* ozone transmittance on 4x4 window - step 2.6.12.1 */
+					    double[] T_o3 = new double[L1_BAND_NUM];   /* ozone transmission */
+					    double airMass0 = HelperFunctions.calculateAirMass(vza.getFloat(x, y), sza.getFloat(x, y));
+					    trans_o3(airMass0, ecmwfOzone.getFloat(x, y), T_o3);
+					
+					    /* process each pixel */
+					    for (int iy = y; iy <= yWinEnd; iy++) {
+					        for (int ix = x; ix <= xWinEnd; ix++) {
+					            int index = TileRectCalculator.convertToIndex(ix, iy, rectangle);
+					            if (gasFlags.isSet(index, F_DO_CORRECT)) {
+					                double eta, x2;       /* band ratios eta, x2 */
+					
+					                /* test SZA - v4.2 */
+					                if (sza.getFloat(ix, iy) > auxData.TETAS_LIM) {
+					                    gasFlags.set(index, F_SUN70);
+					                }
+					
+					                /* gaseous transmittance gasCor : writes rho-ag field - v4.2 */
+					                /* do band ratio for land pixels with full exception handling */
+					                if (l1Flags.isSet(index, L1_F_LAND)) {
+					                    if ((rhoToa[bb753].getFloat(ix, iy) > 0.) && (rhoToa[bb760].getFloat(ix, iy) > 0.)) {
+					                        eta = rhoToa[bb760].getFloat(ix, iy) / rhoToa[bb753].getFloat(ix, iy);    //o2
+					                    } else {
+					                        eta = 1.;
+					                        gasFlags.set(index, F_ORINP0);
+					                    }
+					                    /* DPM #2.6.12.3-1 */
+					                    if ((rhoToa[bb890].getFloat(ix, iy) > 0.) && (rhoToa[bb900].getFloat(ix, iy) > 0.)) {
+					                        x2 = rhoToa[bb900].getFloat(ix, iy) / rhoToa[bb890].getFloat(ix, iy);   //h2o
+					                    } else {
+					                        x2 = 1.;
+					                        gasFlags.set(index, F_ORINP0);
+					                    }
+					                } else { /* water pixels */
+					                    eta = etaAverageForWater;
+					                    x2 = x2AverageForWater;
+					                    gasFlags.set(index, F_ORINP0, iOrinp0);
+					                }
+					                int status = 0;
+					                status = gasCor.gas_correction(ix, iy, T_o3, eta, x2,
+					                                               rhoToa,
+					                                               detectorIndex.getInt(ix, iy),
+					                                               rhoNg,
+					                                               tg,
+					                                               cloudFlags.isSet(index, CloudClassificationOp.F_PCD_POL_P));
+					
+					                /* exception handling */
+					                gasFlags.set(index, F_OROUT0, status != 0);
+					            } else {
+					                writeBadValue(rhoNg, ix, iy);
+					            }
+					        }
+					    }
+					}
                 }
                 pm.worked(1);
             }
@@ -196,115 +286,6 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
             throw new OperatorException(e);
         } finally {
             pm.done();
-        }
-    }
-
-    public void gaseousCorrection(int ic0, int ic1, int il0, int il1, Rectangle rectangle) {
-        boolean correctPixel = false;
-        boolean correctWaterPixel = false;
-        double[] dSumrho = new double[L1_BAND_NUM]; /* accumulator for rho above water */
-
-        for (int il = il0; il <= il1; il++) {
-            for (int ic = ic0; ic <= ic1; ic++) {
-                int index = TileRectCalculator.convertToIndex(ic, il, rectangle);
-
-                if (!l1Flags.isSet(index, L1_F_INVALID) &&
-                        !cloudFlags.isSet(index, CloudClassificationOp.F_CLOUD) &&
-                        (correctWater || altitude[index] >= -50.0 || l1Flags.isSet(index, L1_F_LAND))) {
-
-                    correctPixel = true;
-                    gasFlags.set(index, F_DO_CORRECT);
-
-                    /* v4.2: average radiances for water pixels */
-                    if (!l1Flags.isSet(index, L1_F_LAND)) {
-                        correctWaterPixel = true;
-                        for (int bandId = bb753; bandId <= bb900; bandId++) {
-                            dSumrho[bandId] += rhoToa[bandId][index];
-                        }
-                    }
-                } else {
-                    writeBadValue(index);
-                }
-            }
-        }
-
-        if (correctPixel) {
-            /* v4.2 average TOA radiance */
-            double etaAverageForWater = 0.;
-            double x2AverageForWater = 0.;
-            boolean iOrinp0 = false;
-            if (correctWaterPixel) {
-                if ((dSumrho[bb753] > 0.) && (dSumrho[bb760] > 0.)) {
-                    etaAverageForWater = dSumrho[bb760] / dSumrho[bb753];
-                } else {
-                    iOrinp0 = true;
-                    etaAverageForWater = 1.;
-                }
-
-                if ((dSumrho[bb890] > 0.) && (dSumrho[bb900] > 0.)) {
-                    x2AverageForWater = dSumrho[bb900] / dSumrho[bb890];
-                } else {
-                    iOrinp0 = true;
-                    x2AverageForWater = 1.;
-                }
-            }
-
-            /* V.2 APPLY GASEOUS ABSORPTION CORRECTION - DPM Step 2.6.12 */
-
-            /* ozone transmittance on 4x4 window - step 2.6.12.1 */
-            double[] T_o3 = new double[L1_BAND_NUM];   /* ozone transmission */
-            int index0 = TileRectCalculator.convertToIndex(ic0, il0, rectangle);
-            double airMass0 = HelperFunctions.calculateAirMass(vza[index0], sza[index0]);
-            trans_o3(airMass0, ecmwfOzone[index0], T_o3);
-
-            /* process each pixel */
-            for (int il = il0; il <= il1; il++) {
-                for (int ic = ic0; ic <= ic1; ic++) {
-                    int index = TileRectCalculator.convertToIndex(ic, il, rectangle);
-                    if (gasFlags.isSet(index, F_DO_CORRECT)) {
-                        double eta, x2;       /* band ratios eta, x2 */
-
-                        /* test SZA - v4.2 */
-                        if (sza[index] > auxData.TETAS_LIM) {
-                            gasFlags.set(index, F_SUN70);
-                        }
-
-                        /* gaseous transmittance gasCor : writes rho-ag field - v4.2 */
-                        /* do band ratio for land pixels with full exception handling */
-                        if (l1Flags.isSet(index, L1_F_LAND)) {
-                            if ((rhoToa[bb753][index] > 0.) && (rhoToa[bb760][index] > 0.)) {
-                                eta = rhoToa[bb760][index] / rhoToa[bb753][index];    //o2
-                            } else {
-                                eta = 1.;
-                                gasFlags.set(index, F_ORINP0);
-                            }
-                            /* DPM #2.6.12.3-1 */
-                            if ((rhoToa[bb890][index] > 0.) && (rhoToa[bb900][index] > 0.)) {
-                                x2 = rhoToa[bb900][index] / rhoToa[bb890][index];   //h2o
-                            } else {
-                                x2 = 1.;
-                                gasFlags.set(index, F_ORINP0);
-                            }
-                        } else { /* water pixels */
-                            eta = etaAverageForWater;
-                            x2 = x2AverageForWater;
-                            gasFlags.set(index, F_ORINP0, iOrinp0);
-                        }
-                        int status = 0;
-                        status = gasCor.gas_correction(index, T_o3, eta, x2,
-                                                       rhoToa,
-                                                       detectorIndex[index],
-                                                       rhoNg,
-                                                       tg,
-                                                       cloudFlags.isSet(index, CloudClassificationOp.F_PCD_POL_P));
-
-                        /* exception handling */
-                        gasFlags.set(index, F_OROUT0, status != 0);
-                    } else {
-                        writeBadValue(index);
-                    }
-                }
-            }
         }
     }
 
@@ -326,9 +307,9 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
         }
     }
 
-    private void writeBadValue(int index) {
+    private void writeBadValue(Raster[] rhoNg, int x, int y) {
         for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
-            rhoNg[bandId][index] = BAD_VALUE;
+            rhoNg[bandId].setFloat(x, y, BAD_VALUE);
         }
     }
 

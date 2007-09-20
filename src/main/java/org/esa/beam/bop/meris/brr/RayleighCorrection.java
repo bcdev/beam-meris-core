@@ -6,6 +6,7 @@
  */
 package org.esa.beam.bop.meris.brr;
 
+import org.esa.beam.framework.gpf.Raster;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 
@@ -276,7 +277,7 @@ public class RayleighCorrection implements Constants {
 \*-----------------------------------------------------------------------------*/
 
     public void corr_rayleigh(double[] refRayl, double[] sphalbRayl, double[] transRs, double[] transRv,
-                              float[][] rhoNg, float[][] brr, int index) {
+                              Raster[] rhoNg, Raster[] brr, int x, int y) {
 
         for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
             switch (bandId) {
@@ -294,8 +295,8 @@ public class RayleighCorrection implements Constants {
                 case bb12:
                 case bb13:
                 case bb14:
-                    double dum = (rhoNg[bandId][index] - refRayl[bandId]) / (transRs[bandId] * transRv[bandId]);      /* DPM 2.6.15.4-5 */
-                    brr[bandId][index] = (float) (dum / (1. + sphalbRayl[bandId] * dum)); /* DPM 2.6.15.4-6 */
+                    double dum = (rhoNg[bandId].getFloat(x, y) - refRayl[bandId]) / (transRs[bandId] * transRv[bandId]);      /* DPM 2.6.15.4-5 */
+                    brr[bandId].setDouble(x, y, dum / (1. + sphalbRayl[bandId] * dum)); /* DPM 2.6.15.4-6 */
                     break;
                 default: /* no correction */
 //                    rho_ag[bandId] = rho[bandId];

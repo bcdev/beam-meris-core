@@ -8,6 +8,10 @@ public class HelperFunctions {
         final double muv = Math.cos(viewZenith * MathUtils.DTOR);
         final double mus = Math.cos(sunZenith * MathUtils.DTOR);
 
+        return calculateAirMassMusMuv(muv, mus);
+    }
+    
+    public static double calculateAirMassMusMuv(double muv, double mus) {
         // DPM #2.1.12-1, Air Mass Computation
         return 1.0 / mus + 1.0 / muv;
     }
