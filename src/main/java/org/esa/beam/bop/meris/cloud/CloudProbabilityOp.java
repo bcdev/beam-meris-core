@@ -64,7 +64,11 @@ public class CloudProbabilityOp extends MerisBasisOp {
 
     public static final String CLOUD_PROP_BAND = "cloud_prob";
     public static final String CLOUD_FLAG_BAND = "cloud_flag";
-
+    
+    public static final int FLAG_INVALID = 0;
+    public static final int FLAG_CLOUDY = 1;
+    public static final int FLAG_CLOUDFREE = 2;
+    public static final int FLAG_UNCERTAIN = 4;
 
     private static final String DEFAULT_OUTPUT_PRODUCT_NAME = "MER_CLOUD";
     private static final String PRODUCT_TYPE = "MER_L2_CLOUD";
@@ -75,10 +79,6 @@ public class CloudProbabilityOp extends MerisBasisOp {
     private static final float SCALING_FACTOR = 0.001f;
 
     private static final String PRESS_SCALE_HEIGHT_KEY = "press_scale_height";
-
-    private static final int FLAG_CLOUDY = 1;
-    private static final int FLAG_CLOUDFREE = 2;
-    private static final int FLAG_UNCERTAIN = 4;
 
     private float[] centralWavelenth;
     private CentralWavelengthProvider centralWavelengthProvider;

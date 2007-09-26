@@ -34,15 +34,6 @@ public class CombinedCloudOp extends MerisBasisOp {
     public static final int FLAG_CLOUD_EDGE = 8;
     public static final int FLAG_CLOUD_SHADOW = 16;
 
-    // from FUB cloud PN
-    private static final int CLOUD_INVALID = 0;
-    private static final int CLOUD_FLAG_CLOUDY = 1;
-    private static final int CLOUD_FLAG_CLOUDFREE = 2;
-    private static final int CLOUD_FLAG_UNCERTAIN = 4;
-
-    private byte[] cloudProb;
-    private byte[] blueBand;
-    private byte[] combinedCloud;
     private Band combinedCloudBand;
     
     @SourceProduct(alias="cloudProb")
@@ -80,19 +71,19 @@ public class CombinedCloudOp extends MerisBasisOp {
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-        	cloudProb = (byte[]) getRaster(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getDataBuffer().getElems();
-        	blueBand = (byte[]) getRaster(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle).getDataBuffer().getElems();
+        	byte[] cloudProb = (byte[]) getRaster(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getDataBuffer().getElems();
+        	byte[] blueBand = (byte[]) getRaster(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle).getDataBuffer().getElems();
 
             ProductData flagData = getRaster(combinedCloudBand, rectangle).getDataBuffer();
-            combinedCloud = (byte[]) flagData.getElems();
+            byte[] combinedCloud = (byte[]) flagData.getElems();
             pm.worked(1);
             
             for (int i = 0; i < size; i++) {
-                if (cloudProb[i] == CLOUD_INVALID) {
+                if (cloudProb[i] == CloudProbabilityOp.FLAG_INVALID) {
                     combinedCloud[i] = FLAG_INVALID;
                 } else {
                     combinedCloud[i] = FLAG_CLEAR;
-                    if (cloudProb[i] == CLOUD_FLAG_CLOUDY
+                    if (cloudProb[i] == CloudProbabilityOp.FLAG_CLOUDY
                             || blueBand[i] == BlueBandOp.FLAG_DENSE_CLOUD
                             || blueBand[i] == BlueBandOp.FLAG_THIN_CLOUD) {
                         combinedCloud[i] = FLAG_CLOUD;
