@@ -44,20 +44,6 @@ public class BlueBandOp extends MerisBasisOp {
 
     public static final String BLUE_FLAG_BAND = "blue_cloud";
 
-    private float[] toar1;
-    private float[] toar7;
-    private float[] toar10;
-    private float[] toar11;
-    private float[] toar13;
-
-    // for bright sand test
-    private float[] toar9;
-    private float[] toar14;
-
-    // for plausibility test
-    private Raster latitude;
-    private Raster altitude;
-    
     private static final float D_BBT = 0.25f;
     private static final float D_ASS = 0.4f;
 
@@ -78,12 +64,13 @@ public class BlueBandOp extends MerisBasisOp {
     // for plausibility test
     private static final float LAT_THR = 60.0f;
     private static final float ALT_THR = 1000.0f;
-    public int month;
 
     // for bright sand test
     private static final float SLOPE2_LOW = 0.65f;
     private static final float SLOPE2_UPPER = 1.075f;
 
+    public int month;
+    
     @SourceProduct(alias="l1b")
     private Product l1bProduct;
     @SourceProduct(alias="toar")
@@ -113,25 +100,6 @@ public class BlueBandOp extends MerisBasisOp {
         return targetProduct;
     }
     
-    private void getSourceTiles(Rectangle rect) throws OperatorException {
-        toar1 = (float[]) getRaster(brrProduct.getBand("toar_1"), rect).getDataBuffer().getElems();
-        toar7 = (float[]) getRaster(brrProduct.getBand("toar_7"), rect).getDataBuffer().getElems();
-        toar9 = (float[]) getRaster(brrProduct.getBand("toar_9"), rect).getDataBuffer().getElems();
-        toar10 = (float[]) getRaster(brrProduct.getBand("toar_10"), rect).getDataBuffer().getElems();
-        toar11 = (float[]) getRaster(brrProduct.getBand("toar_11"), rect).getDataBuffer().getElems();
-        toar13 = (float[]) getRaster(brrProduct.getBand("toar_13"), rect).getDataBuffer().getElems();
-        toar14 = (float[]) getRaster(brrProduct.getBand("toar_14"), rect).getDataBuffer().getElems();
-
-        if (l1bProduct.getProductType().equals(
-                EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
-            latitude = getRaster(l1bProduct.getBand("corr_latitude"), rect);
-            altitude = getRaster(l1bProduct.getBand("altitude"), rect);
-        } else {
-            latitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect);
-            altitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect);
-        }
-    }
-
     @Override
     public void computeBand(Band band, Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
@@ -139,7 +107,24 @@ public class BlueBandOp extends MerisBasisOp {
     	Rectangle rect = targetRaster.getRectangle();
         pm.beginTask("Processing frame...", rect.height);
         try {
-            getSourceTiles(rect);
+            float[] toar1 = (float[]) getRaster(brrProduct.getBand("toar_1"), rect).getDataBuffer().getElems();
+			float[] toar7 = (float[]) getRaster(brrProduct.getBand("toar_7"), rect).getDataBuffer().getElems();
+			float[] toar9 = (float[]) getRaster(brrProduct.getBand("toar_9"), rect).getDataBuffer().getElems();
+			float[] toar10 = (float[]) getRaster(brrProduct.getBand("toar_10"), rect).getDataBuffer().getElems();
+			float[] toar11 = (float[]) getRaster(brrProduct.getBand("toar_11"), rect).getDataBuffer().getElems();
+			float[] toar13 = (float[]) getRaster(brrProduct.getBand("toar_13"), rect).getDataBuffer().getElems();
+			float[] toar14 = (float[]) getRaster(brrProduct.getBand("toar_14"), rect).getDataBuffer().getElems();
+			
+			Raster latitude;
+			Raster altitude;
+			if (l1bProduct.getProductType().equals(
+			        EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
+			    latitude = getRaster(l1bProduct.getBand("corr_latitude"), rect);
+			    altitude = getRaster(l1bProduct.getBand("altitude"), rect);
+			} else {
+			    latitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect);
+			    altitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect);
+			}
             byte[] cloudFlagScanLine = (byte[]) targetRaster.getDataBuffer().getElems();
 
             boolean isSnowPlausible;

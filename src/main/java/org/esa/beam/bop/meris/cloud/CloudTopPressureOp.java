@@ -64,16 +64,6 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
     private static final int BB760 = 10;
 
-    private short[] detector;
-    private float[] sza;
-    private float[] saa;
-    private float[] vza;
-    private float[] vaa;
-    private float[] lon;
-    private float[] lat;
-    private Raster toar10;
-    private Raster toar11;
-    private boolean[] isInvalid;
     private L2AuxData auxData;
     private JnnNet neuralNet;
     private L2CloudAuxData cloudAuxData;
@@ -160,23 +150,6 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
     }
 
-    private void loadSourceTiles(Rectangle rectangle) throws OperatorException {
-
-        detector = (short[]) getRaster(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle).getDataBuffer().getElems();
-        sza = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        saa = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vza = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        vaa = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-
-        lat = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle).getDataBuffer().getElems();
-        lon = (float[]) getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle).getDataBuffer().getElems();
-
-        toar10 = getRaster(sourceProduct.getBand("radiance_10"), rectangle);
-        toar11 = getRaster(sourceProduct.getBand("radiance_11"), rectangle);
-
-        isInvalid = (boolean[]) getRaster(invalidBand, rectangle).getDataBuffer().getElems();
-    }
-
     @Override
     public void computeBand(Band band, Raster targetRaster,
             ProgressMonitor pm) throws OperatorException {
@@ -184,10 +157,19 @@ public class CloudTopPressureOp extends MerisBasisOp {
     	Rectangle rectangle = targetRaster.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height);
         try {
-        	loadSourceTiles(rectangle);
-
-            ProductData productDataCtp = getRaster(targetRaster.getRasterDataNode(), rectangle).getDataBuffer();
-            float[] ctp = (float[]) productDataCtp.getElems();
+        	Raster detector = getRaster(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
+        	Raster sza = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+			Raster saa = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
+			Raster vza = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+			Raster vaa = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle)
+			
+			Raster lat = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle);
+			Raster lon = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle);
+			
+			Raster toar10 = getRaster(sourceProduct.getBand("radiance_10"), rectangle);
+			Raster toar11 = getRaster(sourceProduct.getBand("radiance_11"), rectangle);
+			
+			Raster isInvalid = getRaster(invalidBand, rectangle);
 
             final double[] nnIn = new double[7];
             final double[] nnOut = new double[1];
@@ -198,23 +180,23 @@ public class CloudTopPressureOp extends MerisBasisOp {
 					if (pm.isCanceled()) {
 						break;
 					}
-					if (isInvalid[i]) {
-						ctp[i] = 0;
+					if (isInvalid.getBoolean(x, y)) {
+						targetRaster.setFloat(x, y, 0);
 					} else {
-						double szaRad = sza[i] * MathUtils.DTOR;
-						double vzaRad = vza[i] * MathUtils.DTOR;
-						nnIn[0] = computeSurfAlbedo(lat[i], lon[i]); // albedo
+						double szaRad = sza.getFloat(x, y) * MathUtils.DTOR;
+						double vzaRad = vza.getFloat(x, y) * MathUtils.DTOR;
+						nnIn[0] = computeSurfAlbedo(lat.getFloat(x, y), lon.getFloat(x, y)); // albedo
 						nnIn[1] = toar10.getDouble(x, y);
 						nnIn[2] = toar11.getDouble(x, y)
 								/ toar10.getDouble(x, y);
 						nnIn[3] = Math.cos(szaRad);
 						nnIn[4] = Math.cos(vzaRad);
 						nnIn[5] = Math.sin(vzaRad)
-								* Math.cos(MathUtils.DTOR * (vaa[i] - saa[i]));
-						nnIn[6] = auxData.central_wavelength[BB760][detector[i]];
+								* Math.cos(MathUtils.DTOR * (vaa.getFloat(x, y) - saa.getFloat(x, y)));
+						nnIn[6] = auxData.central_wavelength[BB760][detector.getInt(x, y)];
 
 						neuralNet.process(nnIn, nnOut);
-						ctp[i] = (float) nnOut[0];
+						targetRaster.setDouble(x, y, nnOut[0]);
 					}
 					i++;
 				}
