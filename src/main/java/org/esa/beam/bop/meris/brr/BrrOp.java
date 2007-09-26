@@ -23,7 +23,6 @@ import org.esa.beam.framework.datamodel.MetadataAttribute;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.RasterDataNode;
-import org.esa.beam.framework.datamodel.TiePointGrid;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
@@ -51,16 +50,6 @@ public class BrrOp extends MerisBasisOp {
 
     protected DpmConfig dpmConfig;
 
-    protected DpmPixel[] frame;
-    protected DpmPixel[][] block;
-    protected int scanLineSize;
-
-    // data
-    protected Raster[] l1bTiePointScans;
-    protected Raster[] l1bRadianceScans;
-    protected Raster l1bDetectorIndexScan;
-    protected Raster l1bFlagsScan;
-
     // source product
     private RasterDataNode[] tpGrids;
     private RasterDataNode[] l1bRadiance;
@@ -71,10 +60,6 @@ public class BrrOp extends MerisBasisOp {
     protected Band l2FlagsP1;
     protected Band l2FlagsP2;
     protected Band l2FlagsP3;
-
-    protected int[] l2FlagsP1Frame;
-    protected int[] l2FlagsP2Frame;
-    protected int[] l2FlagsP3Frame;
 
     protected Band[] brrReflecBands = new Band[Constants.L1_BAND_NUM];
     protected Band[] toaReflecBands = new Band[Constants.L1_BAND_NUM];
@@ -120,13 +105,13 @@ public class BrrOp extends MerisBasisOp {
         l2FlagsP2 = addFlagsBand(createFlagCodingP2(), 0.2, 0.7, 0.0);
         l2FlagsP3 = addFlagsBand(createFlagCodingP3(), 0.8, 0.1, 0.3);
 
-        initAlgorithms(sourceProduct);    // todo do only once; change some auxdata depending on date and product
+        initAlgorithms(sourceProduct); 
         pixelid.setCorrectWater(correctWater);
         landac.setCorrectWater(correctWater);
         return targetProduct;
     }
 
-    protected void initAlgorithms(Product inputProduct) throws IllegalArgumentException {
+    private void initAlgorithms(Product inputProduct) throws IllegalArgumentException {
         try {
             final L2AuxData auxData = new L2AuxData(dpmConfig, inputProduct);
             extdatl1 = new L1bDataExtraction(auxData);
@@ -138,28 +123,6 @@ public class BrrOp extends MerisBasisOp {
         } catch (Exception e) { // todo handle IOException and DpmException
             e.printStackTrace();
             throw new IllegalArgumentException(e.getMessage());
-        }
-    }
-
-    protected void createScanLines(Rectangle rectangle) {
-        final int frameSize = rectangle.height * rectangle.width;
-        if (frameSize != scanLineSize) {
-            scanLineSize = frameSize;
-            final int frameWidth = rectangle.width;
-            final int frameHeight = rectangle.height;
-
-            frame = new DpmPixel[frameSize];
-            block = new DpmPixel[frameHeight][frameWidth];
-            for (int iP = 0; iP < frame.length; iP++) {
-                final DpmPixel pixel = new DpmPixel();
-                pixel.i = iP % frameWidth;
-                pixel.j = iP / frameWidth;
-                frame[iP] = block[pixel.j][pixel.i] = pixel;
-            }
-
-            l2FlagsP1Frame = new int[frameSize];
-            l2FlagsP2Frame = new int[frameSize];
-            l2FlagsP3Frame = new int[frameSize];
         }
     }
 
@@ -184,42 +147,43 @@ public class BrrOp extends MerisBasisOp {
         l1bFlags = sourceProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME);
     }
     
-    protected void getSourceTiles(Rectangle rect) throws OperatorException {
-    	l1bTiePointScans = new Raster[tpGrids.length];
-        for (int i = 0; i < tpGrids.length; i++) {
-            l1bTiePointScans[i] = getRaster(tpGrids[i], rect);
-        }
-        l1bRadianceScans = new Raster[l1bRadiance.length];
-        for (int i = 0; i < l1bRadiance.length; i++) {
-            l1bRadianceScans[i] = getRaster(l1bRadiance[i], rect);
-        }
-        l1bDetectorIndexScan = getRaster(detectorIndex, rect);
-        l1bFlagsScan = getRaster(l1bFlags, rect);
-
-    }
-
     @Override
-    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle targetTileRectangle,
+    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle,
             ProgressMonitor pm) throws OperatorException {
 
-    	//FIXME  !!!!!!
-        createScanLines(targetTileRectangle);
-        final int rectX = targetTileRectangle.x;
-        final int rectY = targetTileRectangle.y;
-        final int rectW = targetTileRectangle.width;
-        final int rectH = targetTileRectangle.height;
+        final int frameSize = rectangle.height * rectangle.width;
+        DpmPixel[] frame = new DpmPixel[frameSize];
+        DpmPixel[][] block = new DpmPixel[rectangle.height][rectangle.width];
+        for (int pixelIndex = 0; pixelIndex < frameSize; pixelIndex++) {
+            final DpmPixel pixel = new DpmPixel();
+            pixel.i = pixelIndex % rectangle.width;
+            pixel.j = pixelIndex / rectangle.width;
+            frame[pixelIndex] = block[pixel.j][pixel.i] = pixel;
+        }
 
-        getSourceTiles(targetTileRectangle);
+        int[] l2FlagsP1Frame = new int[frameSize];
+        int[] l2FlagsP2Frame = new int[frameSize];
+        int[] l2FlagsP3Frame = new int[frameSize];
+        Raster[] l1bTiePoints = new Raster[tpGrids.length];
+        for (int i = 0; i < tpGrids.length; i++) {
+            l1bTiePoints[i] = getRaster(tpGrids[i], rectangle);
+        }
+        Raster[] l1bRadiances = new Raster[l1bRadiance.length];
+        for (int i = 0; i < l1bRadiance.length; i++) {
+            l1bRadiances[i] = getRaster(l1bRadiance[i], rectangle);
+        }
+        Raster l1bDetectorIndex = getRaster(detectorIndex, rectangle);
+        Raster l1bFlagRaster = getRaster(l1bFlags, rectangle);
         
-        for (int iP = 0; iP < rectW * rectH; iP++) {
-            DpmPixel pixel = frame[iP];
+        for (int pixelIndex = 0; pixelIndex < frameSize; pixelIndex++) {
+            DpmPixel pixel = frame[pixelIndex];
             extdatl1.l1_extract_pixbloc(pixel,
-                                        rectX + pixel.i,
-                                        rectY + pixel.j,
-                                        l1bTiePointScans,
-                                        l1bRadianceScans,
-                                        l1bDetectorIndexScan,
-                                        l1bFlagsScan);
+                                        rectangle.x + pixel.i,
+                                        rectangle.y + pixel.j,
+                                        l1bTiePoints,
+                                        l1bRadiances,
+                                        l1bDetectorIndex,
+                                        l1bFlagRaster);
 
             if (!AlbedoUtils.isFlagSet(pixel.l2flags, Constants.F_INVALID)) {
                 pixelid.rad2reflect(pixel);
@@ -227,10 +191,10 @@ public class BrrOp extends MerisBasisOp {
             }
         }
 
-        for (int iPL1 = 0; iPL1 < rectH; iPL1 += Constants.SUBWIN_HEIGHT) {
-            for (int iPC1 = 0; iPC1 < rectW; iPC1 += Constants.SUBWIN_WIDTH) {
-                final int iPC2 = Math.min(rectW, iPC1 + Constants.SUBWIN_WIDTH) - 1;
-                final int iPL2 = Math.min(rectH, iPL1 + Constants.SUBWIN_HEIGHT) - 1;
+        for (int iPL1 = 0; iPL1 < rectangle.height; iPL1 += Constants.SUBWIN_HEIGHT) {
+            for (int iPC1 = 0; iPC1 < rectangle.width; iPC1 += Constants.SUBWIN_WIDTH) {
+                final int iPC2 = Math.min(rectangle.width, iPC1 + Constants.SUBWIN_WIDTH) - 1;
+                final int iPL2 = Math.min(rectangle.height, iPL1 + Constants.SUBWIN_HEIGHT) - 1;
                 pixelid.pixel_classification(block, iPC1, iPC2, iPL1, iPL2);
                 landac.landAtmCor(block, iPC1, iPC2, iPL1, iPL2);
             }
@@ -248,7 +212,7 @@ public class BrrOp extends MerisBasisOp {
             if (AlbedoUtils.isValidRhoSpectralIndex(bandIndex)) {
                 ProductData data = targetRasters.get(brrReflecBands[bandIndex]).getDataBuffer();
                 float[] ddata = (float[]) data.getElems();
-                for (int iP = 0; iP < rectW * rectH; iP++) {
+                for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
                     ddata[iP] = (float) frame[iP].rho_top[bandIndex];
                 }
             }
@@ -257,22 +221,22 @@ public class BrrOp extends MerisBasisOp {
             for (int bandIndex = 0; bandIndex < toaReflecBands.length; bandIndex++) {
                 ProductData data = targetRasters.get(toaReflecBands[bandIndex]).getDataBuffer();
                 float[] ddata = (float[]) data.getElems();
-                for (int iP = 0; iP < rectW * rectH; iP++) {
+                for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
                     ddata[iP] = (float) frame[iP].rho_toa[bandIndex];
                 }
             }
         }
         ProductData flagData = targetRasters.get(l2FlagsP1).getDataBuffer();
         int[] intFlag = (int[]) flagData.getElems();
-        System.arraycopy(l2FlagsP1Frame, 0, intFlag, 0, rectW * rectH);
+        System.arraycopy(l2FlagsP1Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
 
         flagData = targetRasters.get(l2FlagsP2).getDataBuffer();
         intFlag = (int[]) flagData.getElems();
-        System.arraycopy(l2FlagsP2Frame, 0, intFlag, 0, rectW * rectH);
+        System.arraycopy(l2FlagsP2Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
 
         flagData = targetRasters.get(l2FlagsP3).getDataBuffer();
         intFlag = (int[]) flagData.getElems();
-        System.arraycopy(l2FlagsP3Frame, 0, intFlag, 0, rectW * rectH);
+        System.arraycopy(l2FlagsP3Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
     }
 
     protected Band addFlagsBand(final FlagCoding flagCodingP1, final double rf1, final double gf1, final double bf1) {
