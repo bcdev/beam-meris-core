@@ -71,8 +71,6 @@ public class GapLessSdrOp extends MerisBasisOp {
             if (bandName.startsWith("sdr_") && !bandName.endsWith("flags")) {
                 Band targetBand = ProductUtils.copyBand(bandName, sdrProduct, targetProduct);
                 Band sdrBand = sdrProduct.getBand(bandName);
-                targetBand.setNoDataValueUsed(sdrBand.isNoDataValueUsed());
-                targetBand.setNoDataValue(sdrBand.getNoDataValue());
                 sdrBands.put(targetBand, sdrBand);
                 
                 final String toarBandName = bandName.replaceFirst("sdr", "toar");
