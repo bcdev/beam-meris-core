@@ -72,8 +72,6 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     
     private Configuration config;
 
-
-
     /**
      * Configuration Elements (can be set from XML)
      */
@@ -140,17 +138,6 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
             
     		i++;
         }
-//        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
-//		bandDescriptor.name = "mask";
-//		bandDescriptor.expression = config.maskExp;
-//		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
-//		bandDescriptors[i] = bandDescriptor;
-		
-//		Map<String, Product> products = new HashMap<String, Product>();
-//		products.put(getContext().getIdForSourceProduct(sourceProduct), sourceProduct);
-//		if (maskProduct != null) {
-//			products.put(getContext().getIdForSourceProduct(maskProduct), maskProduct);
-//		}
 		
         parameters.put("bandDescriptors", bandDescriptors);
         validProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct, pm);
@@ -206,7 +193,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         if (weigthSum > 0) {
 			final double tauTemp = tauSum/weigthSum;
 			final double ww = weigthSum/weigthSumTotal;
-			// l3weighting gibt die Krümmung der Kurve an; l3weightiung=8 is a first guess
+			// l3weighting gibt die Krï¿½mmung der Kurve an; l3weightiung=8 is a first guess
 			final int l3weighting = 8;
 			final double wwn = 1 - Math.pow(ww-1, l3weighting);
 			final double tau = wwn * tauTemp + (1.0 - wwn)* defaultValue;
