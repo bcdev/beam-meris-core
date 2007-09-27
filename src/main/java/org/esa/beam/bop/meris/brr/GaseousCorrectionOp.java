@@ -26,7 +26,6 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -118,7 +117,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
         targetProduct.addFlagCoding(flagCoding);
         
         if (exportTg) {
-        	tgBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
+            tgBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
         	for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
                 tgBands[i] = targetProduct.addBand(TG_BAND_PREFIX + "_" + (i + 1), ProductData.TYPE_FLOAT32);
                 tgBands[i].setNoDataValueUsed(true);
@@ -158,7 +157,10 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 
             gasFlags = new FlagWrapper.Byte((byte[]) targetTiles.get(flagBand).getRawSampleData().getElems());
             Tile[] rhoNg = new Tile[rhoNgBands.length];
-            Tile[] tg = new Tile[tgBands.length];
+            Tile[] tg = null;
+            if (exportTg) {
+                tg = new Tile[tgBands.length];
+            }
             for (int i = 0; i < rhoNgBands.length; i++) {
                 rhoNg[i] = targetTiles.get(rhoNgBands[i]);
                 if (exportTg) {

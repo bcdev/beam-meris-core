@@ -161,7 +161,7 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 				                final int bandMin = params.derivative_band_id[bandId][0];
 				                final int bandMax = params.derivative_band_id[bandId][1];
 				                final int detector = detectorIndex.getSampleInt(x, y);
-				                final double derive = (rho[bandMax].getSampleFloat(bandMax, y) - rho[bandMin].getSampleFloat(bandMax, y))
+				                final double derive = (rho[bandMax].getSampleFloat(x, y) - rho[bandMin].getSampleFloat(x, y))
 				                        / (auxData.central_wavelength[bandMax][detector] - auxData.central_wavelength[bandMin][detector]);
 				                /* DPM #2.1.6-4 */
 				                final double simleCorrectValue = rho[bandId].getSampleFloat(x, y)
