@@ -26,7 +26,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -79,10 +79,6 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     private String configFile = MERIS_L2_CONF;
 
 
-    public CloudClassificationOp(OperatorSpi spi) {
-        super(spi);
-    }
-
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
         try {
@@ -129,42 +125,42 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
     	SourceData sd = new SourceData();
     	sd.rhoToa = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
-    	sd.radiance = new Raster[3];
+    	sd.radiance = new Tile[3];
     	
         for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
-            sd.rhoToa[i] = (float[]) getRaster(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle).getDataBuffer().getElems();
+            sd.rhoToa[i] = (float[]) getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle).getRawSampleData().getElems();
         }
-        sd.radiance[BAND_BRIGHT_N] = getRaster(
+        sd.radiance[BAND_BRIGHT_N] = getSourceTile(
 				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_bright_n]),
 				rectangle);
-        sd.radiance[BAND_SLOPE_N_1] = getRaster(
+        sd.radiance[BAND_SLOPE_N_1] = getSourceTile(
 				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_slope_n_1]),
 				rectangle);
-        sd.radiance[BAND_SLOPE_N_2] = getRaster(
+        sd.radiance[BAND_SLOPE_N_2] = getSourceTile(
 				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_slope_n_2]),
 				rectangle);
-        sd.detectorIndex = (short[]) getRaster(
+        sd.detectorIndex = (short[]) getSourceTile(
 				l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME),
-				rectangle).getDataBuffer().getElems();
-        sd.sza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        sd.vza = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getDataBuffer().getElems();
-        sd.saa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        sd.vaa = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getDataBuffer().getElems();
-        sd.altitude = (float[]) getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getDataBuffer().getElems();
-        sd.ecmwfPressure = (float[]) getRaster(l1bProduct.getTiePointGrid("atm_press"), rectangle).getDataBuffer().getElems();
-        sd.l1Flags = new FlagWrapper.Byte((byte[]) getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getDataBuffer().getElems());
+				rectangle).getRawSampleData().getElems();
+        sd.sza = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getRawSampleData().getElems();
+        sd.vza = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getRawSampleData().getElems();
+        sd.saa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getRawSampleData().getElems();
+        sd.vaa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getRawSampleData().getElems();
+        sd.altitude = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getRawSampleData().getElems();
+        sd.ecmwfPressure = (float[]) getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle).getRawSampleData().getElems();
+        sd.l1Flags = new FlagWrapper.Byte((byte[]) getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getRawSampleData().getElems());
         
         return sd;
     }
 
     @Override
-    public void computeBand(Band band, Raster targetRaster, ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
-    	Rectangle rectangle = targetRaster.getRectangle();
+    	Rectangle rectangle = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
             SourceData sd = loadSourceTiles(rectangle);
-            FlagWrapper cloudFlags = new FlagWrapper.Short((short[]) targetRaster.getDataBuffer().getElems());
+            FlagWrapper cloudFlags = new FlagWrapper.Short((short[]) targetTile.getRawSampleData().getElems());
 
             PixelInfo pixelInfo = new PixelInfo();
 			int i = 0;
@@ -540,12 +536,12 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     }
 
     private boolean isSaturated(SourceData sd, int x, int y, int radianceBandId, int bandId) {
-        return sd.radiance[radianceBandId].getFloat(x, y) > auxData.Saturation_L[bandId];
+        return sd.radiance[radianceBandId].getSampleFloat(x, y) > auxData.Saturation_L[bandId];
     }
     
     private static class SourceData {
 		private float[][] rhoToa;
-		private Raster[] radiance;
+		private Tile[] radiance;
 		private short[] detectorIndex;
 		private float[] sza;
 		private float[] vza;

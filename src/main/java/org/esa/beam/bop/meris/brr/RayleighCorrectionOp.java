@@ -29,7 +29,7 @@ import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -86,10 +86,6 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     boolean exportRayCoeffs = false;
 	
     
-    public RayleighCorrectionOp(OperatorSpi spi) {
-        super(spi);
-    }
-
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
         try {
@@ -175,38 +171,38 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     }
 
     @Override
-    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            Raster sza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
-            Raster vza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
-            Raster saa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
-            Raster vaa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
-            Raster altitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle);
-            Raster ecmwfPressure = getRaster(l1bProduct.getTiePointGrid("atm_press"), rectangle);
+            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
+            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
+            Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle);
+            Tile ecmwfPressure = getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle);
 			
-            Raster[] rhoNg = new Raster[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
+            Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i = 0; i < rhoNg.length; i++) {
 			    if (i == bb11 || i == bb15) {
 			        continue;
 			    }
-			    rhoNg[i] = getRaster(gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
+			    rhoNg[i] = getSourceTile(gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
 			}
-			Raster isLandCons = getRaster(isLandBand, rectangle);
+			Tile isLandCons = getSourceTile(isLandBand, rectangle);
 
-			Raster[] transRvData = null;
-			Raster[] transRsData = null;
-			Raster[] tauRData = null;
-			Raster[] sphAlbRData = null;
+			Tile[] transRvData = null;
+			Tile[] transRsData = null;
+			Tile[] tauRData = null;
+			Tile[] sphAlbRData = null;
             if (exportRayCoeffs) {
-				transRvData = getTargetRasterGroup(transRvBands, targetRasters);
-				transRsData = getTargetRasterGroup(transRsBands, targetRasters);
-				tauRData = getTargetRasterGroup(tauRBands, targetRasters);
-				sphAlbRData = getTargetRasterGroup(sphAlbRBands, targetRasters);
+				transRvData = getTargetTileGroup(transRvBands, targetTiles);
+				transRsData = getTargetTileGroup(transRsBands, targetTiles);
+				tauRData = getTargetTileGroup(tauRBands, targetTiles);
+				sphAlbRData = getTargetTileGroup(sphAlbRBands, targetTiles);
             }
-            Raster[] brr = getTargetRasterGroup(brrBands, targetRasters);
-            brrFlags = new FlagWrapper.Short((short[]) getRaster(flagBand, rectangle).getDataBuffer().getElems());
+            Tile[] brr = getTargetTileGroup(brrBands, targetTiles);
+            brrFlags = new FlagWrapper.Short((short[]) getSourceTile(flagBand, rectangle).getRawSampleData().getElems());
             
             boolean[][] do_corr = new boolean[SUBWIN_HEIGHT][SUBWIN_WIDTH];
             // rayleigh phase function coefficients, PR in DPM
@@ -230,7 +226,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					
 					for (int iy = y; iy <= yWinEnd; iy++) {
 					    for (int ix = x; ix <= xWinEnd; ix++) {
-					        if (rhoNg[0].getFloat(ix, iy) != BAD_VALUE && (correctWater || isLandCons.getBoolean(ix, iy))) {
+					        if (rhoNg[0].getSampleFloat(ix, iy) != BAD_VALUE && (correctWater || isLandCons.getSampleBoolean(ix, iy))) {
 					            correctPixel = true;
 					            do_corr[iy - y][ix - x] = true;
 					        } else {
@@ -239,7 +235,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 								    if (bandId == bb11 || bandId == bb15) {
 								        continue;
 								    }
-								    brr[bandId].setFloat(ix, iy, BAD_VALUE);
+								    brr[bandId].setSample(ix, iy, BAD_VALUE);
 								}
 					        }
 					    }
@@ -247,19 +243,19 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					
 					if (correctPixel) {
 					    /* average geometry, ozone for window DPM : just use corner pixel ! */
-					    final double szaRad = sza.getFloat(x, y) * MathUtils.DTOR;
-					    final double vzaRad = vza.getFloat(x, y) * MathUtils.DTOR;
+					    final double szaRad = sza.getSampleFloat(x, y) * MathUtils.DTOR;
+					    final double vzaRad = vza.getSampleFloat(x, y) * MathUtils.DTOR;
 						final double sins = Math.sin(szaRad);
 						final double sinv = Math.sin(vzaRad);
 					    final double mus = Math.cos(szaRad);
 					    final double muv = Math.cos(vzaRad);
-					    final double deltaAzimuth = HelperFunctions.computeAzimuthDifference(vaa.getFloat(x, y), saa.getFloat(x, y));
+					    final double deltaAzimuth = HelperFunctions.computeAzimuthDifference(vaa.getSampleFloat(x, y), saa.getSampleFloat(x, y));
 					
 					    /*
 					    * 2. Rayleigh corrections (DPM section 7.3.3.3.2, step 2.6.15)
 					    */
-					    final double press = HelperFunctions.correctEcmwfPressure(ecmwfPressure.getFloat(x, y),
-					                                                              altitude.getFloat(x, y), 
+					    final double press = HelperFunctions.correctEcmwfPressure(ecmwfPressure.getSampleFloat(x, y),
+					                                                              altitude.getSampleFloat(x, y), 
 					                                                              auxData.press_scale_height); /* DPM #2.6.15.1-3 */
 					    final double airMass = HelperFunctions.calculateAirMassMusMuv(muv, mus);
 					
@@ -270,7 +266,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					    rayleighCorrection.tau_rayleigh(press, tauR);
 					
 					    /* Rayleigh reflectance*/
-					    rayleighCorrection.ref_rayleigh(deltaAzimuth, sza.getFloat(x, y), vza.getFloat(x, y), mus, muv,
+					    rayleighCorrection.ref_rayleigh(deltaAzimuth, sza.getSampleFloat(x, y), vza.getSampleFloat(x, y), mus, muv,
 					                                    airMass, phaseR, tauR, rhoR);
 					
 					    /* Rayleigh transmittance */
@@ -305,7 +301,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					                        case bb775:
 					                        case bb865:
 					                        case bb890:
-					                            if (brr[bandId].getFloat(ix, iy) <= 0.) {
+					                            if (brr[bandId].getSampleFloat(ix, iy) <= 0.) {
 					                                /* set annotation flag for reflectance product - v4.2 */
 					                                brrFlags.set(index, (bandId <= bb760 ? bandId : bandId - 1));
 					                            }
@@ -319,10 +315,10 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					                		if (bandId == bb11 || bandId == bb15) {
 					                			continue;
 					                		}
-					                		transRvData[bandId].setDouble(ix, iy, transRv[bandId]);
-					                		transRsData[bandId].setDouble(ix, iy, transRs[bandId]);
-					                		tauRData[bandId].setDouble(ix, iy, tauR[bandId]);
-					                		sphAlbRData[bandId].setDouble(ix, iy, sphAlbR[bandId]);
+					                		transRvData[bandId].setSample(ix, iy, transRv[bandId]);
+					                		transRsData[bandId].setSample(ix, iy, transRs[bandId]);
+					                		tauRData[bandId].setSample(ix, iy, tauR[bandId]);
+					                		sphAlbRData[bandId].setSample(ix, iy, sphAlbR[bandId]);
 					                	}
 					                }
 					            }
@@ -339,12 +335,12 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         }
     }
     
-    private Raster[] getTargetRasterGroup(Band[] bands, Map<Band, Raster> targetRasters) throws OperatorException {
-        final Raster[] bandRaster = new Raster[L1_BAND_NUM];
+    private Tile[] getTargetTileGroup(Band[] bands, Map<Band, Tile> targetTiles) throws OperatorException {
+        final Tile[] bandRaster = new Tile[L1_BAND_NUM];
         for (int i = 0; i < bands.length; i++) {
             Band band = bands[i];
             if (band != null) {
-                bandRaster[i] = targetRasters.get(band);
+                bandRaster[i] = targetTiles.get(band);
             }
         }
         return bandRaster;

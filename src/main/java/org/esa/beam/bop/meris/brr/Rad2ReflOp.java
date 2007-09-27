@@ -29,7 +29,7 @@ import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -69,10 +69,6 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
     private Product targetProduct;
     @Parameter
     private String configFile = MERIS_L2_CONF;
-
-    public Rad2ReflOp(OperatorSpi spi) {
-        super(spi);
-    }
 
     @Override
 	protected Product initialize(ProgressMonitor pm) throws OperatorException {
@@ -124,39 +120,39 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 
 
     @Override
-    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle,
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle,
             ProgressMonitor pm) throws OperatorException {
 
         pm.beginTask("Processing frame...", rectangle.height);
         try {
-        	Raster[] radiance = new Raster[radianceBands.length];
+        	Tile[] radiance = new Tile[radianceBands.length];
         	for (int i = 0; i < radiance.length; i++) {
-        		radiance[i] = getRaster(radianceBands[i], rectangle);
+        		radiance[i] = getSourceTile(radianceBands[i], rectangle);
             }
-        	Raster detectorIndex = getRaster(detectorIndexBand, rectangle);
-        	Raster sza = getRaster(sunZenihTPG, rectangle);
-        	Raster isInvalid = getRaster(invalidBand, rectangle);
+        	Tile detectorIndex = getSourceTile(detectorIndexBand, rectangle);
+        	Tile sza = getSourceTile(sunZenihTPG, rectangle);
+        	Tile isInvalid = getSourceTile(invalidBand, rectangle);
 
-            Raster[] rhoToa = new Raster[rhoToaBands.length];
+            Tile[] rhoToa = new Tile[rhoToaBands.length];
             for (int i = 0; i < rhoToaBands.length; i++) {
-                rhoToa[i] = targetRasters.get(rhoToaBands[i]);
+                rhoToa[i] = targetTiles.get(rhoToaBands[i]);
             }
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
-					if (isInvalid.getBoolean(x, y)) {
+					if (isInvalid.getSampleBoolean(x, y)) {
 						for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
-							rhoToa[bandId].setFloat(x, y, BAD_VALUE);
+							rhoToa[bandId].setSample(x, y, BAD_VALUE);
 						}
 					} else {
 						final double constantTerm = (Math.PI / Math.cos(sza
-								.getFloat(x, y) * MathUtils.DTOR)) * auxData.seasonal_factor;
+								.getSampleFloat(x, y) * MathUtils.DTOR)) * auxData.seasonal_factor;
 						for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
 							// DPM #2.1.4-1
 							final float aRhoToa = (float) ((radiance[bandId]
-									.getFloat(x, y) * constantTerm) / auxData.detector_solar_irradiance[bandId][detectorIndex
-									.getInt(x, y)]);
-							rhoToa[bandId].setFloat(x, y, aRhoToa);
+									.getSampleFloat(x, y) * constantTerm) / auxData.detector_solar_irradiance[bandId][detectorIndex
+									.getSampleInt(x, y)]);
+							rhoToa[bandId].setSample(x, y, aRhoToa);
 						}
 					}
 				}

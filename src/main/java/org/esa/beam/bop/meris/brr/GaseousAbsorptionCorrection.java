@@ -7,7 +7,7 @@
 package org.esa.beam.bop.meris.brr;
 
 
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 
@@ -41,8 +41,8 @@ public class GaseousAbsorptionCorrection implements Constants {
      * @param PCD_POL_F
      * @return success code (1: out or range output)
      */
-    public int gas_correction(int x, int y, double[] T_o3, double eta, double x2, Raster[] rhoToa, int detector,
-                              Raster[] rhoNg, Raster[] tg2, boolean PCD_POL_F) {
+    public int gas_correction(int x, int y, double[] T_o3, double eta, double x2, Tile[] rhoToa, int detector,
+                              Tile[] rhoNg, Tile[] tg2, boolean PCD_POL_F) {
         int status = 0;
         double T_o2;  /* o2 transmission */
         double T_h2o; /* h2o transmission */
@@ -86,16 +86,16 @@ public class GaseousAbsorptionCorrection implements Constants {
 
             tg = T_o3[bandId] * T_h2o * T_o2; /* DPM #2.6.12.4-2 */
             if (tg > 1.e-6 && tg <= 1.) {
-                rhoNg[bandId].setDouble(x, y, rhoToa[bandId].getFloat(x, y) / tg);  /* DPM #2.6.12.4-3 */
+                rhoNg[bandId].setSample(x, y, rhoToa[bandId].getSampleFloat(x, y) / tg);  /* DPM #2.6.12.4-3 */
                 if (tg2 != null) {
-                	tg2[bandId].setDouble(x, y, tg);
+                	tg2[bandId].setSample(x, y, tg);
                 }
             } else {
                 /* exception handling */
-                rhoNg[bandId].setFloat(x, y, rhoToa[bandId].getFloat(x, y));
+                rhoNg[bandId].setSample(x, y, rhoToa[bandId].getSampleFloat(x, y));
                 status = 1;
                 if (tg2 != null) {
-                	tg2[bandId].setFloat(x, y, 1);
+                	tg2[bandId].setSample(x, y, 1);
                 }
             }
         }  /* end loop on bands */

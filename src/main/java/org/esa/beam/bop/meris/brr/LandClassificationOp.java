@@ -26,7 +26,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -69,10 +69,6 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
     @Parameter
     private String configFile = MERIS_L2_CONF;
 
-    public LandClassificationOp(OperatorSpi spi) {
-        super(spi);
-    }
-
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
         try {
@@ -110,24 +106,24 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
     }
 
     @Override
-    public void computeBand(Band band, Raster targetRaster, ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
     	
-    	Rectangle rectangle = targetRaster.getRectangle();
+    	Rectangle rectangle = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            Raster sza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
-			Raster vza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
-			Raster saa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
-			Raster vaa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
-			Raster windu = getRaster(l1bProduct.getTiePointGrid("zonal_wind"), rectangle);
-			Raster windv = getRaster(l1bProduct.getTiePointGrid("merid_wind"), rectangle);
-			FlagWrapper l1Flags = new FlagWrapper.Byte((byte[])getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getDataBuffer().getElems());
+            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+			Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+			Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
+			Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
+			Tile windu = getSourceTile(l1bProduct.getTiePointGrid("zonal_wind"), rectangle);
+			Tile windv = getSourceTile(l1bProduct.getTiePointGrid("merid_wind"), rectangle);
+			FlagWrapper l1Flags = new FlagWrapper.Byte((byte[])getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getRawSampleData().getElems());
 			
-			Raster[] rhoNg = new Raster[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
+			Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i = 0; i < rhoNg.length; i++) {
-			    rhoNg[i] = getRaster(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
+			    rhoNg[i] = getSourceTile(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
 			}
-            FlagWrapper landFlags = new FlagWrapper.Byte((byte[]) targetRaster.getDataBuffer().getElems());
+            FlagWrapper landFlags = new FlagWrapper.Byte((byte[]) targetTile.getRawSampleData().getElems());
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y += Constants.SUBWIN_HEIGHT) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x += Constants.SUBWIN_WIDTH) {
@@ -137,21 +133,21 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 					/* v7: compute Glint reflectance here (only if there are water/land pixels) */
 					/* first wind modulus at window corner */
 					double windm = 0.0;
-					windm += windu.getFloat(x, y) * windu.getFloat(x, y);
-					windm += windv.getFloat(x, y) * windv.getFloat(x, y);
+					windm += windu.getSampleFloat(x, y) * windu.getSampleFloat(x, y);
+					windm += windv.getSampleFloat(x, y) * windv.getSampleFloat(x, y);
 					windm = Math.sqrt(windm);
 					/* then wind azimuth */
-					double phiw = azimuth(windu.getFloat(x, y), windv.getFloat(x, y));
+					double phiw = azimuth(windu.getSampleFloat(x, y), windv.getSampleFloat(x, y));
 					/* and "scattering" angle */
-					double chiw = MathUtils.RTOD * (Math.acos(Math.cos(saa.getFloat(x, y) - phiw)));
-					double deltaAzimuth = HelperFunctions.computeAzimuthDifference(vaa.getFloat(x, y), saa.getFloat(x, y));
+					double chiw = MathUtils.RTOD * (Math.acos(Math.cos(saa.getSampleFloat(x, y) - phiw)));
+					double deltaAzimuth = HelperFunctions.computeAzimuthDifference(vaa.getSampleFloat(x, y), saa.getSampleFloat(x, y));
 					/* allows to retrieve Glint reflectance for wurrent geometry and wind */
-					double rhoGlint = glintRef(sza.getFloat(x, y), vza.getFloat(x, y), deltaAzimuth, windm, chiw);
+					double rhoGlint = glintRef(sza.getSampleFloat(x, y), vza.getSampleFloat(x, y), deltaAzimuth, windm, chiw);
 					
 					FractIndex[] r7thresh_Index = FractIndex.createArray(3);  /* v4.4 */
 					/* set up threshold for land-water discrimination */
-					Interp.interpCoord(sza.getFloat(x, y), auxData.r7thresh.getTab(0), r7thresh_Index[0]);
-					Interp.interpCoord(vza.getFloat(x, y), auxData.r7thresh.getTab(1), r7thresh_Index[1]);
+					Interp.interpCoord(sza.getSampleFloat(x, y), auxData.r7thresh.getTab(0), r7thresh_Index[0]);
+					Interp.interpCoord(vza.getSampleFloat(x, y), auxData.r7thresh.getTab(1), r7thresh_Index[1]);
 					/* take azimuth difference into account - v4.4 */
 					Interp.interpCoord(deltaAzimuth, auxData.r7thresh.getTab(2), r7thresh_Index[2]);
 					/* DPM #2.6.26-1a */
@@ -180,7 +176,7 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 							
 							/* test if pixel is land */
 							final float thresh_medg = 0.2f;
-							boolean isGlint = (rhoGlint >= thresh_medg * rhoNg[bb865].getFloat(ix, iy));
+							boolean isGlint = (rhoGlint >= thresh_medg * rhoNg[bb865].getSampleFloat(ix, iy));
 							if (isGlint) {
 								landFlags.set(index, F_MEGLINT);
 								b_thresh = auxData.lap_b_thresh[0];
@@ -282,16 +278,16 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
      *                     {@link org.esa.beam.dataproc.meris.sdr.dpm.DpmPixel#l2flags pixel.l2flags}
      * @return inland water flag
      */
-    private boolean inland_waters(double r7thresh_val, Raster[] rhoNg, int x, int y, int b_thresh, double a_thresh) {
+    private boolean inland_waters(double r7thresh_val, Tile[] rhoNg, int x, int y, int b_thresh, double a_thresh) {
         /* DPM #2.6.26-4 */
-        boolean status = (rhoNg[b_thresh].getFloat(x, y) <= a_thresh * r7thresh_val) &&
-                (auxData.lap_beta_l * rhoNg[bb865].getFloat(x, y) < rhoNg[bb665].getFloat(x, y));
+        boolean status = (rhoNg[b_thresh].getSampleFloat(x, y) <= a_thresh * r7thresh_val) &&
+                (auxData.lap_beta_l * rhoNg[bb865].getSampleFloat(x, y) < rhoNg[bb665].getSampleFloat(x, y));
         return status;
     }
 
-    private boolean island(double r7thresh_val, Raster[] rhoNg, int x, int y, int b_thresh, double a_thresh) {
-        boolean status = (rhoNg[b_thresh].getFloat(x, y)  > a_thresh * r7thresh_val) &&
-                (auxData.lap_beta_w * rhoNg[bb865].getFloat(x, y) > rhoNg[bb665].getFloat(x, y));
+    private boolean island(double r7thresh_val, Tile[] rhoNg, int x, int y, int b_thresh, double a_thresh) {
+        boolean status = (rhoNg[b_thresh].getSampleFloat(x, y)  > a_thresh * r7thresh_val) &&
+                (auxData.lap_beta_w * rhoNg[bb865].getSampleFloat(x, y) > rhoNg[bb665].getSampleFloat(x, y));
         return status;
     }
 

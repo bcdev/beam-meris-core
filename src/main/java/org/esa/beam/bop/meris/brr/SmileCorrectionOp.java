@@ -28,7 +28,7 @@ import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -70,11 +70,6 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
     @Parameter
     private String configFile = MERIS_L2_CONF;
 
-	
-
-    public SmileCorrectionOp(OperatorSpi spi) {
-        super(spi);
-    }
 
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
@@ -130,32 +125,32 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 	}
 
     @Override
-    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle,
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle,
             ProgressMonitor pm) throws OperatorException {
 
         pm.beginTask("Processing frame...", rectangle.height);
         try {
-        	Raster detectorIndex = getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
-        	Raster[] rho = new Raster[rhoCorectedBands.length];
+        	Tile detectorIndex = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
+        	Tile[] rho = new Tile[rhoCorectedBands.length];
             for (int i = 0; i < rhoCorectedBands.length; i++) {
-                rho[i] = getRaster(gascorProduct.getBand(rhoCorectedBands[i].getName()), rectangle);
+                rho[i] = getSourceTile(gascorProduct.getBand(rhoCorectedBands[i].getName()), rectangle);
             }
-            Raster isLandCons = getRaster(isLandBand, rectangle);
+            Tile isLandCons = getSourceTile(isLandBand, rectangle);
             
-            Raster[] rhoCorrected = new Raster[rhoCorectedBands.length];
+            Tile[] rhoCorrected = new Tile[rhoCorectedBands.length];
             for (int i = 0; i < rhoCorectedBands.length; i++) {
-                rhoCorrected[i] = targetRasters.get(rhoCorectedBands[i]);
+                rhoCorrected[i] = targetTiles.get(rhoCorectedBands[i]);
             }
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
-					if (rho[0].getFloat(x, y) == BAD_VALUE) {
+					if (rho[0].getSampleFloat(x, y) == BAD_VALUE) {
 						for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
-							rhoCorrected[bandId].setFloat(x, y, BAD_VALUE);
+							rhoCorrected[bandId].setSample(x, y, BAD_VALUE);
 						}
 					} else {
 						L2AuxData.SmileParams params; 
-						if (isLandCons.getBoolean(x, y)) {
+						if (isLandCons.getSampleBoolean(x, y)) {
 							params = auxData.land_smile_params;
 						} else {
 							params = auxData.water_smile_params;
@@ -165,17 +160,17 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 				                /* DPM #2.1.6-3 */
 				                final int bandMin = params.derivative_band_id[bandId][0];
 				                final int bandMax = params.derivative_band_id[bandId][1];
-				                final int detector = detectorIndex.getInt(x, y);
-				                final double derive = (rho[bandMax].getFloat(bandMax, y) - rho[bandMin].getFloat(bandMax, y))
+				                final int detector = detectorIndex.getSampleInt(x, y);
+				                final double derive = (rho[bandMax].getSampleFloat(bandMax, y) - rho[bandMin].getSampleFloat(bandMax, y))
 				                        / (auxData.central_wavelength[bandMax][detector] - auxData.central_wavelength[bandMin][detector]);
 				                /* DPM #2.1.6-4 */
-				                final double simleCorrectValue = rho[bandId].getFloat(x, y)
+				                final double simleCorrectValue = rho[bandId].getSampleFloat(x, y)
 				                        + derive
 				                        * (auxData.theoretical_wavelength[bandId] - auxData.central_wavelength[bandId][detector]);
-				                rhoCorrected[bandId].setFloat(x, y, (float)simleCorrectValue);
+				                rhoCorrected[bandId].setSample(x, y, (float)simleCorrectValue);
 				            } else {
 				                /* DPM #2.1.6-5 */
-				            	rhoCorrected[bandId].setFloat(x, y, rho[bandId].getFloat(x, y));
+				            	rhoCorrected[bandId].setSample(x, y, rho[bandId].getSampleFloat(x, y));
 				            }
 				        }
 					}
