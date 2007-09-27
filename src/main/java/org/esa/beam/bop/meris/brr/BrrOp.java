@@ -26,7 +26,7 @@ import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -75,9 +75,6 @@ public class BrrOp extends MerisBasisOp {
     @Parameter
     public boolean correctWater = false;
 
-    public BrrOp(OperatorSpi spi) {
-        super(spi);
-    }
 
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
@@ -148,7 +145,7 @@ public class BrrOp extends MerisBasisOp {
     }
     
     @Override
-    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle,
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle,
             ProgressMonitor pm) throws OperatorException {
 
         final int frameSize = rectangle.height * rectangle.width;
@@ -164,16 +161,16 @@ public class BrrOp extends MerisBasisOp {
         int[] l2FlagsP1Frame = new int[frameSize];
         int[] l2FlagsP2Frame = new int[frameSize];
         int[] l2FlagsP3Frame = new int[frameSize];
-        Raster[] l1bTiePoints = new Raster[tpGrids.length];
+        Tile[] l1bTiePoints = new Tile[tpGrids.length];
         for (int i = 0; i < tpGrids.length; i++) {
-            l1bTiePoints[i] = getRaster(tpGrids[i], rectangle);
+            l1bTiePoints[i] = getSourceTile(tpGrids[i], rectangle);
         }
-        Raster[] l1bRadiances = new Raster[l1bRadiance.length];
+        Tile[] l1bRadiances = new Tile[l1bRadiance.length];
         for (int i = 0; i < l1bRadiance.length; i++) {
-            l1bRadiances[i] = getRaster(l1bRadiance[i], rectangle);
+            l1bRadiances[i] = getSourceTile(l1bRadiance[i], rectangle);
         }
-        Raster l1bDetectorIndex = getRaster(detectorIndex, rectangle);
-        Raster l1bFlagRaster = getRaster(l1bFlags, rectangle);
+        Tile l1bDetectorIndex = getSourceTile(detectorIndex, rectangle);
+        Tile l1bFlagRaster = getSourceTile(l1bFlags, rectangle);
         
         for (int pixelIndex = 0; pixelIndex < frameSize; pixelIndex++) {
             DpmPixel pixel = frame[pixelIndex];
@@ -210,7 +207,7 @@ public class BrrOp extends MerisBasisOp {
 
         for (int bandIndex = 0; bandIndex < brrReflecBands.length; bandIndex++) {
             if (AlbedoUtils.isValidRhoSpectralIndex(bandIndex)) {
-                ProductData data = targetRasters.get(brrReflecBands[bandIndex]).getDataBuffer();
+                ProductData data = targetTiles.get(brrReflecBands[bandIndex]).getRawSampleData();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
                     ddata[iP] = (float) frame[iP].rho_top[bandIndex];
@@ -219,22 +216,22 @@ public class BrrOp extends MerisBasisOp {
         }
         if (outputToar) {
             for (int bandIndex = 0; bandIndex < toaReflecBands.length; bandIndex++) {
-                ProductData data = targetRasters.get(toaReflecBands[bandIndex]).getDataBuffer();
+                ProductData data = targetTiles.get(toaReflecBands[bandIndex]).getRawSampleData();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
                     ddata[iP] = (float) frame[iP].rho_toa[bandIndex];
                 }
             }
         }
-        ProductData flagData = targetRasters.get(l2FlagsP1).getDataBuffer();
+        ProductData flagData = targetTiles.get(l2FlagsP1).getRawSampleData();
         int[] intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP1Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
 
-        flagData = targetRasters.get(l2FlagsP2).getDataBuffer();
+        flagData = targetTiles.get(l2FlagsP2).getRawSampleData();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP2Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
 
-        flagData = targetRasters.get(l2FlagsP3).getDataBuffer();
+        flagData = targetTiles.get(l2FlagsP3).getRawSampleData();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP3Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
     }

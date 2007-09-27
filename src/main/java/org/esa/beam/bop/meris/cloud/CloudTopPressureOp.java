@@ -36,7 +36,7 @@ import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
@@ -74,10 +74,6 @@ public class CloudTopPressureOp extends MerisBasisOp {
     @TargetProduct
     private Product targetProduct;
 	
-
-    public CloudTopPressureOp(OperatorSpi spi) {
-        super(spi);
-    }
 
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
@@ -151,25 +147,25 @@ public class CloudTopPressureOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeBand(Band band, Raster targetRaster,
+    public void computeTile(Band band, Tile targetTile,
             ProgressMonitor pm) throws OperatorException {
     	
-    	Rectangle rectangle = targetRaster.getRectangle();
+    	Rectangle rectangle = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height);
         try {
-        	Raster detector = getRaster(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
-        	Raster sza = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
-			Raster saa = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
-			Raster vza = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
-			Raster vaa = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
+        	Tile detector = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
+        	Tile sza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+			Tile saa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
+			Tile vza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+			Tile vaa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
 			
-			Raster lat = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle);
-			Raster lon = getRaster(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle);
+			Tile lat = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle);
+			Tile lon = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle);
 			
-			Raster toar10 = getRaster(sourceProduct.getBand("radiance_10"), rectangle);
-			Raster toar11 = getRaster(sourceProduct.getBand("radiance_11"), rectangle);
+			Tile toar10 = getSourceTile(sourceProduct.getBand("radiance_10"), rectangle);
+			Tile toar11 = getSourceTile(sourceProduct.getBand("radiance_11"), rectangle);
 			
-			Raster isInvalid = getRaster(invalidBand, rectangle);
+			Tile isInvalid = getSourceTile(invalidBand, rectangle);
 
             final double[] nnIn = new double[7];
             final double[] nnOut = new double[1];
@@ -180,23 +176,23 @@ public class CloudTopPressureOp extends MerisBasisOp {
 					if (pm.isCanceled()) {
 						break;
 					}
-					if (isInvalid.getBoolean(x, y)) {
-						targetRaster.setFloat(x, y, 0);
+					if (isInvalid.getSampleBoolean(x, y)) {
+						targetTile.setSample(x, y, 0);
 					} else {
-						double szaRad = sza.getFloat(x, y) * MathUtils.DTOR;
-						double vzaRad = vza.getFloat(x, y) * MathUtils.DTOR;
-						nnIn[0] = computeSurfAlbedo(lat.getFloat(x, y), lon.getFloat(x, y)); // albedo
-						nnIn[1] = toar10.getDouble(x, y);
-						nnIn[2] = toar11.getDouble(x, y)
-								/ toar10.getDouble(x, y);
+						double szaRad = sza.getSampleFloat(x, y) * MathUtils.DTOR;
+						double vzaRad = vza.getSampleFloat(x, y) * MathUtils.DTOR;
+						nnIn[0] = computeSurfAlbedo(lat.getSampleFloat(x, y), lon.getSampleFloat(x, y)); // albedo
+						nnIn[1] = toar10.getSampleDouble(x, y);
+						nnIn[2] = toar11.getSampleDouble(x, y)
+								/ toar10.getSampleDouble(x, y);
 						nnIn[3] = Math.cos(szaRad);
 						nnIn[4] = Math.cos(vzaRad);
 						nnIn[5] = Math.sin(vzaRad)
-								* Math.cos(MathUtils.DTOR * (vaa.getFloat(x, y) - saa.getFloat(x, y)));
-						nnIn[6] = auxData.central_wavelength[BB760][detector.getInt(x, y)];
+								* Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
+						nnIn[6] = auxData.central_wavelength[BB760][detector.getSampleInt(x, y)];
 
 						neuralNet.process(nnIn, nnOut);
-						targetRaster.setDouble(x, y, nnOut[0]);
+						targetTile.setSample(x, y, nnOut[0]);
 					}
 					i++;
 				}

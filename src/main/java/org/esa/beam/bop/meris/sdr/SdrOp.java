@@ -20,7 +20,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -85,11 +85,6 @@ public class SdrOp extends MerisBasisOp {
     @Parameter
     private double angValue;
 	
-
-    public SdrOp(OperatorSpi spi) {
-        super(spi);
-    }
-
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
         if (StringUtils.isNullOrEmpty(neuralNetFile)) {
@@ -142,44 +137,44 @@ public class SdrOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final double[] sdrAlgoInput = new double[9];
         final double[] sdrAlgoOutput = new double[1];
 
         pm.beginTask("Processing frame...", rectangle.height);
         try {
-            Raster sza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
-            Raster saa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
-            Raster vza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
-            Raster vaa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
+            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
+            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
 
-            Raster ang = null;
+            Tile ang = null;
             if (StringUtils.isNotNullAndNotEmpty(angName)) {
-            	ang = getRaster(aerosolProduct.getBand(angName), rectangle);
+            	ang = getSourceTile(aerosolProduct.getBand(angName), rectangle);
             }
-            Raster aot470 = getRaster(aerosolProduct.getBand(aot470Name), rectangle);
+            Tile aot470 = getSourceTile(aerosolProduct.getBand(aot470Name), rectangle);
 
 
-            Raster[] reflectance = new Raster[sdrBandNo.length];
-            Raster[] sdr = new Raster[sdrBandNo.length];
+            Tile[] reflectance = new Tile[sdrBandNo.length];
+            Tile[] sdr = new Tile[sdrBandNo.length];
             
             for (int i = 0; i < sdrBandNo.length; i++) {
-                reflectance[i] = getRaster(reflectanceBands[i], rectangle);
+                reflectance[i] = getSourceTile(reflectanceBands[i], rectangle);
             }
-            Raster isValidPixel = getRaster(validBand, rectangle);
+            Tile isValidPixel = getSourceTile(validBand, rectangle);
 
             for (int i = 0; i < sdrBands.length; i++) {
-            	sdr[i] = targetRasters.get(sdrBands[i]);
+            	sdr[i] = targetTiles.get(sdrBands[i]);
             }
-            Raster sdrFlag = targetRasters.get(sdrFlagBand);
+            Tile sdrFlag = targetTiles.get(sdrFlagBand);
             
 			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x+rectangle.width; x++) {
-	                if (isValidPixel.getBoolean(x, y)) {
-	                    double t_sza = sza.getDouble(x, y) * MathUtils.DTOR;
-	                    double t_vza = vza.getDouble(x, y) * MathUtils.DTOR;
-	                    double ada = AlbedoUtils.computeAzimuthDifference(vaa.getDouble(x, y), saa.getDouble(x, y)) * MathUtils.DTOR;
+	                if (isValidPixel.getSampleBoolean(x, y)) {
+	                    double t_sza = sza.getSampleDouble(x, y) * MathUtils.DTOR;
+	                    double t_vza = vza.getSampleDouble(x, y) * MathUtils.DTOR;
+	                    double ada = AlbedoUtils.computeAzimuthDifference(vaa.getSampleDouble(x, y), saa.getSampleDouble(x, y)) * MathUtils.DTOR;
 	                    double rhoNorm;
 	                    double wavelength;
 	                    double mueSun = Math.cos(t_sza);
@@ -191,7 +186,7 @@ public class SdrOp extends MerisBasisOp {
 	                    short sdrFlags = 0;
 	                    for (int bandId = 0; bandId < reflectanceBands.length; bandId++) {
 	                        final Band reflInputBand = reflectanceBands[bandId];
-	                        rhoNorm = reflectance[bandId].getDouble(x, y) / Math.PI;
+	                        rhoNorm = reflectance[bandId].getSampleDouble(x, y) / Math.PI;
 	                        wavelength = reflInputBand.getSpectralWavelength();
 	                        sdrAlgoInput[0] = rhoNorm;
 	                        sdrAlgoInput[1] = wavelength;
@@ -199,10 +194,10 @@ public class SdrOp extends MerisBasisOp {
 	                        sdrAlgoInput[3] = geomX;
 	                        sdrAlgoInput[4] = geomY;
 	                        sdrAlgoInput[5] = geomZ;
-	                        sdrAlgoInput[6] = aot470.getDouble(x, y);
+	                        sdrAlgoInput[6] = aot470.getSampleDouble(x, y);
 	                        sdrAlgoInput[7] = 0; // aot 660; usage discontinued
 	                        if (ang != null) {
-	                        	sdrAlgoInput[8] = ang.getDouble(x, y);
+	                        	sdrAlgoInput[8] = ang.getSampleDouble(x, y);
 	                        } else {
 	                        	sdrAlgoInput[8] = angValue;
 	                        }
@@ -218,16 +213,16 @@ public class SdrOp extends MerisBasisOp {
 	                            t_sdr = 1.0;
 	                            sdrFlags |= 1 << (reflInputBand.getSpectralBandIndex() + 1);
 	                        }
-	                        sdr[bandId].setFloat(x, y, (float) t_sdr);
+	                        sdr[bandId].setSample(x, y, (float) t_sdr);
 	                    }
 	                    // Combine SDR-Flags to single INVALID Flag
 	                    sdrFlags |= (sdrFlags == 0 ? 0 : 1); 
-	                    sdrFlag.setInt(x, y, sdrFlags);
+	                    sdrFlag.setSample(x, y, sdrFlags);
 	                } else {
 	                    for (int j = 0; j < reflectanceBands.length; j++) {
-	                        sdr[j].setDouble(x, y, -1);
+	                        sdr[j].setSample(x, y, -1);
 	                    }
-	                    sdrFlag.setInt(x, y, SDR_INVALID_FLAG_VALUE);
+	                    sdrFlag.setSample(x, y, SDR_INVALID_FLAG_VALUE);
 	                }
 				}
 			}

@@ -27,7 +27,7 @@ import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
@@ -68,10 +68,6 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     @TargetProduct
     private Product targetProduct;
 
-    public ProcessFurtherStateOp(OperatorSpi spi) {
-        super(spi);
-    }
-
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
         targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
@@ -90,9 +86,9 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
 		parameters.put("bandDescriptors", bandDescriptions);
 		
 		Map<String, Product> products = new HashMap<String, Product>();
-		products.put(getContext().getIdForSourceProduct(l1bProduct), l1bProduct);
-		products.put(getContext().getIdForSourceProduct(brrProduct), brrProduct);
-		products.put(getContext().getIdForSourceProduct(cloudProduct), cloudProduct);
+		products.put(getContext().getSourceProductId(l1bProduct), l1bProduct);
+		products.put(getContext().getSourceProductId(brrProduct), brrProduct);
+		products.put(getContext().getSourceProductId(cloudProduct), cloudProduct);
 		Product expressionProduct = GPF.createProduct("BandArithmetic", parameters, products, pm);
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", expressionProduct);
@@ -103,23 +99,23 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     }
     
     @Override
-    public void computeBand(Band band, Raster targetRaster,
+    public void computeTile(Band band, Tile targetTile,
             ProgressMonitor pm) throws OperatorException {
 
-    	Rectangle rectangle = targetRaster.getRectangle();
+    	Rectangle rectangle = targetTile.getRectangle();
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-        	Raster[] isValid = new Raster[EXPRESSIONS.length];
+        	Tile[] isValid = new Tile[EXPRESSIONS.length];
         	for (int i = 0; i < isValid.length; i++) {
-        		isValid[i] = getRaster(bands[i], rectangle);
+        		isValid[i] = getSourceTile(bands[i], rectangle);
         	}
 
         	for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 					for (int j = 0; j < EXPRESSIONS.length; j++) {
-						if (isValid[j].getBoolean(x, y)) {
-							targetRaster.setInt(x, y, j);
+						if (isValid[j].getSampleBoolean(x, y)) {
+							targetTile.setSample(x, y, j);
 						}
 					}
 				}

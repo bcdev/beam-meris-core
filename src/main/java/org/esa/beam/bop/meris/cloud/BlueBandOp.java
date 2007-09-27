@@ -28,7 +28,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -78,9 +78,6 @@ public class BlueBandOp extends MerisBasisOp {
     @TargetProduct
     private Product targetProduct;
     
-    public BlueBandOp(OperatorSpi spi) {
-        super(spi);
-    }
 
     @Override
 	protected Product initialize(ProgressMonitor pm) throws OperatorException {
@@ -101,31 +98,31 @@ public class BlueBandOp extends MerisBasisOp {
     }
     
     @Override
-    public void computeBand(Band band, Raster targetRaster,
+    public void computeTile(Band band, Tile targetTile,
             ProgressMonitor pm) throws OperatorException {
     	
-    	Rectangle rect = targetRaster.getRectangle();
+    	Rectangle rect = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rect.height);
         try {
-            float[] toar1 = (float[]) getRaster(brrProduct.getBand("toar_1"), rect).getDataBuffer().getElems();
-			float[] toar7 = (float[]) getRaster(brrProduct.getBand("toar_7"), rect).getDataBuffer().getElems();
-			float[] toar9 = (float[]) getRaster(brrProduct.getBand("toar_9"), rect).getDataBuffer().getElems();
-			float[] toar10 = (float[]) getRaster(brrProduct.getBand("toar_10"), rect).getDataBuffer().getElems();
-			float[] toar11 = (float[]) getRaster(brrProduct.getBand("toar_11"), rect).getDataBuffer().getElems();
-			float[] toar13 = (float[]) getRaster(brrProduct.getBand("toar_13"), rect).getDataBuffer().getElems();
-			float[] toar14 = (float[]) getRaster(brrProduct.getBand("toar_14"), rect).getDataBuffer().getElems();
+            float[] toar1 = (float[]) getSourceTile(brrProduct.getBand("toar_1"), rect).getRawSampleData().getElems();
+			float[] toar7 = (float[]) getSourceTile(brrProduct.getBand("toar_7"), rect).getRawSampleData().getElems();
+			float[] toar9 = (float[]) getSourceTile(brrProduct.getBand("toar_9"), rect).getRawSampleData().getElems();
+			float[] toar10 = (float[]) getSourceTile(brrProduct.getBand("toar_10"), rect).getRawSampleData().getElems();
+			float[] toar11 = (float[]) getSourceTile(brrProduct.getBand("toar_11"), rect).getRawSampleData().getElems();
+			float[] toar13 = (float[]) getSourceTile(brrProduct.getBand("toar_13"), rect).getRawSampleData().getElems();
+			float[] toar14 = (float[]) getSourceTile(brrProduct.getBand("toar_14"), rect).getRawSampleData().getElems();
 			
-			Raster latitude;
-			Raster altitude;
+			Tile latitude;
+			Tile altitude;
 			if (l1bProduct.getProductType().equals(
 			        EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
-			    latitude = getRaster(l1bProduct.getBand("corr_latitude"), rect);
-			    altitude = getRaster(l1bProduct.getBand("altitude"), rect);
+			    latitude = getSourceTile(l1bProduct.getBand("corr_latitude"), rect);
+			    altitude = getSourceTile(l1bProduct.getBand("altitude"), rect);
 			} else {
-			    latitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect);
-			    altitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect);
+			    latitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect);
+			    altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect);
 			}
-            byte[] cloudFlagScanLine = (byte[]) targetRaster.getDataBuffer().getElems();
+            byte[] cloudFlagScanLine = (byte[]) targetTile.getRawSampleData().getElems();
 
             boolean isSnowPlausible;
             boolean isBrightLand;
@@ -134,7 +131,7 @@ public class BlueBandOp extends MerisBasisOp {
             	for (int x = rect.x; x < rect.x+rect.width; x++, i++) {
             		final float po2 = toar11[i] / toar10[i];
 
-            		isSnowPlausible = isSnowPlausible(latitude.getFloat(x, y), altitude.getFloat(x, y));
+            		isSnowPlausible = isSnowPlausible(latitude.getSampleFloat(x, y), altitude.getSampleFloat(x, y));
             		isBrightLand = isBrightLand(toar9[i], toar14[i]);
 
             		// blue band test
@@ -159,8 +156,8 @@ public class BlueBandOp extends MerisBasisOp {
             		} else {
             			// altitude of scattering surface
             			// ToDo: introduce RR/FR specific altitude
-            			if ((altitude.getFloat(x, y) < 1700 && po2 >= D_ASS)
-            					|| (altitude.getFloat(x, y) >= 1700 && po2 > 0.04 + (0.31746 + 0.00003814 * altitude.getFloat(x, y)))) {
+            			if ((altitude.getSampleFloat(x, y) < 1700 && po2 >= D_ASS)
+            					|| (altitude.getSampleFloat(x, y) >= 1700 && po2 > 0.04 + (0.31746 + 0.00003814 * altitude.getSampleFloat(x, y)))) {
             				// snow cover
             				if ((toar13[i] <= R1_ASS * toar7[i] + R2_ASS) && // snow test 3
             						(toar13[i] <= R3_ASS)) {

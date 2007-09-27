@@ -29,7 +29,7 @@ import org.esa.beam.framework.datamodel.TiePointGrid;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -69,10 +69,6 @@ public class CloudShadowOp extends MerisBasisOp {
     @Parameter
     private int shadowWidth;
 
-    public CloudShadowOp(OperatorSpi spi) {
-        super(spi);
-    }
-
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
         targetProduct = createCompatibleProduct(cloudProduct, "MER_CLOUD_SHADOW", "MER_L2");
@@ -92,41 +88,41 @@ public class CloudShadowOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeBand(Band band, Raster targetRaster,
+    public void computeTile(Band band, Tile targetTile,
             ProgressMonitor pm) throws OperatorException {
     	
-    	Rectangle targetRectangle = targetRaster.getRectangle();
+    	Rectangle targetRectangle = targetTile.getRectangle();
         Rectangle sourceRectangle = rectCalculator.computeSourceRectangle(targetRectangle);
         final int size = sourceRectangle.height * sourceRectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-        	Raster szaRaster = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle);
-        	Raster saaRaster = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle);
-        	Raster vzaRaster = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), sourceRectangle);
-        	Raster vaaRaster = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle);
-        	Raster cloudRaster = getRaster(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle);
-        	Raster ctpRaster = getRaster(ctpProduct.getBand("cloud_top_press"), sourceRectangle);
+        	Tile szaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle);
+        	Tile saaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle);
+        	Tile vzaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), sourceRectangle);
+        	Tile vaaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle);
+        	Tile cloudTile = getSourceTile(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle);
+        	Tile ctpTile = getSourceTile(ctpProduct.getBand("cloud_top_press"), sourceRectangle);
 
-        	Raster cloudTargetRaster = getRaster(targetRaster.getRasterDataNode(), targetRectangle);
+        	Tile cloudTargetRaster = getSourceTile(targetTile.getRasterDataNode(), targetRectangle);
 
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
                 for (int x = targetRectangle.x; x < targetRectangle.x + targetRectangle.width; x++) {
-                    cloudTargetRaster.setInt(x, y, cloudRaster.getInt(x, y));
+                    cloudTargetRaster.setSample(x, y, cloudTile.getSampleInt(x, y));
                 }
             }
 
             int sourceIndex = 0;
             for (int y = sourceRectangle.y; y < sourceRectangle.y + sourceRectangle.height; y++) {
                 for (int x = sourceRectangle.x; x < sourceRectangle.x + sourceRectangle.width; x++) {
-                    if (cloudRaster.getInt(x, y) == CombinedCloudOp.FLAG_CLOUD) {
-                        final float sza = szaRaster.getFloat(x, y) * MathUtils.DTOR_F;
-                        final float saa = saaRaster.getFloat(x, y) * MathUtils.DTOR_F;
-                        final float vza = vzaRaster.getFloat(x, y) * MathUtils.DTOR_F;
-                        final float vaa = vaaRaster.getFloat(x, y) * MathUtils.DTOR_F;
+                    if (cloudTile.getSampleInt(x, y) == CombinedCloudOp.FLAG_CLOUD) {
+                        final float sza = szaTile.getSampleFloat(x, y) * MathUtils.DTOR_F;
+                        final float saa = saaTile.getSampleFloat(x, y) * MathUtils.DTOR_F;
+                        final float vza = vzaTile.getSampleFloat(x, y) * MathUtils.DTOR_F;
+                        final float vaa = vaaTile.getSampleFloat(x, y) * MathUtils.DTOR_F;
 
                         PixelPos pixelPos = new PixelPos(x, y);
                         final GeoPos geoPos = geoCoding.getGeoPos(pixelPos, null);
-                        float cloudAlt = computeHeightFromPressure(ctpRaster.getFloat(x, y));
+                        float cloudAlt = computeHeightFromPressure(ctpTile.getSampleFloat(x, y));
                         GeoPos shadowPos = getCloudShadow2(sza, saa, vza, vaa, cloudAlt, geoPos);
                         if (shadowPos != null) {
                             pixelPos = geoCoding.getPixelPos(shadowPos, pixelPos);
@@ -134,10 +130,10 @@ public class CloudShadowOp extends MerisBasisOp {
                             if (targetRectangle.contains(pixelPos)) {
                                 final int pixelX = (int) Math.floor(pixelPos.x);
                                 final int pixelY = (int) Math.floor(pixelPos.y);
-                                int flagValue = cloudRaster.getInt(pixelX, pixelY);
+                                int flagValue = cloudTile.getSampleInt(pixelX, pixelY);
                                 if ((flagValue & CombinedCloudOp.FLAG_CLOUD_SHADOW) == 0) {
                                     flagValue += CombinedCloudOp.FLAG_CLOUD_SHADOW;
-                                    cloudTargetRaster.setInt(pixelX, pixelY, flagValue);
+                                    cloudTargetRaster.setSample(pixelX, pixelY, flagValue);
                                 }
                             }
                         }

@@ -29,7 +29,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -62,9 +62,6 @@ public class AerosolMergerOp extends MerisBasisOp {
     @TargetProduct
     private Product targetProduct;
     
-    public AerosolMergerOp(OperatorSpi spi) {
-        super(spi);
-    }
 
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
@@ -118,21 +115,21 @@ public class AerosolMergerOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", 1 + size);
         try {
-            float[] modAot = (float[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getDataBuffer().getElems();
-			float[] modAng = (float[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle).getDataBuffer().getElems();
-			byte[] modFlag = (byte[]) getRaster(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle).getDataBuffer().getElems();
+            float[] modAot = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getRawSampleData().getElems();
+			float[] modAng = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle).getRawSampleData().getElems();
+			byte[] modFlag = (byte[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle).getRawSampleData().getElems();
 			
-			float[] l2Aot = (float[]) getRaster(l2Product.getBand("aero_opt_thick_443"), rectangle).getDataBuffer().getElems();
-			float[] l2Ang = (float[]) getRaster(l2Product.getBand("aero_alpha"), rectangle).getDataBuffer().getElems();
+			float[] l2Aot = (float[]) getSourceTile(l2Product.getBand("aero_opt_thick_443"), rectangle).getRawSampleData().getElems();
+			float[] l2Ang = (float[]) getSourceTile(l2Product.getBand("aero_alpha"), rectangle).getRawSampleData().getElems();
 
-            float[] aot470 = (float[]) targetRasters.get(aot470Band).getDataBuffer().getElems();
-            float[] ang = (float[]) targetRasters.get(angstrBand).getDataBuffer().getElems();
-            byte[] flag = (byte[]) targetRasters.get(flagBand).getDataBuffer().getElems();
+            float[] aot470 = (float[]) targetTiles.get(aot470Band).getRawSampleData().getElems();
+            float[] ang = (float[]) targetTiles.get(angstrBand).getRawSampleData().getElems();
+            byte[] flag = (byte[]) targetTiles.get(flagBand).getRawSampleData().getElems();
 
             for (int i = 0; i < size; i++) {
                 if (l2Aot[i] >= 0 && l2Ang[i] >= 0) {

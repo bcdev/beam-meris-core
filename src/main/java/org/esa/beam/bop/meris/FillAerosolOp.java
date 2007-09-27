@@ -32,7 +32,7 @@ import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.ParameterConverter;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
@@ -93,8 +93,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         String defaultBand;
     }
 
-    public FillAerosolOp(OperatorSpi spi) {
-        super(spi);
+    public FillAerosolOp() {
         config = new Configuration();
     }
 
@@ -204,10 +203,10 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         return mean;
 	}
     
-    private float[] getScaledArrayFromRaster(Raster raster) {
-        ProductData valueDataBuffer = raster.getDataBuffer();
+    private float[] getScaledArrayFromTile(Tile tile) {
+        ProductData valueDataBuffer = tile.getRawSampleData();
         float[] scaledValues = new float[valueDataBuffer.getNumElems()];
-        RasterDataNode srcRasterDataNode = raster.getRasterDataNode();
+        RasterDataNode srcRasterDataNode = tile.getRasterDataNode();
 		boolean scaled = srcRasterDataNode.isScalingApplied();
 		for (int i = 0; i < scaledValues.length; i++) {
 			float value = valueDataBuffer.getElemFloatAt(i);
@@ -220,15 +219,15 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
 		return scaledValues;
     }
     
-    private float[] getScaledArrayFromRasterFRS(Raster raster) {
-        ProductData valueDataBuffer = raster.getDataBuffer();
-        final int frsWidth = raster.getRectangle().width;
-        final int frsHeight = raster.getRectangle().height;
+    private float[] getScaledArrayFromTileFRS(Tile tile) {
+        ProductData valueDataBuffer = tile.getRawSampleData();
+        final int frsWidth = tile.getRectangle().width;
+        final int frsHeight = tile.getRectangle().height;
         final int width = MathUtils.ceilInt(frsWidth / 4.0);
         final int height = MathUtils.ceilInt(frsHeight / 4.0);
         
         float[] scaledValues = new float[width * height];
-        RasterDataNode srcRasterDataNode = raster.getRasterDataNode();
+        RasterDataNode srcRasterDataNode = tile.getRasterDataNode();
 		boolean scaled = srcRasterDataNode.isScalingApplied();
 		int scaledIndex = 0;
 		for (int y = 0; y < frsHeight; y+=4) {
@@ -246,10 +245,10 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
 		return scaledValues;
     }
     
-    private boolean[] getArrayFromRasterFRS(Raster raster) {
-        ProductData dataBuffer = raster.getDataBuffer();
-        final int frsWidth = raster.getRectangle().width;
-        final int frsHeight = raster.getRectangle().height;
+    private boolean[] getArrayFromTileFRS(Tile tile) {
+        ProductData dataBuffer = tile.getRawSampleData();
+        final int frsWidth = tile.getRectangle().width;
+        final int frsHeight = tile.getRectangle().height;
         final int width = MathUtils.ceilInt(frsWidth / 4.0);
         final int height = MathUtils.ceilInt(frsHeight / 4.0);
         
@@ -267,12 +266,12 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
 		return values;
     }
     
-    private boolean isMaskSetInRegion(int x, int y, int maxX, int maxY, Raster mask) {
+    private boolean isMaskSetInRegion(int x, int y, int maxX, int maxY, Tile mask) {
     	final int ixEnd = Math.min(x+4, maxX);
     	final int iyEnd = Math.min(y+4, maxY);
     	for (int iy = y; iy < iyEnd; iy++) {
     		for (int ix = x; ix < ixEnd; ix++) {
-    			if (mask.getBoolean(ix, iy)) {
+    			if (mask.getSampleBoolean(ix, iy)) {
     				return true;
     			}
     		}
@@ -280,63 +279,63 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     	return false;
     }
     
-    private void setValueInRegion(int x, int y, int maxX, int maxY, float v, Raster target) {
+    private void setValueInRegion(int x, int y, int maxX, int maxY, float v, Tile target) {
     	final int ixEnd = Math.min(x+4, maxX);
     	final int iyEnd = Math.min(y+4, maxY);
     	for (int iy = y; iy < iyEnd; iy++) {
     		for (int ix = x; ix < ixEnd; ix++) {
-    			target.setFloat(ix, iy, v);
+    			target.setSample(ix, iy, v);
     		}
 		}
     }
     
     @Override
-    public void computeBand(Band band, Raster targetRaster,
+    public void computeTile(Band band, Tile targetTile,
             ProgressMonitor pm) throws OperatorException {
 
-    	Rectangle targetRect = targetRaster.getRectangle();
+    	Rectangle targetRect = targetTile.getRectangle();
         Rectangle sourceRect = rectCalculator.computeSourceRectangle(targetRect);
         
         pm.beginTask("Processing frame...", sourceRect.height + 1);
         try {
-        	Raster maskRaster = null;
+        	Tile maskTile = null;
             boolean useMask = false;
             if (maskProduct != null && StringUtils.isNotNullAndNotEmpty(config.maskBand)) {
-            	maskRaster = getRaster(maskProduct.getBand(config.maskBand), sourceRect);
+            	maskTile = getSourceTile(maskProduct.getBand(config.maskBand), sourceRect);
             	useMask = true;
             }
-            Raster defaultRaster = getRaster(defaultBands.get(band), sourceRect);
-            Raster validDataRaster = getRaster(validProduct.getBand(band.getName()), sourceRect);
-            Raster dataRaster = getRaster(sourceBands.get(band), sourceRect);
+            Tile defaultTile = getSourceTile(defaultBands.get(band), sourceRect);
+            Tile validDataTile = getSourceTile(validProduct.getBand(band.getName()), sourceRect);
+            Tile dataTile = getSourceTile(sourceBands.get(band), sourceRect);
             
             if (!config.frs) {
-            	float[] scaledData = getScaledArrayFromRaster(dataRaster);
-                boolean[] validData = (boolean[]) validDataRaster.getDataBuffer().getElems();
+            	float[] scaledData = getScaledArrayFromTile(dataTile);
+                boolean[] validData = (boolean[]) validDataTile.getRawSampleData().getElems();
                 
 				for (int y = targetRect.y; y < targetRect.y + targetRect.height; y++) {
 					for (int x = targetRect.x; x < targetRect.x
 							+ targetRect.width; x++) {
-						if (!useMask || maskRaster.getBoolean(x, y)) {
-							if (validDataRaster.getBoolean(x, y)) {
-								targetRaster.setFloat(x, y, dataRaster
-										.getFloat(x, y));
+						if (!useMask || maskTile.getSampleBoolean(x, y)) {
+							if (validDataTile.getSampleBoolean(x, y)) {
+								targetTile.setSample(x, y, dataTile
+										.getSampleFloat(x, y));
 							} else {
-								final float defaultValue = defaultRaster
-										.getFloat(x, y);
+								final float defaultValue = defaultTile
+										.getSampleFloat(x, y);
 								float v = computeInterpolatedValue(x, y,
 										sourceRect, scaledData, validData,
 										defaultValue);
-								targetRaster.setFloat(x, y, v);
+								targetTile.setSample(x, y, v);
 							}
 						} else {
-							targetRaster.setFloat(x, y, -1);
+							targetTile.setSample(x, y, -1);
 						}
 					}
 					pm.worked(1);
 				}
 			} else {
-				float[] scaledData = getScaledArrayFromRasterFRS(dataRaster);
-				boolean[] validData = getArrayFromRasterFRS(validDataRaster);
+				float[] scaledData = getScaledArrayFromTileFRS(dataTile);
+				boolean[] validData = getArrayFromTileFRS(validDataTile);
 	            Rectangle sourceRectFRS = new Rectangle(MathUtils.ceilInt(sourceRect.x/4.0), MathUtils.ceilInt(sourceRect.y/4.0),
 	            		MathUtils.ceilInt(sourceRect.width/4.0), MathUtils.ceilInt(sourceRect.height/4.0));
 	            
@@ -345,22 +344,22 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
 	            
 				for (int y = targetRect.y; y < maxY; y += 4) {
 					for (int x = targetRect.x; x < maxX; x += 4) {
-						if (!useMask || isMaskSetInRegion(x, y, maxX, maxY, maskRaster)) {
-							if (validDataRaster.getBoolean(x, y)) {
-								setValueInRegion(x, y, maxX, maxY, dataRaster
-										.getFloat(x, y), targetRaster);
+						if (!useMask || isMaskSetInRegion(x, y, maxX, maxY, maskTile)) {
+							if (validDataTile.getSampleBoolean(x, y)) {
+								setValueInRegion(x, y, maxX, maxY, dataTile
+										.getSampleFloat(x, y), targetTile);
 							} else {
-								final float defaultValue = defaultRaster
-										.getFloat(x, y);
+								final float defaultValue = defaultTile
+										.getSampleFloat(x, y);
 								final int x4 = (x+1)/4;
 								final int y4 = (y+1)/4;
 								float v = computeInterpolatedValue(x4, y4,
 										sourceRectFRS, scaledData, validData,
 										defaultValue);
-								setValueInRegion(x, y, maxX, maxY, v, targetRaster);
+								setValueInRegion(x, y, maxX, maxY, v, targetTile);
 							}
 						} else {
-							setValueInRegion(x, y, maxX, maxY, -1, targetRaster);
+							setValueInRegion(x, y, maxX, maxY, -1, targetTile);
 						}
 					}
 					pm.worked(1);

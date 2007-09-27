@@ -10,7 +10,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -43,10 +43,6 @@ public class CombinedCloudOp extends MerisBasisOp {
     @TargetProduct
     private Product targetProduct;
 
-    public CombinedCloudOp(OperatorSpi spi) {
-        super(spi);
-    }
-
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
 
@@ -64,17 +60,17 @@ public class CombinedCloudOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeBand(Band band, Raster targetRaster,
+    public void computeTile(Band band, Tile targetTile,
             ProgressMonitor pm) throws OperatorException {
 
-    	Rectangle rectangle = targetRaster.getRectangle();
+    	Rectangle rectangle = targetTile.getRectangle();
         final int size = rectangle.height * rectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-        	byte[] cloudProb = (byte[]) getRaster(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getDataBuffer().getElems();
-        	byte[] blueBand = (byte[]) getRaster(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle).getDataBuffer().getElems();
+        	byte[] cloudProb = (byte[]) getSourceTile(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getRawSampleData().getElems();
+        	byte[] blueBand = (byte[]) getSourceTile(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle).getRawSampleData().getElems();
 
-            ProductData flagData = getRaster(combinedCloudBand, rectangle).getDataBuffer();
+            ProductData flagData = getSourceTile(combinedCloudBand, rectangle).getRawSampleData();
             byte[] combinedCloud = (byte[]) flagData.getElems();
             pm.worked(1);
             

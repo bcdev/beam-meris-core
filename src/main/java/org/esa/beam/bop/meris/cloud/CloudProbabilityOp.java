@@ -39,7 +39,7 @@ import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -111,10 +111,6 @@ public class CloudProbabilityOp extends MerisBasisOp {
     @Parameter
     private String validOceanExpression = DEFAULT_VALID_OCEAN_EXP;
 	
-
-    public CloudProbabilityOp(OperatorSpi spi) {
-        super(spi);
-    }
 
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
@@ -276,33 +272,33 @@ public class CloudProbabilityOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final double[] cloudIn = new double[15];
 
         pm.beginTask("Processing frame...", rectangle.height);
         try {
         	//sources
-        	Raster[] radiance = new Raster[radianceBands.length];
+        	Tile[] radiance = new Tile[radianceBands.length];
             for (int i1 = 0; i1 < radianceBands.length; i1++) {
-			    radiance[i1] = getRaster(radianceBands[i1], rectangle);
+			    radiance[i1] = getSourceTile(radianceBands[i1], rectangle);
 			}
 			
-            Raster detector = getRaster(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
-            Raster sza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
-            Raster saa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
-            Raster vza = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
-            Raster vaa = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
-            Raster pressure = getRaster(l1bProduct.getTiePointGrid("atm_press"), rectangle);
-            Raster altitude = getRaster(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle);
+            Tile detector = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
+            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
+            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
+            Tile pressure = getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle);
+            Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle);
 			
-            Raster isValidLand = getRaster(validLandBand, rectangle);
-            Raster isValidOcean = getRaster(validOceanBand, rectangle);
-            Raster isLand = getRaster(landBand, rectangle);
+            Tile isValidLand = getSourceTile(validLandBand, rectangle);
+            Tile isValidOcean = getSourceTile(validOceanBand, rectangle);
+            Tile isLand = getSourceTile(landBand, rectangle);
 			
 			//targets
-            Raster cloudRaster = targetRasters.get(cloudBand);
-            Raster flagRaster = targetRasters.get(cloudFlagBand);
+            Tile cloudTile = targetTiles.get(cloudBand);
+            Tile flagTile = targetTiles.get(cloudFlagBand);
 
             int i = 0;
 			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
@@ -310,64 +306,64 @@ public class CloudProbabilityOp extends MerisBasisOp {
 					if (pm.isCanceled()) {
 						break;
 					}
-					flagRaster.setInt(x, y, 0);
-					if (!isValidLand.getBoolean(x, y) && !isValidOcean.getBoolean(x, y)) {
-						cloudRaster.setInt(x, y, -1);
+					flagTile.setSample(x, y, 0);
+					if (!isValidLand.getSampleBoolean(x, y) && !isValidOcean.getSampleBoolean(x, y)) {
+						cloudTile.setSample(x, y, -1);
 					} else {
 						final double aziDiff = AlbedoUtils
-								.computeAzimuthDifference(vaa.getFloat(x, y), saa.getFloat(x, y))
+								.computeAzimuthDifference(vaa.getSampleFloat(x, y), saa.getSampleFloat(x, y))
 								* MathUtils.DTOR;
-						final double szaCos = Math.cos(sza.getFloat(x, y) * MathUtils.DTOR);
-						cloudIn[0] = calculateI(radiance[0].getDouble(x, y),
+						final double szaCos = Math.cos(sza.getSampleFloat(x, y) * MathUtils.DTOR);
+						cloudIn[0] = calculateI(radiance[0].getSampleDouble(x, y),
 								radianceBands[0].getSolarFlux(), szaCos);
-						cloudIn[1] = calculateI(radiance[1].getDouble(x, y),
+						cloudIn[1] = calculateI(radiance[1].getSampleDouble(x, y),
 								radianceBands[1].getSolarFlux(), szaCos);
-						cloudIn[2] = calculateI(radiance[2].getDouble(x, y),
+						cloudIn[2] = calculateI(radiance[2].getSampleDouble(x, y),
 								radianceBands[2].getSolarFlux(), szaCos);
-						cloudIn[3] = calculateI(radiance[3].getDouble(x, y),
+						cloudIn[3] = calculateI(radiance[3].getSampleDouble(x, y),
 								radianceBands[3].getSolarFlux(), szaCos);
-						cloudIn[4] = calculateI(radiance[4].getDouble(x, y),
+						cloudIn[4] = calculateI(radiance[4].getSampleDouble(x, y),
 								radianceBands[4].getSolarFlux(), szaCos);
-						cloudIn[5] = calculateI(radiance[5].getDouble(x, y),
+						cloudIn[5] = calculateI(radiance[5].getSampleDouble(x, y),
 								radianceBands[5].getSolarFlux(), szaCos);
-						cloudIn[6] = calculateI(radiance[8].getDouble(x, y),
+						cloudIn[6] = calculateI(radiance[8].getSampleDouble(x, y),
 								radianceBands[8].getSolarFlux(), szaCos);
-						cloudIn[7] = calculateI(radiance[9].getDouble(x, y),
+						cloudIn[7] = calculateI(radiance[9].getSampleDouble(x, y),
 								radianceBands[9].getSolarFlux(), szaCos);
-						cloudIn[8] = calculateI(radiance[12].getDouble(x, y),
+						cloudIn[8] = calculateI(radiance[12].getSampleDouble(x, y),
 								radianceBands[12].getSolarFlux(), szaCos);
-						cloudIn[9] = (radiance[10].getDouble(x, y) * radianceBands[9]
+						cloudIn[9] = (radiance[10].getSampleDouble(x, y) * radianceBands[9]
 								.getSolarFlux())
-								/ (radiance[9].getDouble(x, y) * radianceBands[10]
+								/ (radiance[9].getSampleDouble(x, y) * radianceBands[10]
 										.getSolarFlux());
-						cloudIn[10] = altitudeCorrectedPressure(pressure.getFloat(x, y),
-								altitude.getFloat(x, y), isLand.getBoolean(x, y));
-						cloudIn[11] = centralWavelenth[detector.getInt(x, y)]; // central-wavelength
+						cloudIn[10] = altitudeCorrectedPressure(pressure.getSampleFloat(x, y),
+								altitude.getSampleFloat(x, y), isLand.getSampleBoolean(x, y));
+						cloudIn[11] = centralWavelenth[detector.getSampleInt(x, y)]; // central-wavelength
 																		// channel
 																		// 11
 						cloudIn[12] = szaCos;
-						final double vzaRad = vza.getFloat(x, y) * MathUtils.DTOR;
+						final double vzaRad = vza.getSampleFloat(x, y) * MathUtils.DTOR;
 						cloudIn[13] = Math.cos(vzaRad);
 						cloudIn[14] = Math.cos(aziDiff) * Math.sin(vzaRad);
 
 						double cloudProbability = 0;
-						if (isValidLand.getBoolean(x, y)) {
+						if (isValidLand.getSampleBoolean(x, y)) {
 							cloudProbability = landAlgo
 									.computeCloudProbability(cloudIn);
-						} else if (isValidOcean.getBoolean(x, y)) {
+						} else if (isValidOcean.getSampleBoolean(x, y)) {
 							cloudProbability = oceanAlgo
 									.computeCloudProbability(cloudIn);
 						}
 
 						if (cloudProbability > 0.8) {
-							flagRaster.setInt(x, y, FLAG_CLOUDY);
+							flagTile.setSample(x, y, FLAG_CLOUDY);
 						} else if (cloudProbability < 0.2) {
-							flagRaster.setInt(x, y, FLAG_CLOUDFREE);
+							flagTile.setSample(x, y, FLAG_CLOUDFREE);
 						} else if (cloudProbability >= 0.2
 								&& cloudProbability <= 0.8) {
-							flagRaster.setInt(x, y, FLAG_UNCERTAIN);
+							flagTile.setSample(x, y, FLAG_UNCERTAIN);
 						}
-						cloudRaster.setDouble(x, y, cloudProbability);
+						cloudTile.setSample(x, y, cloudProbability);
 					}
 					i++;
 				}

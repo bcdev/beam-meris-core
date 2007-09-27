@@ -7,7 +7,7 @@
 package org.esa.beam.bop.meris.brr.dpm;
 
 import org.esa.beam.bop.meris.AlbedoUtils;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 
 /**
  * The MERIS Level 2 module for L1b data extraction.
@@ -42,10 +42,10 @@ public class L1bDataExtraction implements Constants {
     public void l1_extract_pixbloc(final DpmPixel pixel,
                                    final int x,
                                    final int y,
-                                   final Raster[] tpdata,
-                                   final Raster[] toars,
-                                   final Raster detectorIndex,
-                                   final Raster l1bFlags) {
+                                   final Tile[] tpdata,
+                                   final Tile[] toars,
+                                   final Tile detectorIndex,
+                                   final Tile l1bFlags) {
 
         /////////////////////////////////////////////////////////////////////
         // Initialize still unknown pixel values
@@ -65,14 +65,14 @@ public class L1bDataExtraction implements Constants {
         pixel.y = y;
         pixel.SATURATED_F = 0;
         for (int band = 0; band < 15; band++) {
-            pixel.TOAR[band] = toars[band].getDouble(x, y);
+            pixel.TOAR[band] = toars[band].getSampleDouble(x, y);
             if (pixel.TOAR[band] > auxData.Saturation_L[band]) {
                 pixel.SATURATED_F = AlbedoUtils.setFlag(pixel.SATURATED_F, band);
             }
         }
-        pixel.detector = detectorIndex.getInt(x, y);
+        pixel.detector = detectorIndex.getSampleInt(x, y);
 
-        pixel.l1flags = l1bFlags.getInt(x, y);
+        pixel.l1flags = l1bFlags.getSampleInt(x, y);
         pixel.l2flags = 0L;
         if (AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_COSMETIC)) {
             pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_COSMETIC);
@@ -105,27 +105,27 @@ public class L1bDataExtraction implements Constants {
         }
 
         // DPM #2.1.0-3
-        pixel.sun_zenith = tpdata[SUN_ZENITH_TPG_INDEX].getDouble(x, y);
+        pixel.sun_zenith = tpdata[SUN_ZENITH_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-4
-        pixel.view_zenith = tpdata[VIEW_ZENITH_TPG_INDEX].getDouble(x, y);
+        pixel.view_zenith = tpdata[VIEW_ZENITH_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-5
-        double view_azimuth = tpdata[VIEW_AZIMUTH_TPG_INDEX].getDouble(x, y);
+        double view_azimuth = tpdata[VIEW_AZIMUTH_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-6
-        pixel.sun_azimuth = tpdata[SUN_AZIMUTH_TPG_INDEX].getDouble(x, y);
+        pixel.sun_azimuth = tpdata[SUN_AZIMUTH_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-7
-        pixel.lat = tpdata[LATITUDE_TPG_INDEX].getDouble(x, y);
+        pixel.lat = tpdata[LATITUDE_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-8
-        pixel.lon = tpdata[LONGITUDE_TPG_INDEX].getDouble(x, y);
+        pixel.lon = tpdata[LONGITUDE_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-9
-        pixel.altitude = tpdata[DEM_ALT_TPG_INDEX].getDouble(x, y);
+        pixel.altitude = tpdata[DEM_ALT_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-10
-        pixel.press_ecmwf = tpdata[ATM_PRESS_TPG_INDEX].getDouble(x, y);
+        pixel.press_ecmwf = tpdata[ATM_PRESS_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-11
-        pixel.windu = tpdata[ZONAL_WIND_TPG_INDEX].getDouble(x, y);
+        pixel.windu = tpdata[ZONAL_WIND_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-12
-        pixel.windv = tpdata[MERID_WIND_TPG_INDEX].getDouble(x, y);
+        pixel.windv = tpdata[MERID_WIND_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-13
-        pixel.ozone_ecmwf = tpdata[OZONE_TPG_INDEX].getDouble(x, y);
+        pixel.ozone_ecmwf = tpdata[OZONE_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-14
         pixel.delta_azimuth = DEG * Math.acos(Math.cos(RAD * (view_azimuth - pixel.sun_azimuth)));
         // DPM #2.1.0-15

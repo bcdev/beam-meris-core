@@ -24,7 +24,7 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -57,9 +57,6 @@ public class CloudEdgeOp extends MerisBasisOp {
     @Parameter
     private int cloudWidth;
 
-    public CloudEdgeOp(OperatorSpi spi) {
-        super(spi);
-    }
 
     @Override
 	protected Product initialize(ProgressMonitor pm) throws OperatorException {
@@ -78,21 +75,21 @@ public class CloudEdgeOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeBand(Band band, Raster targetRaster,
+    public void computeTile(Band band, Tile targetTile,
             ProgressMonitor pm) throws OperatorException {
 
-        Rectangle targetRectangle = targetRaster.getRectangle();
+        Rectangle targetRectangle = targetTile.getRectangle();
 		Rectangle sourceRectangle = rectCalculator.computeSourceRectangle(targetRectangle);
         final int size = sourceRectangle.height * sourceRectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-            Raster cloudSource = getRaster(sourceBand, sourceRectangle);
-            Raster cloudTarget = getRaster(targetBand, targetRectangle);
+            Tile cloudSource = getSourceTile(sourceBand, sourceRectangle);
+            Tile cloudTarget = getSourceTile(targetBand, targetRectangle);
 
             int i = 0;
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
                 for (int x = targetRectangle.x; x < targetRectangle.x + targetRectangle.width; x++) {
-                    cloudTarget.setInt(x, y, cloudSource.getInt(x, y));
+                    cloudTarget.setSample(x, y, cloudSource.getSampleInt(x, y));
                     i++;
                 }
             }
@@ -100,7 +97,7 @@ public class CloudEdgeOp extends MerisBasisOp {
             int sourceIndex = 0;
             for (int y = sourceRectangle.y; y < sourceRectangle.y + sourceRectangle.height; y++) {
                 for (int x = sourceRectangle.x; x < sourceRectangle.x + sourceRectangle.width; x++) {
-                    if (cloudSource.getInt(x, y) == CombinedCloudOp.FLAG_CLOUD) {
+                    if (cloudSource.getSampleInt(x, y) == CombinedCloudOp.FLAG_CLOUD) {
                         markEdgeAround(x, y, cloudSource, cloudTarget);
                     }
                     sourceIndex++;
@@ -111,7 +108,7 @@ public class CloudEdgeOp extends MerisBasisOp {
         }
     }
 
-    private void markEdgeAround(int xi, int yi, Raster cloudSource, Raster cloudTarget) {
+    private void markEdgeAround(int xi, int yi, Tile cloudSource, Tile cloudTarget) {
     	Rectangle targetRectangle = cloudTarget.getRectangle();
         int xStart = xi - cloudWidth;
         if (xStart < targetRectangle.x) {
@@ -132,12 +129,12 @@ public class CloudEdgeOp extends MerisBasisOp {
 
         for (int y = yStart; y <= yEnd; y++) {
             for (int x = xStart; x <= xEnd; x++) {
-                int pixelValue = cloudSource.getInt(x, y);
+                int pixelValue = cloudSource.getSampleInt(x, y);
                 if (pixelValue != CombinedCloudOp.FLAG_INVALID
                         && (pixelValue & CombinedCloudOp.FLAG_CLOUD) == 0
                         && (pixelValue & CombinedCloudOp.FLAG_CLOUD_EDGE) == 0) {
                     pixelValue += CombinedCloudOp.FLAG_CLOUD_EDGE;
-                    cloudTarget.setInt(x, y, pixelValue);
+                    cloudTarget.setSample(x, y, pixelValue);
                 }
             }
         }

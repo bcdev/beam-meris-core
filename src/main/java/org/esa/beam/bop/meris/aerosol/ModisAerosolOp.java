@@ -29,7 +29,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -79,10 +79,6 @@ public class ModisAerosolOp extends MerisBasisOp {
     @Parameter
     private String auxdataDir;
 
-    public ModisAerosolOp(OperatorSpi spi) {
-        super(spi);
-    }
-
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
         if (StringUtils.isNullOrEmpty(auxdataDir)) {
@@ -128,17 +124,17 @@ public class ModisAerosolOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeAllBands(Map<Band, Raster> targetRasters, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final GeoCoding geoCoding = sourceProduct.getGeoCoding();
         final GeoPos geoPos = new GeoPos();
         final PixelPos pixelPos = new PixelPos();
         final FractIndex[] indexes = FractIndex.createArray(3);
 
-        Raster aot470Raster = targetRasters.get(_aot470Band);
-        Raster aot660Raster = targetRasters.get(_aot660Band);
-        Raster angRaster = targetRasters.get(_angstrBand);
-        Raster flagRaster = targetRasters.get(_flagsBand);
+        Tile aot470Tile = targetTiles.get(_aot470Band);
+        Tile aot660Tile = targetTiles.get(_aot660Band);
+        Tile angTile = targetTiles.get(_angstrBand);
+        Tile flagTile = targetTiles.get(_flagsBand);
 
         final double time = getSceneRasterMeanTime(sourceProduct).getMJD();
         final double logWavelengthDiff = Math.log(AOT_660_WAVELENGTH) - Math.log(AOT_470_WAVELENGTH);
@@ -156,10 +152,10 @@ public class ModisAerosolOp extends MerisBasisOp {
                 Interp.interpCoord(lon, _aot470LUT.getTab(2), indexes[2]);
 
                 double aot470 = Interp.interpolate(_aot470LUT.getJavaArray(), indexes);
-				aot470Raster.setFloat(x, y, (float) aot470);
+				aot470Tile.setSample(x, y, (float) aot470);
                 double aot660 = Interp.interpolate(_aot660LUT.getJavaArray(), indexes);
-				aot660Raster.setFloat(x, y, (float) aot660);
-                angRaster.setFloat(x, y, (float) ((Math.log(aot470) - Math.log(aot660)) / logWavelengthDiff));
+				aot660Tile.setSample(x, y, (float) aot660);
+                angTile.setSample(x, y, (float) ((Math.log(aot470) - Math.log(aot660)) / logWavelengthDiff));
 
                 int xInt = indexes[2].index;
                 int yInt = indexes[1].index;
@@ -169,7 +165,7 @@ public class ModisAerosolOp extends MerisBasisOp {
                         tFlag += 1 << prod;
                     }
                 }
-                flagRaster.setInt(x, y, tFlag);
+                flagTile.setSample(x, y, tFlag);
 
                 i++;
             }

@@ -27,7 +27,7 @@ import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.Raster;
+import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
@@ -55,10 +55,6 @@ public class GapLessSdrOp extends MerisBasisOp {
     private Product toarProduct;
     @TargetProduct
     private Product targetProduct;
-
-    public GapLessSdrOp(OperatorSpi spi) {
-        super(spi);
-    }
 
     @Override
     public Product initialize(ProgressMonitor pm) throws OperatorException {
@@ -99,24 +95,24 @@ public class GapLessSdrOp extends MerisBasisOp {
 	}
 
     @Override
-    public void computeBand(Band band, Raster targetRaster, ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
-    	Rectangle rectangle = targetRaster.getRectangle();
+    	Rectangle rectangle = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-        	Raster sdrRaster = getRaster(sdrBands.get(band), rectangle);
-        	Raster toarRaster = getRaster(toarBands.get(band), rectangle);
-        	Raster invalid = getRaster(invalidBand, rectangle);
+        	Tile sdrTile = getSourceTile(sdrBands.get(band), rectangle);
+        	Tile toarTile = getSourceTile(toarBands.get(band), rectangle);
+        	Tile invalid = getSourceTile(invalidBand, rectangle);
         	
         	pm.worked(1);
 
         	for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
-					final float sdr = sdrRaster.getFloat(x, y);
-					if (invalid.getBoolean(x, y) || (sdr != -1 && sdr != 0)) {
-						targetRaster.setFloat(x, y, sdr);
+					final float sdr = sdrTile.getSampleFloat(x, y);
+					if (invalid.getSampleBoolean(x, y) || (sdr != -1 && sdr != 0)) {
+						targetTile.setSample(x, y, sdr);
 					} else {
-						targetRaster.setFloat(x, y, toarRaster.getFloat(x, y));
+						targetTile.setSample(x, y, toarTile.getSampleFloat(x, y));
 
 					}
 				}
