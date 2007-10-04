@@ -87,7 +87,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
 		products.put(getContext().getSourceProductId(l1bProduct), l1bProduct);
 		products.put(getContext().getSourceProductId(brrProduct), brrProduct);
 		products.put(getContext().getSourceProductId(cloudProduct), cloudProduct);
-		Product expressionProduct = GPF.createProduct("BandArithmetic", parameters, products, createProgressMonitor());
+		Product expressionProduct = GPF.createProduct("BandArithmetic", parameters, products);
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", expressionProduct);
 		

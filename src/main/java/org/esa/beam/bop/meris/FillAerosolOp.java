@@ -138,7 +138,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         }
 		
         parameters.put("bandDescriptors", bandDescriptors);
-        validProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct, createProgressMonitor());
+        validProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", validProduct);
 		
