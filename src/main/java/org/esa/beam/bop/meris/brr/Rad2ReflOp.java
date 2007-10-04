@@ -112,7 +112,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 		bandDescriptors[0] = bandDescriptor;
 		parameters.put("bandDescriptors", bandDescriptors);
 		
-		Product invalidProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct, createProgressMonitor());
+		Product invalidProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", invalidProduct);
 		return invalidProduct.getBand("bBand");
