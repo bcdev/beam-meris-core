@@ -28,7 +28,6 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -43,6 +42,7 @@ import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
+
 
 /**
  * Created by marcoz.
@@ -87,7 +87,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 	
     
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         try {
             dpmConfig = new DpmConfig(configFile);
         } catch (Exception e) {
@@ -99,10 +99,10 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);
         }
-        return createTargetProduct(pm);
+        return createTargetProduct();
     }
 
-    private Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
+    private Product createTargetProduct() throws OperatorException {
     	targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
     	brrBands = addBandGroup(BRR_BAND_PREFIX);
@@ -118,13 +118,13 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         	tauRBands = addBandGroup("tauR");
 	        sphAlbRBands = addBandGroup("sphAlbR");
 		}
-        isLandBand = createBooleanBandForExpression(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct, pm);
+        isLandBand = createBooleanBandForExpression(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
 		
         return targetProduct;
     }
     
     private Band createBooleanBandForExpression(String expression,
-			Product product, ProgressMonitor pm) throws OperatorException {
+			Product product) throws OperatorException {
     	
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
@@ -135,7 +135,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 		bandDescriptors[0] = bandDescriptor;
 		parameters.put("bandDescriptors", bandDescriptors);
 
-		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product, pm);
+		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product, createProgressMonitor());
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", expProduct);
 		return expProduct.getBand("bBand");
@@ -171,8 +171,8 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     }
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
-
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
+        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
             Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
@@ -335,7 +335,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         }
     }
     
-    private Tile[] getTargetTileGroup(Band[] bands, Map<Band, Tile> targetTiles) throws OperatorException {
+    private Tile[] getTargetTileGroup(Band[] bands, Map<Band, Tile> targetTiles)  {
         final Tile[] bandRaster = new Tile[L1_BAND_NUM];
         for (int i = 0; i < bands.length; i++) {
             Band band = bands[i];

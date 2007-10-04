@@ -27,7 +27,6 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -38,6 +37,7 @@ import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.ProductUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
+
 
 /**
  * Created by marcoz.
@@ -72,7 +72,7 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         try {
             dpmConfig = new DpmConfig(configFile);
         } catch (Exception e) {
@@ -84,10 +84,10 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
             throw new OperatorException("could not load L2Auxdata", e);
         }
         
-        return createTargetProduct(pm);
+        return createTargetProduct();
     }
 
-    private Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
+    private Product createTargetProduct() throws OperatorException {
         targetProduct = createCompatibleProduct(gascorProduct, "MER", "MER_L2");
         rhoCorectedBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
         for (int i = 0; i < rhoCorectedBands.length; i++) {
@@ -101,13 +101,13 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
         
 //        rhoCorrected = new float[rhoCorectedBands.length][0];
 //        rho = new float[rhoCorectedBands.length][0];
-        isLandBand = createBooleanBandForExpression(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct, pm);
+        isLandBand = createBooleanBandForExpression(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
         
         return targetProduct;
     }
     
     private Band createBooleanBandForExpression(String expression,
-			Product product, ProgressMonitor pm) throws OperatorException {
+			Product product) throws OperatorException {
     	
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
@@ -118,16 +118,15 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 		bandDescriptors[0] = bandDescriptor;
 		parameters.put("bandDescriptors", bandDescriptors);
 
-		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product, pm);
+		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product, createProgressMonitor());
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", expProduct);
 		return expProduct.getBand("bBand");
 	}
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle,
-            ProgressMonitor pm) throws OperatorException {
-
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
+        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height);
         try {
         	Tile detectorIndex = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);

@@ -41,6 +41,7 @@ import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
 
+
 /**
  * Created by marcoz.
  *
@@ -70,7 +71,7 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
     private String configFile = MERIS_L2_CONF;
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         try {
             dpmConfig = new DpmConfig(configFile);
         } catch (Exception e) {
@@ -106,9 +107,10 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
     }
 
     @Override
-    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile) throws OperatorException {
     	
     	Rectangle rectangle = targetTile.getRectangle();
+    	ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
             Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);

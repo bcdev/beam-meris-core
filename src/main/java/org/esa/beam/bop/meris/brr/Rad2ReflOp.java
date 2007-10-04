@@ -28,7 +28,6 @@ import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -40,6 +39,7 @@ import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
+
 
 /**
  * Created by marcoz.
@@ -71,7 +71,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
     private String configFile = MERIS_L2_CONF;
 
     @Override
-	protected Product initialize(ProgressMonitor pm) throws OperatorException {
+	protected Product initialize() throws OperatorException {
         try {
             dpmConfig = new DpmConfig(configFile);
         } catch (Exception e) {
@@ -98,11 +98,11 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
         detectorIndexBand = sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME);
         sunZenihTPG = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
         
-		invalidBand = createBooleanBandForExpression("l1_flags.INVALID", pm);
+		invalidBand = createBooleanBandForExpression("l1_flags.INVALID");
         return targetProduct;
     }
     
-    private Band createBooleanBandForExpression(String expression, ProgressMonitor pm) throws OperatorException {
+    private Band createBooleanBandForExpression(String expression) throws OperatorException {
 		Map<String, Object> parameters = new HashMap<String, Object>();
         BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
         BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
@@ -112,7 +112,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 		bandDescriptors[0] = bandDescriptor;
 		parameters.put("bandDescriptors", bandDescriptors);
 		
-		Product invalidProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct, pm);
+		Product invalidProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct, createProgressMonitor());
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", invalidProduct);
 		return invalidProduct.getBand("bBand");
@@ -120,9 +120,8 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle,
-            ProgressMonitor pm) throws OperatorException {
-
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
+        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height);
         try {
         	Tile[] radiance = new Tile[radianceBands.length];

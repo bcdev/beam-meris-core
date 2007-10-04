@@ -38,6 +38,7 @@ import org.esa.beam.util.ProductUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
 
+
 /**
  * Created by marcoz.
  *
@@ -85,7 +86,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     boolean exportTg = false;
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         try {
             dpmConfig = new DpmConfig(configFile);
         } catch (Exception e) {
@@ -137,8 +138,8 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     }
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
-
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
+        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
             Tile detectorIndex = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
