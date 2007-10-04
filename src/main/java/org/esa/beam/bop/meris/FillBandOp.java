@@ -29,14 +29,12 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.ParameterConverter;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
-import com.bc.ceres.core.ProgressMonitor;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.XppDomReader;
 import com.thoughtworks.xstream.io.xml.xppdom.Xpp3Dom;
@@ -94,7 +92,7 @@ public class FillBandOp extends MerisBasisOp implements ParameterConverter {
     }
 
 	@Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         
 		targetProduct = createCompatibleProduct(sourceProduct, "fille_band", "FILL");
 		defaultMap = new HashMap<Band, Float>(config.bands.size());
@@ -106,23 +104,12 @@ public class FillBandOp extends MerisBasisOp implements ParameterConverter {
 	}
 	
 	@Override
-    public void computeTile(Band band, Tile targetTile,
-            ProgressMonitor pm) throws OperatorException {
-		
-		pm.beginTask("Processing frame...", 1);
-		try {
-			Rectangle targetRect = targetTile.getRectangle();
-			float[] outValues = (float[]) getSourceTile(band, targetRect).getRawSampleData().getElems();
-			final float defaultValue = defaultMap.get(band);
-			
-			Arrays.fill(outValues, defaultValue);
-			
-			pm.worked(1);
-		} catch (Exception e) {
-			throw new OperatorException(e);
-		} finally {
-			pm.done();
-		}
+    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+	    Rectangle targetRect = targetTile.getRectangle();
+	    float[] outValues = (float[]) getSourceTile(band, targetRect).getRawSampleData().getElems();
+	    final float defaultValue = defaultMap.get(band);
+	    
+	    Arrays.fill(outValues, defaultValue);
     }
 	
 	public static class Spi extends AbstractOperatorSpi {

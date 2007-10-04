@@ -35,7 +35,6 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -76,14 +75,14 @@ public class CloudTopPressureOp extends MerisBasisOp {
 	
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         try {
             loadNeuralNet();
         } catch (Exception e) {
             throw new OperatorException("Failed to load neural net ctp.nna:\n" + e.getMessage());
         }
         initAuxData();
-        return createTargetProduct(pm);
+        return createTargetProduct();
     }
 
     private void loadNeuralNet() throws IOException, JnnException {
@@ -101,17 +100,17 @@ public class CloudTopPressureOp extends MerisBasisOp {
         }
     }
 
-    private Product createTargetProduct(ProgressMonitor pm) throws OperatorException {
+    private Product createTargetProduct() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "MER_CTP", "MER_L2");
         targetProduct.addBand("cloud_top_press", ProductData.TYPE_FLOAT32);
 
-        invalidBand = createBooleanBandForExpression(INVALID_EXPRESSION, sourceProduct, pm);
+        invalidBand = createBooleanBandForExpression(INVALID_EXPRESSION, sourceProduct);
         
         return targetProduct;
     }
     
     private Band createBooleanBandForExpression(String expression,
-			Product product, ProgressMonitor pm) throws OperatorException {
+			Product product) throws OperatorException {
     	
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
@@ -122,7 +121,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
 		bandDescriptors[0] = bandDescriptor;
 		parameters.put("bandDescriptors", bandDescriptors);
 
-		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product, pm);
+		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product, createProgressMonitor());
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", expProduct);
 		return expProduct.getBand("bBand");
@@ -147,10 +146,10 @@ public class CloudTopPressureOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Band band, Tile targetTile,
-            ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile) throws OperatorException {
     	
     	Rectangle rectangle = targetTile.getRectangle();
+    	ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height);
         try {
         	Tile detector = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);

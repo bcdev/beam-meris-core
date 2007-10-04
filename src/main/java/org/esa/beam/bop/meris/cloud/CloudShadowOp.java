@@ -28,7 +28,6 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.TiePointGrid;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -39,6 +38,7 @@ import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
+
 
 /**
  * Created by marcoz.
@@ -70,7 +70,7 @@ public class CloudShadowOp extends MerisBasisOp {
     private int shadowWidth;
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(cloudProduct, "MER_CLOUD_SHADOW", "MER_L2");
         Band cloudBand = ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, cloudProduct, targetProduct);
         FlagCoding sourceFlagCoding = cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME).getFlagCoding();
@@ -88,13 +88,12 @@ public class CloudShadowOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Band band, Tile targetTile,
-            ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile) throws OperatorException {
     	
     	Rectangle targetRectangle = targetTile.getRectangle();
         Rectangle sourceRectangle = rectCalculator.computeSourceRectangle(targetRectangle);
-        final int size = sourceRectangle.height * sourceRectangle.width;
-        pm.beginTask("Processing frame...", size + 1);
+        ProgressMonitor pm = createProgressMonitor();
+        pm.beginTask("Processing frame...", sourceRectangle.height);
         try {
         	Tile szaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle);
         	Tile saaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle);
@@ -140,6 +139,7 @@ public class CloudShadowOp extends MerisBasisOp {
                     }
                     sourceIndex++;
                 }
+                pm.worked(1);
             }
         } finally {
             pm.done();

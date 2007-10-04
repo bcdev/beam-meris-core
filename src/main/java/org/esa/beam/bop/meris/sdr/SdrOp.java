@@ -19,7 +19,6 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -86,7 +85,7 @@ public class SdrOp extends MerisBasisOp {
     private double angValue;
 	
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         if (StringUtils.isNullOrEmpty(neuralNetFile)) {
             throw new OperatorException("No neural net specified.");
         }
@@ -137,11 +136,11 @@ public class SdrOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
 
         final double[] sdrAlgoInput = new double[9];
         final double[] sdrAlgoOutput = new double[1];
-
+        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height);
         try {
             Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);

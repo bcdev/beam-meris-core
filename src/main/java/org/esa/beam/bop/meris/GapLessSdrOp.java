@@ -26,7 +26,6 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -36,6 +35,7 @@ import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.ProductUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
+
 
 /**
  * Created by marcoz.
@@ -57,7 +57,7 @@ public class GapLessSdrOp extends MerisBasisOp {
     private Product targetProduct;
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sdrProduct, "MER_SDR", "MER_SDR");
 
         sdrBands = new HashMap<Band, Band>();
@@ -74,11 +74,11 @@ public class GapLessSdrOp extends MerisBasisOp {
                 toarBands.put(targetBand, toarBand);
             }
         }
-        invalidBand = createBooleanBandForExpression("l2_flags_p1.F_INVALID", pm);
+        invalidBand = createBooleanBandForExpression("l2_flags_p1.F_INVALID");
         return targetProduct;
     }
     
-    private Band createBooleanBandForExpression(String expression, ProgressMonitor pm) throws OperatorException {
+    private Band createBooleanBandForExpression(String expression) throws OperatorException {
 		Map<String, Object> parameters = new HashMap<String, Object>();
         BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
         BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
@@ -88,16 +88,17 @@ public class GapLessSdrOp extends MerisBasisOp {
 		bandDescriptors[0] = bandDescriptor;
 		parameters.put("bandDescriptors", bandDescriptors);
 		
-		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, toarProduct, pm);
+		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, toarProduct, createProgressMonitor());
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", validLandProduct);
 		return validLandProduct.getBand("bBand");
 	}
 
     @Override
-    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile) throws OperatorException {
 
     	Rectangle rectangle = targetTile.getRectangle();
+    	ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
         	Tile sdrTile = getSourceTile(sdrBands.get(band), rectangle);

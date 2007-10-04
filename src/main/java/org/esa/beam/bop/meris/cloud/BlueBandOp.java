@@ -27,13 +27,13 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
 import com.bc.ceres.core.ProgressMonitor;
+
 
 public class BlueBandOp extends MerisBasisOp {
 
@@ -80,7 +80,7 @@ public class BlueBandOp extends MerisBasisOp {
     
 
     @Override
-	protected Product initialize(ProgressMonitor pm) throws OperatorException {
+	protected Product initialize() throws OperatorException {
         month = l1bProduct.getStartTime().getAsCalendar().get(Calendar.MONTH);
 
         targetProduct = createCompatibleProduct(l1bProduct, "MER_BLUEBAND_CLOUD", "MER_L2");
@@ -98,10 +98,10 @@ public class BlueBandOp extends MerisBasisOp {
     }
     
     @Override
-    public void computeTile(Band band, Tile targetTile,
-            ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile) throws OperatorException {
     	
     	Rectangle rect = targetTile.getRectangle();
+    	ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rect.height);
         try {
             float[] toar1 = (float[]) getSourceTile(brrProduct.getBand("toar_1"), rect).getRawSampleData().getElems();

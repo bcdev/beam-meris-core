@@ -23,7 +23,6 @@ import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -33,6 +32,7 @@ import org.esa.beam.framework.gpf.support.TileRectCalculator;
 import org.esa.beam.util.ProductUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
+
 
 /**
  * Created by marcoz.
@@ -59,7 +59,7 @@ public class CloudEdgeOp extends MerisBasisOp {
 
 
     @Override
-	protected Product initialize(ProgressMonitor pm) throws OperatorException {
+	protected Product initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "cloude_edge", "MER_L2");
         targetBand = ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, sourceProduct, targetProduct);
         sourceBand = sourceProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME);
@@ -75,12 +75,12 @@ public class CloudEdgeOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Band band, Tile targetTile,
-            ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile) throws OperatorException {
 
         Rectangle targetRectangle = targetTile.getRectangle();
 		Rectangle sourceRectangle = rectCalculator.computeSourceRectangle(targetRectangle);
         final int size = sourceRectangle.height * sourceRectangle.width;
+        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", size + 1);
         try {
             Tile cloudSource = getSourceTile(sourceBand, sourceRectangle);

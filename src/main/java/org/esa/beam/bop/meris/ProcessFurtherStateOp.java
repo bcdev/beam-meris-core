@@ -26,7 +26,6 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -34,7 +33,6 @@ import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
-import com.bc.ceres.core.ProgressMonitor;
 
 /**
  * Created by marcoz.
@@ -69,7 +67,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     private Product targetProduct;
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
         Band processFurtherBand = targetProduct.addBand(PROCESS_FURTHER_BAND_NAME, ProductData.TYPE_INT8);
         processFurtherBand.setDescription("process further state");
@@ -89,7 +87,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
 		products.put(getContext().getSourceProductId(l1bProduct), l1bProduct);
 		products.put(getContext().getSourceProductId(brrProduct), brrProduct);
 		products.put(getContext().getSourceProductId(cloudProduct), cloudProduct);
-		Product expressionProduct = GPF.createProduct("BandArithmetic", parameters, products, pm);
+		Product expressionProduct = GPF.createProduct("BandArithmetic", parameters, products, createProgressMonitor());
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", expressionProduct);
 		
@@ -99,32 +97,23 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     }
     
     @Override
-    public void computeTile(Band band, Tile targetTile,
-            ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile) throws OperatorException {
 
     	Rectangle rectangle = targetTile.getRectangle();
-        final int size = rectangle.height * rectangle.width;
-        pm.beginTask("Processing frame...", size + 1);
-        try {
-        	Tile[] isValid = new Tile[EXPRESSIONS.length];
-        	for (int i = 0; i < isValid.length; i++) {
-        		isValid[i] = getSourceTile(bands[i], rectangle);
-        	}
+    	Tile[] isValid = new Tile[EXPRESSIONS.length];
+    	for (int i = 0; i < isValid.length; i++) {
+    	    isValid[i] = getSourceTile(bands[i], rectangle);
+    	}
 
-        	for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
-				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
-					for (int j = 0; j < EXPRESSIONS.length; j++) {
-						if (isValid[j].getSampleBoolean(x, y)) {
-							targetTile.setSample(x, y, j);
-						}
-					}
-				}
-			}
-        } catch (Exception e) {
-            throw new OperatorException(e);
-        } finally {
-            pm.done();
-        }
+    	for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+    	    for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+    	        for (int j = 0; j < EXPRESSIONS.length; j++) {
+    	            if (isValid[j].getSampleBoolean(x, y)) {
+    	                targetTile.setSample(x, y, j);
+    	            }
+    	        }
+    	    }
+    	}
     }
 
     public static class Spi extends AbstractOperatorSpi {

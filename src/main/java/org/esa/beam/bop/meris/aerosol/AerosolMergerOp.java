@@ -36,6 +36,7 @@ import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
 import com.bc.ceres.core.ProgressMonitor;
 
+
 /**
  * Created by marcoz.
  *
@@ -64,7 +65,7 @@ public class AerosolMergerOp extends MerisBasisOp {
     
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(mod08Product, "AEROSOL", "AEROSOL");
         aot470Band = targetProduct.addBand("aot_470", ProductData.TYPE_FLOAT32);
         angstrBand = targetProduct.addBand("ang", ProductData.TYPE_FLOAT32);
@@ -115,9 +116,10 @@ public class AerosolMergerOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
 
         final int size = rectangle.height * rectangle.width;
+        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", 1 + size);
         try {
             float[] modAot = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getRawSampleData().getElems();

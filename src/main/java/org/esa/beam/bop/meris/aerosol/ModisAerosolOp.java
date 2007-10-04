@@ -39,7 +39,6 @@ import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.LUT;
 
-import com.bc.ceres.core.ProgressMonitor;
 
 
 public class ModisAerosolOp extends MerisBasisOp {
@@ -80,7 +79,7 @@ public class ModisAerosolOp extends MerisBasisOp {
     private String auxdataDir;
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         if (StringUtils.isNullOrEmpty(auxdataDir)) {
             throw new OperatorException("'auxdataDir' not set.");
         }
@@ -124,7 +123,7 @@ public class ModisAerosolOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
 
         final GeoCoding geoCoding = sourceProduct.getGeoCoding();
         final GeoPos geoPos = new GeoPos();

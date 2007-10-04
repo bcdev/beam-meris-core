@@ -32,7 +32,6 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
-import com.bc.ceres.core.ProgressMonitor;
 
 /**
  * A processing node to compute the BRR of a meris Lib product.
@@ -77,7 +76,7 @@ public class BrrOp extends MerisBasisOp {
 
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         try {
             dpmConfig = new DpmConfig(configFile);
         } catch (Exception e) {
@@ -145,8 +144,7 @@ public class BrrOp extends MerisBasisOp {
     }
     
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle,
-            ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
 
         final int frameSize = rectangle.height * rectangle.width;
         DpmPixel[] frame = new DpmPixel[frameSize];

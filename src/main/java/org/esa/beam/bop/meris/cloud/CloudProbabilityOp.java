@@ -38,7 +38,6 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -51,6 +50,7 @@ import org.esa.beam.util.StringUtils;
 import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
+
 
 /**
  * A processing node to compute a cloud_probability mask using a neural network.
@@ -113,7 +113,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
 	
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         try {
             loadAuxdata();
         } catch (IOException e) {
@@ -150,12 +150,12 @@ public class CloudProbabilityOp extends MerisBasisOp {
                 throw new IllegalArgumentException("Source product does not contain band " + bandName);
             }
         }
-        createBooleanBands(pm);
+        createBooleanBands();
         
         return targetProduct;
     }
     
-    private void createBooleanBands(ProgressMonitor pm) throws OperatorException {
+    private void createBooleanBands() throws OperatorException {
     	
 		Map<String, Object> parameters = new HashMap<String, Object>();
 		BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[3];
@@ -177,7 +177,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
 		
 		parameters.put("bandDescriptors", bandDescriptors);
 
-		Product expProduct = GPF.createProduct("BandArithmetic", parameters, l1bProduct, pm);
+		Product expProduct = GPF.createProduct("BandArithmetic", parameters, l1bProduct, createProgressMonitor());
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", expProduct);
 		
@@ -272,10 +272,10 @@ public class CloudProbabilityOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
 
         final double[] cloudIn = new double[15];
-
+        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height);
         try {
         	//sources

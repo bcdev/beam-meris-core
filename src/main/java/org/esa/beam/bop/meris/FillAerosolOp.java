@@ -30,7 +30,6 @@ import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.ParameterConverter;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -111,7 +110,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     }
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "fill_aerosol", "MER_L2");
         sourceBands = new HashMap<Band, Band>(config.bands.size());
         defaultBands = new HashMap<Band, Band>(config.bands.size());
@@ -139,7 +138,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         }
 		
         parameters.put("bandDescriptors", bandDescriptors);
-        validProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct, pm);
+        validProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct, createProgressMonitor());
 		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
 		context.addSourceProduct("x", validProduct);
 		
@@ -290,12 +289,11 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     }
     
     @Override
-    public void computeTile(Band band, Tile targetTile,
-            ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile) throws OperatorException {
 
     	Rectangle targetRect = targetTile.getRectangle();
         Rectangle sourceRect = rectCalculator.computeSourceRectangle(targetRect);
-        
+        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", sourceRect.height + 1);
         try {
         	Tile maskTile = null;

@@ -9,13 +9,13 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
-import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
 import com.bc.ceres.core.ProgressMonitor;
+
 
 /**
  * Created by IntelliJ IDEA.
@@ -44,7 +44,7 @@ public class CombinedCloudOp extends MerisBasisOp {
     private Product targetProduct;
 
     @Override
-    public Product initialize(ProgressMonitor pm) throws OperatorException {
+    public Product initialize() throws OperatorException {
 
         targetProduct = createCompatibleProduct(cloudProduct, "MER_COMBINED_CLOUD", "MER_L2");
         // create and add the flags coding
@@ -60,11 +60,11 @@ public class CombinedCloudOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Band band, Tile targetTile,
-            ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile) throws OperatorException {
 
     	Rectangle rectangle = targetTile.getRectangle();
         final int size = rectangle.height * rectangle.width;
+        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", size + 1);
         try {
         	byte[] cloudProb = (byte[]) getSourceTile(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getRawSampleData().getElems();
