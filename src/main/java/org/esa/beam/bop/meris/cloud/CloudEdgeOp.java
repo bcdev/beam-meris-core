@@ -21,8 +21,8 @@ import java.awt.Rectangle;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -59,7 +59,7 @@ public class CloudEdgeOp extends MerisBasisOp {
 
 
     @Override
-	protected Product initialize() throws OperatorException {
+    public Product initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "cloude_edge", "MER_L2");
         targetBand = ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, sourceProduct, targetProduct);
         sourceBand = sourceProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME);
@@ -140,7 +140,7 @@ public class CloudEdgeOp extends MerisBasisOp {
         }
     }
 
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(CloudEdgeOp.class, "Meris.CloudEdge");
         }

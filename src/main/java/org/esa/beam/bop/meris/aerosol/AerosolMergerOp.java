@@ -26,7 +26,6 @@ import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.MetadataAttribute;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
@@ -154,7 +153,7 @@ public class AerosolMergerOp extends MerisBasisOp {
         }
     }
 
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(AerosolMergerOp.class, "Meris.AerosolMerger");
         }

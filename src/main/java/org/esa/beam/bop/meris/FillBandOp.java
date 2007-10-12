@@ -26,9 +26,9 @@ import java.util.Map;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.ParameterConverter;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -112,7 +112,7 @@ public class FillBandOp extends MerisBasisOp implements ParameterConverter {
 	    Arrays.fill(outValues, defaultValue);
     }
 	
-	public static class Spi extends AbstractOperatorSpi {
+	public static class Spi extends OperatorSpi {
         public Spi() {
             super(FillBandOp.class, "FillBand");
         }

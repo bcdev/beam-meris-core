@@ -25,8 +25,8 @@ import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.MetadataAttribute;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -80,7 +80,7 @@ public class BlueBandOp extends MerisBasisOp {
     
 
     @Override
-	protected Product initialize() throws OperatorException {
+    public Product initialize() throws OperatorException {
         month = l1bProduct.getStartTime().getAsCalendar().get(Calendar.MONTH);
 
         targetProduct = createCompatibleProduct(l1bProduct, "MER_BLUEBAND_CLOUD", "MER_L2");
@@ -224,7 +224,7 @@ public class BlueBandOp extends MerisBasisOp {
         return flagCoding;
     }
 
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(BlueBandOp.class, "Meris.BlueBand");
         }

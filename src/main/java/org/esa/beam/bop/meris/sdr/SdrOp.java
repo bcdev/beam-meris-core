@@ -17,8 +17,8 @@ import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.MetadataAttribute;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
@@ -294,7 +294,7 @@ public class SdrOp extends MerisBasisOp {
         return flagCoding;
     }
 
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(SdrOp.class, "Meris.Sdr");
         }

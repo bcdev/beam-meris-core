@@ -35,14 +35,13 @@ import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.MetadataAttribute;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.framework.gpf.support.Auxdata;
@@ -178,8 +177,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
 		parameters.put("bandDescriptors", bandDescriptors);
 
 		Product expProduct = GPF.createProduct("BandArithmetic", parameters, l1bProduct);
-		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
-		context.addSourceProduct("x", expProduct);
+		addSourceProduct("x", expProduct);
 		
 		validLandBand = expProduct.getBand("validLand");
 		validOceanBand = expProduct.getBand("validOcean");
@@ -392,7 +390,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
     }
 
 
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(CloudProbabilityOp.class, "Meris.CloudProbability");
         }

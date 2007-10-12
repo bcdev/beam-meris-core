@@ -23,13 +23,12 @@ import java.util.Map;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
@@ -84,12 +83,11 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
 		parameters.put("bandDescriptors", bandDescriptions);
 		
 		Map<String, Product> products = new HashMap<String, Product>();
-		products.put(getContext().getSourceProductId(l1bProduct), l1bProduct);
-		products.put(getContext().getSourceProductId(brrProduct), brrProduct);
-		products.put(getContext().getSourceProductId(cloudProduct), cloudProduct);
+		products.put(getSourceProductId(l1bProduct), l1bProduct);
+		products.put(getSourceProductId(brrProduct), brrProduct);
+		products.put(getSourceProductId(cloudProduct), cloudProduct);
 		Product expressionProduct = GPF.createProduct("BandArithmetic", parameters, products);
-		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
-		context.addSourceProduct("x", expressionProduct);
+		addSourceProduct("x", expressionProduct);
 		
 		bands = expressionProduct.getBands();
         
@@ -116,7 +114,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     	}
     }
 
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(ProcessFurtherStateOp.class, "Meris.ProcessFurtherState");
         }

@@ -26,15 +26,14 @@ import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.RasterDataNode;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.ParameterConverter;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.framework.gpf.support.TileRectCalculator;
@@ -139,8 +138,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
 		
         parameters.put("bandDescriptors", bandDescriptors);
         validProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
-		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
-		context.addSourceProduct("x", validProduct);
+		addSourceProduct("x", validProduct);
 		
 		if (config.frs) {
 			rectCalculator = new TileRectCalculator(sourceProduct, config.pixelWidth*4, config.pixelWidth*4);
@@ -371,7 +369,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     
 
     
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(FillAerosolOp.class, "FillAerosol");
         }

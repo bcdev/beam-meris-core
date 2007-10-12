@@ -23,13 +23,12 @@ import java.util.Map;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.ProductUtils;
@@ -89,8 +88,7 @@ public class GapLessSdrOp extends MerisBasisOp {
 		parameters.put("bandDescriptors", bandDescriptors);
 		
 		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, toarProduct);
-		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
-		context.addSourceProduct("x", validLandProduct);
+		addSourceProduct("x", validLandProduct);
 		return validLandProduct.getBand("bBand");
 	}
 
@@ -124,7 +122,7 @@ public class GapLessSdrOp extends MerisBasisOp {
         }
     }
 
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(GapLessSdrOp.class, "Meris.GapLessSdr");
         }
