@@ -23,7 +23,6 @@ import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
@@ -34,7 +33,6 @@ import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.framework.gpf.support.TileRectCalculator;
 import org.esa.beam.operator.util.HelperFunctions;
 import org.esa.beam.util.FlagWrapper;
-import org.esa.beam.util.FlagWrapper.Byte;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
@@ -294,7 +292,7 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
     }
 
 
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(LandClassificationOp.class, "Meris.LandClassification");
         }

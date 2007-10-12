@@ -25,14 +25,13 @@ import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.framework.gpf.support.TileRectCalculator;
@@ -136,8 +135,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 		parameters.put("bandDescriptors", bandDescriptors);
 
 		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product);
-		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
-		context.addSourceProduct("x", expProduct);
+		addSourceProduct("x", expProduct);
 		return expProduct.getBand("bBand");
 	}
     
@@ -346,7 +344,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         return bandRaster;
     }
 
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(RayleighCorrectionOp.class, "Meris.RayleighCorrection");
         }

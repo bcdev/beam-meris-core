@@ -25,14 +25,13 @@ import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.RasterDataNode;
-import org.esa.beam.framework.gpf.AbstractOperatorSpi;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
+import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.internal.DefaultOperatorContext;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.ProductUtils;
@@ -71,7 +70,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
     private String configFile = MERIS_L2_CONF;
 
     @Override
-	protected Product initialize() throws OperatorException {
+    public Product initialize() throws OperatorException {
         try {
             dpmConfig = new DpmConfig(configFile);
         } catch (Exception e) {
@@ -113,8 +112,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 		parameters.put("bandDescriptors", bandDescriptors);
 		
 		Product invalidProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
-		DefaultOperatorContext context = (DefaultOperatorContext) getContext();
-		context.addSourceProduct("x", invalidProduct);
+		addSourceProduct("x", invalidProduct);
 		return invalidProduct.getBand("bBand");
 	}
 
@@ -165,7 +163,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
     }
 
 
-    public static class Spi extends AbstractOperatorSpi {
+    public static class Spi extends OperatorSpi {
         public Spi() {
             super(Rad2ReflOp.class, "Meris.Rad2Refl");
         }
