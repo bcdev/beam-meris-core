@@ -107,7 +107,7 @@ public class PixelIdentification implements Constants {
                 DpmPixel pixel = pixelBlock[il][ic];
                 long flags = pixel.l2flags;
 
-                if (!AlbedoUtils.isFlagSet(flags, F_INVALID) && !AlbedoUtils.isFlagSet(flags, F_CLOUD)) {
+                if (!AlbedoUtils.isFlagSet(flags, F_INVALID) /*&& !AlbedoUtils.isFlagSet(flags, F_CLOUD)*/) {
                     if (!correctWater && pixel.altitude < -50.0 && !AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_LAND)) {
                         do_corr[il - il0][ic - ic0] = false;
                     } else {
