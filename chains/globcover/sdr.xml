@@ -210,8 +210,20 @@
           </band>
           <band>
               <product>l1b</product>
-              <nameExp>l1_flags</nameExp>
+              <name>l1_flags</name>
           </band>
+          <band>
+              <product>l1b</product>
+              <name>corr_latitude</name>
+          </band>
+          <band>
+              <product>l1b</product>
+              <name>corr_longitude</name>
+          </band>
+          <band>
+              <product>l1b</product>
+              <name>altitude</name>
+          </band>          
           <band>
               <product>brr</product>
               <nameExp>l2_flags.*</nameExp>
