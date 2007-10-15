@@ -41,7 +41,18 @@ public class BlueBandOp extends MerisBasisOp {
     public static final int FLAG_SNOW = 2;
     public static final int FLAG_DENSE_CLOUD = 4;
     public static final int FLAG_THIN_CLOUD = 8;
+    public static final int FLAG_SNOW_INDEX = 16;
+    public static final int FLAG_SNOW_PLAUSIBLE = 32;
+    public static final int FLAG_BRIGHT_LAND = 64;
 
+    public static final int CLEAR_BIT = 0;
+    public static final int SNOW_BIT = 1;
+    public static final int DENSE_CLOUD_BIT = 2;
+    public static final int THIN_CLOUD_BIT = 3;
+    public static final int SNOW_INDEX_BIT = 4;
+    public static final int SNOW_PLAUSIBLE_BIT = 5;
+    public static final int BRIGHT_LAND_BIT = 6;
+    
     public static final String BLUE_FLAG_BAND = "blue_cloud";
 
     private static final float D_BBT = 0.25f;
@@ -62,13 +73,17 @@ public class BlueBandOp extends MerisBasisOp {
     private static final float R5_ASS = 0.5f;
 
     // for plausibility test
-    private static final float LAT_THR = 60.0f;
-    private static final float ALT_THR = 1000.0f;
+    private static final float LAT_ALWAYS_SNOW = 50.0f;
+    private static final float LAT_TROPIC = 30.0f;
+    private static final float ALT_MEDIAL = 1000.0f;
+    private static final float ALT_TROPIC = 2000.0f;
 
     // for bright sand test
     private static final float SLOPE2_LOW = 0.65f;
     private static final float SLOPE2_UPPER = 1.075f;
 
+    private static final float TOAR_9_SAT = 0.99f;
+   
     public int month;
     
     @SourceProduct(alias="l1b")
@@ -174,10 +189,16 @@ public class BlueBandOp extends MerisBasisOp {
             				cloudFlagScanLine[i] = FLAG_CLEAR;
             			}
             		}
-            		if (cloudFlagScanLine[i] == FLAG_SNOW
-            				&& (!isSnowPlausible || isBrightLand)) {
-            			cloudFlagScanLine[i] = FLAG_CLEAR;
-            		}
+            		double snowIndex = (toar14[i] - toar13[i]) / (toar14[i] + toar13[i]);
+                    if(snowIndex < -0.01) {
+                        cloudFlagScanLine[i] += FLAG_SNOW_INDEX;
+                    }
+                    if (isSnowPlausible) {
+                        cloudFlagScanLine[i] += FLAG_SNOW_PLAUSIBLE;
+                    }
+                    if (isBrightLand) {
+                        cloudFlagScanLine[i] += FLAG_BRIGHT_LAND;
+                    }
             	}
                 pm.worked(1);
             }
@@ -188,16 +209,22 @@ public class BlueBandOp extends MerisBasisOp {
 
     private boolean isBrightLand(float toar_9, float toar_14) {
         final float bsRatio = toar_9 / toar_14;
-        return ((bsRatio >= SLOPE2_LOW) && (bsRatio <= SLOPE2_UPPER));
+        return ((bsRatio >= SLOPE2_LOW) && (bsRatio <= SLOPE2_UPPER)) || toar_9 > TOAR_9_SAT;
     }
 
     private boolean isSnowPlausible(float lat, float alt) {
-        if (((lat <= LAT_THR && lat >= 0.) && (alt <= ALT_THR) && (month >= 4) && (month <= 10)) ||   // northern hemisphere
-                ((-1 * lat <= LAT_THR && lat < 0.) && (alt <= ALT_THR) && (month >= 10) && (month <= 4)))
-        {     // southern hemisphere
-            return false;
+        if (lat > LAT_ALWAYS_SNOW || lat < -LAT_ALWAYS_SNOW) {
+            return true;
         }
-        return true;
+        if ((((lat <= LAT_ALWAYS_SNOW && lat >= LAT_TROPIC) && (month >= 4) && (month <= 10)) ||   // northern hemisphere
+                (((-1 * lat) <= LAT_ALWAYS_SNOW && (-1 * lat) >= LAT_TROPIC && lat < 0.) && ((month >= 10) || (month <= 4)))) && alt > ALT_MEDIAL)
+        {     // southern hemisphere
+            return true;
+        }
+        if (lat < LAT_TROPIC && lat > -LAT_TROPIC && alt > ALT_TROPIC) {
+            return true;
+        }
+        return false;
     }
 
     private FlagCoding createFlagCoding() {

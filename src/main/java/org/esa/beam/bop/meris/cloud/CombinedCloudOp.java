@@ -67,32 +67,59 @@ public class CombinedCloudOp extends MerisBasisOp {
         ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", size + 1);
         try {
-        	byte[] cloudProb = (byte[]) getSourceTile(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getRawSampleData().getElems();
-        	byte[] blueBand = (byte[]) getSourceTile(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle).getRawSampleData().getElems();
+        	byte[] cloudProbData = (byte[]) getSourceTile(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getRawSampleData().getElems();
+        	byte[] blueBandData = (byte[]) getSourceTile(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle).getRawSampleData().getElems();
 
             ProductData flagData = getSourceTile(combinedCloudBand, rectangle).getRawSampleData();
-            byte[] combinedCloud = (byte[]) flagData.getElems();
+            byte[] combinedCloudData = (byte[]) flagData.getElems();
             pm.worked(1);
             
             for (int i = 0; i < size; i++) {
-                if (cloudProb[i] == CloudProbabilityOp.FLAG_INVALID) {
-                    combinedCloud[i] = FLAG_INVALID;
+                final byte cloudProb = cloudProbData[i];
+                byte result;
+                if (cloudProb == CloudProbabilityOp.FLAG_INVALID) {
+                    result = FLAG_INVALID;
                 } else {
-                    combinedCloud[i] = FLAG_CLEAR;
-                    if (cloudProb[i] == CloudProbabilityOp.FLAG_CLOUDY
-                            || blueBand[i] == BlueBandOp.FLAG_DENSE_CLOUD
-                            || blueBand[i] == BlueBandOp.FLAG_THIN_CLOUD) {
-                        combinedCloud[i] = FLAG_CLOUD;
+                    byte combined = FLAG_CLEAR;
+                    final byte blueBand = blueBandData[i];
+                    if (cloudProb == CloudProbabilityOp.FLAG_CLOUDY
+                            || isSet(blueBand, BlueBandOp.DENSE_CLOUD_BIT)
+                            || isSet(blueBand, BlueBandOp.THIN_CLOUD_BIT)) {
+                        combined = FLAG_CLOUD;
                     }
-                    if (blueBand[i] == BlueBandOp.FLAG_SNOW) {
-                        combinedCloud[i] = FLAG_SNOW;
+                    if (isSet(blueBand, BlueBandOp.SNOW_BIT)) {
+                        combined = FLAG_SNOW;
+                    }
+                    
+                    boolean snowPlausible = isSet(blueBand, BlueBandOp.SNOW_PLAUSIBLE_BIT);
+                    boolean snowIndex = isSet(blueBand, BlueBandOp.SNOW_INDEX_BIT);
+                    boolean brightLand = isSet(blueBand, BlueBandOp.BRIGHT_LAND_BIT);
+
+                    if (snowPlausible && (snowIndex || combined == FLAG_SNOW)) {
+                        result = FLAG_SNOW;
+                    } else if (brightLand && !snowPlausible &&
+                                    ((snowIndex && combined != FLAG_CLOUD)
+                                    || combined == FLAG_SNOW)) {
+                        result = FLAG_CLOUD;
+                    } else if (combined == FLAG_CLOUD && !snowIndex) {
+                        result = FLAG_CLOUD;
+                    } else {
+                        result = FLAG_CLEAR;
+                    }
+                    if (combined == FLAG_CLEAR) {
+                        result = FLAG_CLEAR;
                     }
                 }
+                combinedCloudData[i] = result;
                 pm.worked(1);
             }
         } finally {
             pm.done();
         }
+    }
+    
+    private boolean isSet(int flags, int bitIndex) {
+        return (flags & (1 << bitIndex)) != 0;
     }
 
     private FlagCoding createFlagCoding() {
