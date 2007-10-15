@@ -1,0 +1,231 @@
+
+<graph>
+  <id>albedomap_sdr_processing</id>
+
+    <node>
+      <id>l1b</id>
+      <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+      <configuration>
+          <filePath>${inputFile1}</filePath>
+      </configuration>
+    </node>
+    
+    <node>
+      <id>l2rr</id>
+      <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+      <configuration>
+          <filePath>${inputFile2}</filePath>
+      </configuration>
+    </node>
+    
+    <node>
+      <id>l3</id>
+      <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+      <configuration>
+          <filePath>${inputFile3}</filePath>
+      </configuration>
+    </node>    
+    
+    <node>
+      <id>brr</id>
+      <operator>org.esa.beam.bop.meris.brr.BrrOp$Spi</operator>
+      <sources>
+          <input>l1b</input>
+      </sources>
+      <configuration>
+          <outputToar>true</outputToar>
+          <correctWater>false</correctWater>
+      </configuration>
+    </node>
+
+    <node>
+      <id>blue</id>
+      <operator>org.esa.beam.bop.meris.cloud.BlueBandOp$Spi</operator>
+      <sources>
+            <toar>brr</toar>
+            <l1b>l1b</l1b>
+        </sources>
+    </node>
+
+    <node>
+      <id>cloudProb</id>
+      <operator>org.esa.beam.bop.meris.cloud.CloudProbabilityOp$Spi</operator>
+      <sources>
+            <input>l1b</input>
+        </sources>
+    </node>
+    
+    <node>
+      <id>combinedCloud</id>
+      <operator>org.esa.beam.bop.meris.cloud.CombinedCloudOp$Spi</operator>
+        <sources>
+            <cloudProb>cloudProb</cloudProb>
+            <blueBand>blue</blueBand>
+        </sources>
+    </node>
+    
+    <node>
+      <id>cloudEdge</id>
+      <operator>org.esa.beam.bop.meris.cloud.CloudEdgeOp$Spi</operator>
+        <sources>
+            <input>combinedCloud</input>
+        </sources>
+    </node>
+    
+    <node>
+      <id>ctp</id>
+      <operator>org.esa.beam.bop.meris.cloud.CloudTopPressureOp$Spi</operator>
+        <sources>
+            <input>l1b</input>
+        </sources>
+    </node>
+    
+    
+    <node>
+      <id>cloudShadow</id>
+      <operator>org.esa.beam.bop.meris.cloud.CloudShadowOp$Spi</operator>
+        <sources>
+            <cloud>cloudEdge</cloud>
+            <l1b>l1b</l1b>
+            <ctp>ctp</ctp>
+        </sources>
+    </node>    
+    
+    <node>
+      <id>processFurther</id>
+      <operator>org.esa.beam.bop.meris.ProcessFurtherStateOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <brr>brr</brr>
+            <cloud>cloudShadow</cloud>
+        </sources>
+    </node>
+    
+    <node>
+        <id>sdrMask</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.BandArithmeticOp$Spi</operator>
+        <sources>            
+            <brr>brr</brr>            
+            <cloud>combinedCloud</cloud>
+        </sources>
+        <configuration>
+                <bandDescriptor>
+            		<name>sdrmask</name>
+            		<expression>$brr.l2_flags_p1.F_LANDCONS AND (not ($cloud.combined_cloud.cloud or $cloud.combined_cloud.cloud_edge or $cloud.combined_cloud.cloud_shadow))</expression>
+            		<type>boolean</type>
+                </bandDescriptor>
+        </configuration>
+    </node>    
+
+    <node>
+      <id>l3ForRR</id>
+      <operator>org.esa.beam.framework.gpf.operators.meris.L3ToL1Op$Spi</operator>
+      <sources>
+        <l1>l1b</l1>
+        <l3>l3</l3>
+        <mask>sdrMask</mask>
+      </sources>
+      <configuration>        
+        <maskBand>sdrmask</maskBand>        
+      </configuration>
+    </node>
+    
+     <node>
+      <id>aerosol</id>
+      <operator>org.esa.beam.bop.meris.FillAerosolOp$Spi</operator>
+      <sources>
+        <input>l2rr</input>
+        <default>l3ForRR</default>
+        <mask>sdrMask</mask>
+      </sources>
+      <configuration>
+        <pixelWidth>50</pixelWidth>        
+        <maskBand>sdrmask</maskBand>
+        <band>
+          <name>aero_opt_thick_443</name>
+          <inputBand>aero_opt_thick_443</inputBand>
+          <validExp>!l2_flags.PCD_19 AND l2_flags.LAND</validExp>
+          <defaultBand>aero_opt_thick_443</defaultBand>          
+        </band>
+      </configuration>
+    </node>
+        
+    
+    <node>
+      <id>sdr</id>
+      <operator>org.esa.beam.bop.meris.sdr.SdrOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <brr>brr</brr>
+            <aerosol>aerosol</aerosol>
+            <mask>sdrMask</mask>
+        </sources>
+      <configuration>
+          <neuralNetFile>fub_aerosol_16.10.2006.nna</neuralNetFile>
+          <validBandName>sdrmask</validBandName>
+          <aot470Name>aero_opt_thick_443</aot470Name>
+          <angValue>1</angValue>
+      </configuration>
+    </node>
+    
+    <node>
+      <id>gaplesssdr</id>
+      <operator>org.esa.beam.bop.meris.GapLessSdrOp$Spi</operator>
+      <sources>
+        <sdr>sdr</sdr>
+        <toar>brr</toar>
+      </sources>
+    </node>
+            
+    <node>
+      <id>mergedSDR</id>
+      <operator>org.esa.beam.framework.gpf.operators.common.ProductMergeOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <brr>brr</brr>
+            <sdr>sdr</sdr>
+            <gaplesssdr>gaplesssdr</gaplesssdr>
+            <cloud>cloudShadow</cloud>
+            <processFurther>processFurther</processFurther>
+        </sources>
+      <configuration>
+           <productType>MER_L2_SDR</productType>
+           <baseGeoInfo>l1b</baseGeoInfo>           
+           <band>
+              <product>gaplesssdr</product>
+              <nameExp>.*</nameExp>
+          </band>
+          <band>
+              <product>sdr</product>
+              <name>sdr_flags</name>
+          </band>
+          <band>
+              <product>l1b</product>
+              <nameExp>l1_flags</nameExp>
+          </band>
+          <band>
+              <product>brr</product>
+              <nameExp>l2_flags.*</nameExp>
+          </band>
+          <band>
+              <product>cloud</product>
+              <name>combined_cloud</name>
+          </band>
+          <band>
+              <product>processFurther</product>
+              <name>process_further_state</name>
+          </band>
+      </configuration>
+    </node>            
+        
+    <node>
+      <id>write</id>
+      <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>mergedSDR</input>
+        </sources>
+      <configuration>
+          <filePath>${outputFile1}</filePath>
+      </configuration>
+    </node>
+</graph>
