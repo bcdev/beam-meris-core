@@ -209,6 +209,7 @@ public class BrrOp extends MerisBasisOp {
                 for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
                     ddata[iP] = (float) frame[iP].rho_top[bandIndex];
                 }
+                targetTiles.get(brrReflecBands[bandIndex]).setRawSampleData(data);
             }
         }
         if (outputToar) {
@@ -218,19 +219,23 @@ public class BrrOp extends MerisBasisOp {
                 for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
                     ddata[iP] = (float) frame[iP].rho_toa[bandIndex];
                 }
+                targetTiles.get(toaReflecBands[bandIndex]).setRawSampleData(data);
             }
         }
         ProductData flagData = targetTiles.get(l2FlagsP1).getRawSampleData();
         int[] intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP1Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
-
+        targetTiles.get(l2FlagsP1).setRawSampleData(flagData);
+        
         flagData = targetTiles.get(l2FlagsP2).getRawSampleData();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP2Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
+        targetTiles.get(l2FlagsP2).setRawSampleData(flagData);
 
         flagData = targetTiles.get(l2FlagsP3).getRawSampleData();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP3Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
+        targetTiles.get(l2FlagsP3).setRawSampleData(flagData);
     }
 
     protected Band addFlagsBand(final FlagCoding flagCodingP1, final double rf1, final double gf1, final double bf1) {
