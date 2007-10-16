@@ -34,8 +34,6 @@ public class CombinedCloudOp extends MerisBasisOp {
     public static final int FLAG_CLOUD_EDGE = 8;
     public static final int FLAG_CLOUD_SHADOW = 16;
 
-    private Band combinedCloudBand;
-    
     @SourceProduct(alias="cloudProb")
     private Product cloudProduct;
     @SourceProduct(alias="blueBand")
@@ -52,7 +50,7 @@ public class CombinedCloudOp extends MerisBasisOp {
         targetProduct.addFlagCoding(flagCoding);
 
         // create and add the flags dataset
-        combinedCloudBand = targetProduct.addBand(FLAG_BAND_NAME, ProductData.TYPE_UINT8);
+        Band combinedCloudBand = targetProduct.addBand(FLAG_BAND_NAME, ProductData.TYPE_UINT8);
         combinedCloudBand.setDescription("combined cloud flags");
         combinedCloudBand.setFlagCoding(flagCoding);
 
@@ -70,7 +68,7 @@ public class CombinedCloudOp extends MerisBasisOp {
         	byte[] cloudProbData = (byte[]) getSourceTile(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getRawSampleData().getElems();
         	byte[] blueBandData = (byte[]) getSourceTile(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle).getRawSampleData().getElems();
 
-            ProductData flagData = getSourceTile(combinedCloudBand, rectangle).getRawSampleData();
+            ProductData flagData = targetTile.getRawSampleData();
             byte[] combinedCloudData = (byte[]) flagData.getElems();
             pm.worked(1);
             
@@ -113,6 +111,7 @@ public class CombinedCloudOp extends MerisBasisOp {
                 combinedCloudData[i] = result;
                 pm.worked(1);
             }
+            targetTile.setRawSampleData(flagData);
         } finally {
             pm.done();
         }

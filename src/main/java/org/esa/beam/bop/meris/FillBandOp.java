@@ -16,7 +16,6 @@
  */
 package org.esa.beam.bop.meris;
 
-import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -105,11 +104,12 @@ public class FillBandOp extends MerisBasisOp implements ParameterConverter {
 	
 	@Override
     public void computeTile(Band band, Tile targetTile) throws OperatorException {
-	    Rectangle targetRect = targetTile.getRectangle();
-	    float[] outValues = (float[]) getSourceTile(band, targetRect).getRawSampleData().getElems();
+	    ProductData rawSampleData = targetTile.getRawSampleData();
+        float[] outValues = (float[]) rawSampleData.getElems();
 	    final float defaultValue = defaultMap.get(band);
 	    
 	    Arrays.fill(outValues, defaultValue);
+	    targetTile.setRawSampleData(rawSampleData);
     }
 	
 	public static class Spi extends OperatorSpi {

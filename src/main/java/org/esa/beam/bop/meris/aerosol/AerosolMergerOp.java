@@ -128,9 +128,12 @@ public class AerosolMergerOp extends MerisBasisOp {
 			float[] l2Aot = (float[]) getSourceTile(l2Product.getBand("aero_opt_thick_443"), rectangle).getRawSampleData().getElems();
 			float[] l2Ang = (float[]) getSourceTile(l2Product.getBand("aero_alpha"), rectangle).getRawSampleData().getElems();
 
-            float[] aot470 = (float[]) targetTiles.get(aot470Band).getRawSampleData().getElems();
-            float[] ang = (float[]) targetTiles.get(angstrBand).getRawSampleData().getElems();
-            byte[] flag = (byte[]) targetTiles.get(flagBand).getRawSampleData().getElems();
+            ProductData rawSampleDataAot470 = targetTiles.get(aot470Band).getRawSampleData();
+            float[] aot470 = (float[]) rawSampleDataAot470.getElems();
+            ProductData rawSampleDataAng = targetTiles.get(aot470Band).getRawSampleData();
+            float[] ang = (float[]) rawSampleDataAng.getElems();
+            ProductData rawSampleDataFlag = targetTiles.get(flagBand).getRawSampleData();
+            byte[] flag = (byte[]) rawSampleDataFlag.getElems();
 
             for (int i = 0; i < size; i++) {
                 if (l2Aot[i] >= 0 && l2Ang[i] >= 0) {
@@ -148,6 +151,9 @@ public class AerosolMergerOp extends MerisBasisOp {
                 }
                 pm.worked(1);
             }
+            targetTiles.get(aot470Band).setRawSampleData(rawSampleDataAot470);
+            targetTiles.get(aot470Band).setRawSampleData(rawSampleDataAng);
+            targetTiles.get(flagBand).setRawSampleData(rawSampleDataFlag);
         } finally {
             pm.done();
         }

@@ -137,7 +137,8 @@ public class BlueBandOp extends MerisBasisOp {
 			    latitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect);
 			    altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect);
 			}
-            byte[] cloudFlagScanLine = (byte[]) targetTile.getRawSampleData().getElems();
+            ProductData rawSampleData = targetTile.getRawSampleData();
+            byte[] cloudFlagScanLine = (byte[]) rawSampleData.getElems();
 
             boolean isSnowPlausible;
             boolean isBrightLand;
@@ -202,6 +203,7 @@ public class BlueBandOp extends MerisBasisOp {
             	}
                 pm.worked(1);
             }
+            targetTile.setRawSampleData(rawSampleData);
         } finally {
             pm.done();
         }
