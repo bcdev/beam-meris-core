@@ -161,7 +161,8 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
             SourceData sd = loadSourceTiles(rectangle);
-            FlagWrapper cloudFlags = new FlagWrapper.Short((short[]) targetTile.getRawSampleData().getElems());
+            ProductData rawSampleData = targetTile.getRawSampleData();
+            FlagWrapper cloudFlags = new FlagWrapper.Short((short[]) rawSampleData.getElems());
 
             PixelInfo pixelInfo = new PixelInfo();
 			int i = 0;
@@ -189,6 +190,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 				}
 				pm.worked(1);
 			}
+			targetTile.setRawSampleData(rawSampleData);
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {

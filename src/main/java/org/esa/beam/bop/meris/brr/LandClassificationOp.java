@@ -123,7 +123,8 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 			for (int i = 0; i < rhoNg.length; i++) {
 			    rhoNg[i] = getSourceTile(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
 			}
-            FlagWrapper landFlags = new FlagWrapper.Byte((byte[]) targetTile.getRawSampleData().getElems());
+            ProductData rawSampleData = targetTile.getRawSampleData();
+            FlagWrapper landFlags = new FlagWrapper.Byte((byte[]) rawSampleData.getElems());
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y += Constants.SUBWIN_HEIGHT) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x += Constants.SUBWIN_WIDTH) {
@@ -206,6 +207,7 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
                 }
                 pm.worked(1);
             }
+            targetTile.setRawSampleData(rawSampleData);
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {

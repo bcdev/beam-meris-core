@@ -156,7 +156,8 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 			
 			cloudFlags = new FlagWrapper.Short((short[])getSourceTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle).getRawSampleData().getElems());
 
-            gasFlags = new FlagWrapper.Byte((byte[]) targetTiles.get(flagBand).getRawSampleData().getElems());
+            ProductData rawSampleData = targetTiles.get(flagBand).getRawSampleData();
+            gasFlags = new FlagWrapper.Byte((byte[]) rawSampleData.getElems());
             Tile[] rhoNg = new Tile[rhoNgBands.length];
             Tile[] tg = null;
             if (exportTg) {
@@ -281,6 +282,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
                 }
                 pm.worked(1);
             }
+            targetTiles.get(flagBand).setRawSampleData(rawSampleData);
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {

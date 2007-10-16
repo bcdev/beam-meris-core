@@ -1,31 +1,12 @@
 <graph>
-    <id>rad2refl</id>
-
-    <node>
-        <id>l1b</id>
-        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
-        <parameters>
-            <filePath>${inputFile1}</filePath>
-        </parameters>
-    </node>
+    <id>Rad2Refl</id>
 
     <node>
         <id>refl</id>
         <operator>org.esa.beam.bop.meris.brr.Rad2ReflOp$Spi</operator>
         <sources>
-            <input>l1b</input>
+            <input>${l1b}</input>
         </sources>
-    </node>
-
-    <node>
-        <id>write</id>
-        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
-        <sources>
-            <input>refl</input>
-        </sources>
-        <parameters>
-            <filePath>${outputFile1}</filePath>
-        </parameters>
     </node>
 
 </graph>
