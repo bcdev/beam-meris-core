@@ -31,7 +31,7 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.operator.util.HelperFunctions;
-import org.esa.beam.util.FlagWrapper;
+import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
@@ -109,15 +109,15 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
     protected static FlagCoding createFlagCoding() {
         FlagCoding flagCoding = new FlagCoding(CLOUD_FLAGS);
-        flagCoding.addFlag("F_CLOUD", FlagWrapper.setFlag(0, F_CLOUD), null);
-        flagCoding.addFlag("F_BRIGHT", FlagWrapper.setFlag(0, F_BRIGHT), null);
-        flagCoding.addFlag("F_LOW_NN_P", FlagWrapper.setFlag(0, F_LOW_NN_P), null);
-        flagCoding.addFlag("F_PCD_NN_P", FlagWrapper.setFlag(0, F_PCD_NN_P), null);
-        flagCoding.addFlag("F_LOW_POL_P", FlagWrapper.setFlag(0, F_LOW_POL_P), null);
-        flagCoding.addFlag("F_PCD_POL_P", FlagWrapper.setFlag(0, F_PCD_POL_P), null);
-        flagCoding.addFlag("F_CONFIDENCE_P", FlagWrapper.setFlag(0, F_CONFIDENCE_P), null);
-        flagCoding.addFlag("F_SLOPE_1", FlagWrapper.setFlag(0, F_SLOPE_1), null);
-        flagCoding.addFlag("F_SLOPE_2", FlagWrapper.setFlag(0, F_SLOPE_2), null);
+        flagCoding.addFlag("F_CLOUD", BitSetter.setFlag(0, F_CLOUD), null);
+        flagCoding.addFlag("F_BRIGHT", BitSetter.setFlag(0, F_BRIGHT), null);
+        flagCoding.addFlag("F_LOW_NN_P", BitSetter.setFlag(0, F_LOW_NN_P), null);
+        flagCoding.addFlag("F_PCD_NN_P", BitSetter.setFlag(0, F_PCD_NN_P), null);
+        flagCoding.addFlag("F_LOW_POL_P", BitSetter.setFlag(0, F_LOW_POL_P), null);
+        flagCoding.addFlag("F_PCD_POL_P", BitSetter.setFlag(0, F_PCD_POL_P), null);
+        flagCoding.addFlag("F_CONFIDENCE_P", BitSetter.setFlag(0, F_CONFIDENCE_P), null);
+        flagCoding.addFlag("F_SLOPE_1", BitSetter.setFlag(0, F_SLOPE_1), null);
+        flagCoding.addFlag("F_SLOPE_2", BitSetter.setFlag(0, F_SLOPE_2), null);
         return flagCoding;
     }
 
@@ -148,7 +148,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         sd.vaa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getRawSamples().getElems();
         sd.altitude = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getRawSamples().getElems();
         sd.ecmwfPressure = (float[]) getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle).getRawSamples().getElems();
-        sd.l1Flags = new FlagWrapper.Byte((byte[]) getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getRawSamples().getElems());
+        sd.l1Flags = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle);
         
         return sd;
     }
@@ -161,20 +161,18 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
             SourceData sd = loadSourceTiles(rectangle);
-            ProductData rawSampleData = targetTile.getRawSamples();
-            FlagWrapper cloudFlags = new FlagWrapper.Short((short[]) rawSampleData.getElems());
 
             PixelInfo pixelInfo = new PixelInfo();
 			int i = 0;
 			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				pixelInfo.y = y;
 				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
-					if (!sd.l1Flags.isSet(i, L1_F_INVALID)) {
+					if (!sd.l1Flags.getSampleBit(x, y, L1_F_INVALID)) {
 						pixelInfo.x = x;
 						pixelInfo.index = i;
 						pixelInfo.airMass = HelperFunctions.calculateAirMass(
 								sd.vza[i], sd.sza[i]);
-						if (sd.l1Flags.isSet(i, L1_F_LAND)) {
+						if (sd.l1Flags.getSampleBit(x, y, L1_F_LAND)) {
 							// ECMWF pressure is only corrected for positive
 							// altitudes and only for land pixels
 							pixelInfo.ecmwfPressure = HelperFunctions
@@ -184,13 +182,12 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 						} else {
 							pixelInfo.ecmwfPressure = sd.ecmwfPressure[i];
 						}
-						classifyCloud(sd, pixelInfo, cloudFlags);
+						classifyCloud(sd, pixelInfo, targetTile);
 					}
 					i++;
 				}
 				pm.worked(1);
 			}
-			targetTile.setRawSamples(rawSampleData);
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {
@@ -198,7 +195,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         }
     }
 
-    public void classifyCloud(SourceData sd, PixelInfo pixelInfo, FlagWrapper cloudFlags) {
+    public void classifyCloud(SourceData sd, PixelInfo pixelInfo, Tile targetTile) {
         final ReturnValue press = new ReturnValue();
         final boolean[] resultFlags = new boolean[3];
 
@@ -213,31 +210,31 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         boolean delta_p = resultFlags[2];
 
         /* keep for display-debug - added for v2.1 */
-        cloudFlags.set(pixelInfo.index, F_LOW_NN_P, low_P_nn);
-        cloudFlags.set(pixelInfo.index, F_PCD_NN_P, true); /* DPM #2.1.5-25 */
-        cloudFlags.set(pixelInfo.index, F_LOW_POL_P, low_P_poly);
-        cloudFlags.set(pixelInfo.index, F_PCD_POL_P, pcd_poly); /* DPM #2.1.12-12 */
-        cloudFlags.set(pixelInfo.index, F_CONFIDENCE_P, delta_p);
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, F_LOW_NN_P, low_P_nn);
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, F_PCD_NN_P, true); /* DPM #2.1.5-25 */
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, F_LOW_POL_P, low_P_poly);
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, F_PCD_POL_P, pcd_poly); /* DPM #2.1.12-12 */
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, F_CONFIDENCE_P, delta_p);
 
         // Compute slopes- step 2.1.7
         spec_slopes(sd, pixelInfo, resultFlags);
         boolean bright_f = resultFlags[0];
         boolean slope_1_f = resultFlags[1];
         boolean slope_2_f = resultFlags[2];
-        cloudFlags.set(pixelInfo.index, F_BRIGHT, bright_f);
-        cloudFlags.set(pixelInfo.index, F_SLOPE_1, slope_1_f);
-        cloudFlags.set(pixelInfo.index, F_SLOPE_2, slope_2_f);
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, F_BRIGHT, bright_f);
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, F_SLOPE_1, slope_1_f);
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, F_SLOPE_2, slope_2_f);
 
         // table-driven classification- step 2.1.8
         // DPM #2.1.8-1
-        boolean land_f = sd.l1Flags.isSet(pixelInfo.index, L1_F_LAND);
+        boolean land_f = sd.l1Flags.getSampleBit(pixelInfo.x, pixelInfo.y, L1_F_LAND);
         boolean is_cloud = is_cloudy(land_f,
                                      bright_f,
                                      low_P_nn, low_P_poly, delta_p,
                                      slope_1_f, slope_2_f,
                                      true, pcd_poly);
 
-        cloudFlags.set(pixelInfo.index, F_CLOUD, is_cloud);
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, F_CLOUD, is_cloud);
     }
 
     /**
@@ -373,7 +370,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         FractIndex[] DP_Index = FractIndex.createArray(2);
 
         /* get proper threshold - DPM #2.1.2-2 */
-        if (sd.l1Flags.isSet(pixelInfo.index, L1_F_LAND)) {
+        if (sd.l1Flags.getSampleBit(pixelInfo.x, pixelInfo.y, L1_F_LAND)) {
             Interp.interpCoord(sd.sza[pixelInfo.index], auxData.DPthresh_land.getTab(0), DP_Index[0]);
             Interp.interpCoord(sd.vza[pixelInfo.index], auxData.DPthresh_land.getTab(1), DP_Index[1]);
             delta_press_thresh = Interp.interpolate(auxData.DPthresh_land.getJavaArray(), DP_Index);
@@ -437,7 +434,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
         final FractIndex[] rhoRC442index = FractIndex.createArray(3);
         /* Interpolate threshold on rayleigh corrected reflectance - DPM #2.1.7-9 */
-        if (dc.l1Flags.isSet(pixelInfo.index, L1_F_LAND)) {   /* land pixel */
+        if (dc.l1Flags.getSampleBit(pixelInfo.x, pixelInfo.y, L1_F_LAND)) {   /* land pixel */
             Interp.interpCoord(dc.sza[pixelInfo.index],
                                auxData.Rhorc_442_land_LUT.getTab(0),
                                rhoRC442index[0]);
@@ -516,16 +513,16 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
                               boolean pcd_poly) {
         boolean is_cloud;
         int index = 0;
-
+        
         /* set bits of index according to inputs */
-        index = FlagWrapper.setFlag(index, CC_BRIGHT, bright_f);
-        index = FlagWrapper.setFlag(index, CC_LOW_P_NN, low_P_nn);
-        index = FlagWrapper.setFlag(index, CC_LOW_P_PO, low_P_poly);
-        index = FlagWrapper.setFlag(index, CC_DELTA_P, delta_p);
-        index = FlagWrapper.setFlag(index, CC_PCD_NN, pcd_nn);
-        index = FlagWrapper.setFlag(index, CC_PCD_PO, pcd_poly);
-        index = FlagWrapper.setFlag(index, CC_SLOPE_1, slope_1_f);
-        index = FlagWrapper.setFlag(index, CC_SLOPE_2, slope_2_f);
+        index = BitSetter.setFlag(index, CC_BRIGHT, bright_f);
+        index = BitSetter.setFlag(index, CC_LOW_P_NN, low_P_nn);
+        index = BitSetter.setFlag(index, CC_LOW_P_PO, low_P_poly);
+        index = BitSetter.setFlag(index, CC_DELTA_P, delta_p);
+        index = BitSetter.setFlag(index, CC_PCD_NN, pcd_nn);
+        index = BitSetter.setFlag(index, CC_PCD_PO, pcd_poly);
+        index = BitSetter.setFlag(index, CC_SLOPE_1, slope_1_f);
+        index = BitSetter.setFlag(index, CC_SLOPE_2, slope_2_f);
         index &= 0xff;
 
         /* readRecord decision table */
@@ -552,7 +549,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 		private float[] vaa;
 		private float[] altitude;
 		private float[] ecmwfPressure;
-		private FlagWrapper l1Flags;
+		private Tile l1Flags;
 	}
 
     private static class PixelInfo {

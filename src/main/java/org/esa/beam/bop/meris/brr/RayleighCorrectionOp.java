@@ -34,9 +34,8 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.framework.gpf.support.TileRectCalculator;
 import org.esa.beam.operator.util.HelperFunctions;
-import org.esa.beam.util.FlagWrapper;
+import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
 
@@ -57,7 +56,6 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     private DpmConfig dpmConfig;
     protected L2AuxData auxData;
-    protected FlagWrapper brrFlags;
     protected RayleighCorrection rayleighCorrection;
     
     private Band isLandBand;
@@ -162,7 +160,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
             if (i == bb11 || i == bb15) {
                 continue;
             }
-            flagCoding.addFlag("F_NEGATIV_BRR_" + (i + 1), FlagWrapper.setFlag(0, bitIndex), null);
+            flagCoding.addFlag("F_NEGATIV_BRR_" + (i + 1), BitSetter.setFlag(0, bitIndex), null);
             bitIndex++;
         }
         return flagCoding;
@@ -200,7 +198,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 				sphAlbRData = getTargetTileGroup(sphAlbRBands, targetTiles);
             }
             Tile[] brr = getTargetTileGroup(brrBands, targetTiles);
-            brrFlags = new FlagWrapper.Short((short[]) getSourceTile(flagBand, rectangle).getRawSamples().getElems());
+            Tile brrFlags = getSourceTile(flagBand, rectangle);
             
             boolean[][] do_corr = new boolean[SUBWIN_HEIGHT][SUBWIN_WIDTH];
             // rayleigh phase function coefficients, PR in DPM
@@ -277,7 +275,6 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					    /* process each pixel */
 					    for (int iy = y; iy <= yWinEnd; iy++) {
 					        for (int ix = x; ix <= xWinEnd; ix++) {
-					            int index = TileRectCalculator.convertToIndex(ix, iy, rectangle);
 					            if (do_corr[iy - y][ix - x]) {
 					                /* Rayleigh correction for each pixel */
 					                rayleighCorrection.corr_rayleigh(rhoR, sphAlbR, transRs, transRv,
@@ -301,7 +298,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					                        case bb890:
 					                            if (brr[bandId].getSampleFloat(ix, iy) <= 0.) {
 					                                /* set annotation flag for reflectance product - v4.2 */
-					                                brrFlags.set(index, (bandId <= bb760 ? bandId : bandId - 1));
+					                                brrFlags.setSample(ix, iy, (bandId <= bb760 ? bandId : bandId - 1), true);
 					                            }
 					                            break;
 					                        default:

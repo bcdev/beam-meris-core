@@ -30,9 +30,8 @@ import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.framework.gpf.support.TileRectCalculator;
 import org.esa.beam.operator.util.HelperFunctions;
-import org.esa.beam.util.FlagWrapper;
+import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
@@ -97,10 +96,10 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 
     protected static FlagCoding createFlagCoding() {
         FlagCoding flagCoding = new FlagCoding(LAND_FLAGS);
-        flagCoding.addFlag("F_MEGLINT", FlagWrapper.setFlag(0, F_MEGLINT), null);
-        flagCoding.addFlag("F_LOINLD", FlagWrapper.setFlag(0, F_LOINLD), null);
-        flagCoding.addFlag("F_ISLAND", FlagWrapper.setFlag(0, F_ISLAND), null);
-        flagCoding.addFlag("F_LANDCONS", FlagWrapper.setFlag(0, F_LANDCONS), null);
+        flagCoding.addFlag("F_MEGLINT", BitSetter.setFlag(0, F_MEGLINT), null);
+        flagCoding.addFlag("F_LOINLD", BitSetter.setFlag(0, F_LOINLD), null);
+        flagCoding.addFlag("F_ISLAND", BitSetter.setFlag(0, F_ISLAND), null);
+        flagCoding.addFlag("F_LANDCONS", BitSetter.setFlag(0, F_LANDCONS), null);
         return flagCoding;
     }
 
@@ -117,14 +116,12 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 			Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
 			Tile windu = getSourceTile(l1bProduct.getTiePointGrid("zonal_wind"), rectangle);
 			Tile windv = getSourceTile(l1bProduct.getTiePointGrid("merid_wind"), rectangle);
-			FlagWrapper l1Flags = new FlagWrapper.Byte((byte[])getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getRawSamples().getElems());
+			Tile l1Flags = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle);
 			
 			Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i = 0; i < rhoNg.length; i++) {
 			    rhoNg[i] = getSourceTile(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
 			}
-            ProductData rawSampleData = targetTile.getRawSamples();
-            FlagWrapper landFlags = new FlagWrapper.Byte((byte[]) rawSampleData.getElems());
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y += Constants.SUBWIN_HEIGHT) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x += Constants.SUBWIN_WIDTH) {
@@ -158,7 +155,6 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 					/* process each pixel */
 					for (int iy = y; iy <= yWinEnd; iy++) {
 						for (int ix = x; ix <= xWinEnd; ix++) {
-							int index = TileRectCalculator.convertToIndex(ix, iy, rectangle);
 							/* Land /Water re-classification - v4.2, updated for v7 */
 							/* DPM step 2.6.26 */
 							
@@ -173,13 +169,13 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 							a_thresh = auxData.alpha_thresh[0];
 							is_water = inland_waters(r7thresh_val, rhoNg, ix, iy, b_thresh, a_thresh);
 							/* the is_water flag is available in the output product as F_LOINLD */
-							landFlags.set(x, F_LOINLD, is_water);
+							targetTile.setSample(ix, iy, F_LOINLD, is_water);
 							
 							/* test if pixel is land */
 							final float thresh_medg = 0.2f;
 							boolean isGlint = (rhoGlint >= thresh_medg * rhoNg[bb865].getSampleFloat(ix, iy));
 							if (isGlint) {
-								landFlags.set(index, F_MEGLINT);
+							    targetTile.setSample(ix, iy, F_MEGLINT, true);
 								b_thresh = auxData.lap_b_thresh[0];
 								a_thresh = auxData.alpha_thresh[0];
 								rThresh = r7thresh_val;
@@ -190,7 +186,7 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 							}
 							is_land = island(rThresh, rhoNg, ix, iy, b_thresh, a_thresh);
 							/* the is_land flag is available in the output product as F_ISLAND */
-							landFlags.set(index, F_ISLAND, is_land);
+							targetTile.setSample(ix, iy, F_ISLAND, is_land);
 							
 							// DPM step 2.6.26-7
 							// DPM #2.6.26-6
@@ -198,16 +194,15 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 							// the water test is less severe than the land test
 							boolean is_land_consolidated = !is_water;
 							// the land test is more severe than the water test
-							if (isGlint && !l1Flags.isSet(index, L1_F_LAND)) {
+							if (isGlint && !l1Flags.getSampleBit(ix, iy, L1_F_LAND)) {
 								is_land_consolidated = is_land;
 							}
-							landFlags.set(index, F_LANDCONS, is_land_consolidated);
+							targetTile.setSample(ix, iy, F_LANDCONS, is_land_consolidated);
 						}
 					}
                 }
                 pm.worked(1);
             }
-            targetTile.setRawSamples(rawSampleData);
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {
