@@ -1,6 +1,6 @@
 package org.esa.beam.bop.meris.brr.dpm;
 
-import org.esa.beam.bop.meris.AlbedoUtils;
+import org.esa.beam.util.BitSetter;
 
 /**
  * Created by IntelliJ IDEA.
@@ -48,9 +48,9 @@ public class AtmosphericCorrectionLand implements Constants {
                 pixel = pixels[il][ic];
                 flags = pixel.l2flags;
                 /* do NOT correct invalid + DO correct land */
-                if (!AlbedoUtils.isFlagSet(flags, F_INVALID) &&
-                        (AlbedoUtils.isFlagSet(flags, F_LANDCONS) ||
-                                (correctWater && !AlbedoUtils.isFlagSet(flags, F_CLOUD)))) {
+                if (!BitSetter.isFlagSet(flags, F_INVALID) &&
+                        (BitSetter.isFlagSet(flags, F_LANDCONS) ||
+                                (correctWater && !BitSetter.isFlagSet(flags, F_CLOUD)))) {
                     correctPixel = true;
                     lh.do_corr[il - il0][ic - ic0] = true;
                 } else {

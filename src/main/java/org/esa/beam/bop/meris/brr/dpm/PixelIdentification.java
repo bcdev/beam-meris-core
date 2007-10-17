@@ -6,7 +6,7 @@
  */
 package org.esa.beam.bop.meris.brr.dpm;
 
-import org.esa.beam.bop.meris.AlbedoUtils;
+import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
@@ -107,13 +107,13 @@ public class PixelIdentification implements Constants {
                 DpmPixel pixel = pixelBlock[il][ic];
                 long flags = pixel.l2flags;
 
-                if (!AlbedoUtils.isFlagSet(flags, F_INVALID) /*&& !AlbedoUtils.isFlagSet(flags, F_CLOUD)*/) {
-                    if (!correctWater && pixel.altitude < -50.0 && !AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_LAND)) {
+                if (!BitSetter.isFlagSet(flags, F_INVALID) /*&& !AlbedoUtils.isFlagSet(flags, F_CLOUD)*/) {
+                    if (!correctWater && pixel.altitude < -50.0 && !BitSetter.isFlagSet(pixel.l1flags, L1_F_LAND)) {
                         do_corr[il - il0][ic - ic0] = false;
                     } else {
                         correctPixel = true;
                         do_corr[il - il0][ic - ic0] = true;
-                        is_L1bland[il - il0][ic - ic0] = AlbedoUtils.isFlagSet(flags, F_LAND);
+                        is_L1bland[il - il0][ic - ic0] = BitSetter.isFlagSet(flags, F_LAND);
 
                         /* v4.2: average radiances for water pixels */
                         if (!is_L1bland[il - il0][ic - ic0]) {
@@ -187,7 +187,7 @@ public class PixelIdentification implements Constants {
 
                         /* test SZA - v4.2 */
                         if (pixel.sun_zenith > auxData.TETAS_LIM) {
-                            pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_SUN70);
+                            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_SUN70, true);
                         }
 
                         /* gaseous transmittance correction : writes rho-ag field - v4.2 */
@@ -197,29 +197,29 @@ public class PixelIdentification implements Constants {
                                 eta = pixel.rho_toa[bb760] / pixel.rho_toa[bb753];    //o2
                             } else {
                                 eta = 1.;
-                                pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_ORINP0, true);
+                                pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_ORINP0, true);
                             }
                             /* DPM #2.6.12.3-1 */
                             if ((pixel.rho_toa[bb890] > 0.) && (pixel.rho_toa[bb900] > 0.)) {
                                 x2 = pixel.rho_toa[bb900] / pixel.rho_toa[bb890];   //h2o
                             } else {
                                 x2 = 1.;
-                                pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_ORINP0, true);
+                                pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_ORINP0, true);
                             }
                         } else { /* water pixels */
                             eta = etaAverageForWater;
                             x2 = x2AverageForWater;
-                            pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_ORINP0, iOrinp0);
+                            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_ORINP0, iOrinp0);
                         }
 
                         status = gaseousCorr.gas_correction(pixel.airMass, T_o3, eta, x2,
                                                             pixel.rho_toa,
                                                             pixel.detector,
                                                             pixel.rho_ag,
-                                                            AlbedoUtils.isFlagSet(pixel.l2flags, F_PCD_POL_P));
+                                                            BitSetter.isFlagSet(pixel.l2flags, F_PCD_POL_P));
 
                         /* exception handling */
-                        pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_OROUT0, status != 0);
+                        pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_OROUT0, status != 0);
 
                         /* Land /Water re-classification - v4.2, updated for v7 */
                         /* DPM step 2.6.26 */
@@ -241,7 +241,7 @@ public class PixelIdentification implements Constants {
                         final float thresh_medg = 0.2f;
                         boolean isGlint = (rhoGlint >= thresh_medg * pixel.rho_ag[bb865]);
                         if (isGlint) {
-                            pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_MEGLINT, isGlint);
+                            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_MEGLINT, isGlint);
                             b_thresh = auxData.lap_b_thresh[0];
                             a_thresh = auxData.alpha_thresh[0];
                             rThresh = r7thresh_val;
@@ -259,10 +259,10 @@ public class PixelIdentification implements Constants {
                         // the water test is less severe than the land test
                         is_land_consolidated = !is_water;
                         // the land test is more severe than the water test
-                        if (isGlint && !AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_LAND)) {
+                        if (isGlint && !BitSetter.isFlagSet(pixel.l1flags, L1_F_LAND)) {
                             is_land_consolidated = is_land;
                         }
-                        pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_LANDCONS, is_land_consolidated);
+                        pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_LANDCONS, is_land_consolidated);
 
                         if (is_land_consolidated) {
                             /* DPM #2.1.6-1 */
@@ -340,7 +340,7 @@ public class PixelIdentification implements Constants {
         boolean status = (pixel.rho_ag[b_thresh] <= a_thresh * r7thresh_val) &&
                 (auxData.lap_beta_l * pixel.rho_ag[bb865] < pixel.rho_ag[bb665]);
 
-        pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_LOINLD, status);
+        pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_LOINLD, status);
         return status;
     }
 
@@ -348,7 +348,7 @@ public class PixelIdentification implements Constants {
         boolean status = (pixel.rho_ag[b_thresh] > a_thresh * r7thresh_val) &&
                 (auxData.lap_beta_w * pixel.rho_ag[bb865] > pixel.rho_ag[bb665]);
 
-        pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_ISLAND, status);
+        pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_ISLAND, status);
         return status;
     }
 

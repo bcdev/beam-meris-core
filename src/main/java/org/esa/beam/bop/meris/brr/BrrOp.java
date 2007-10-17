@@ -30,6 +30,7 @@ import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.util.BitSetter;
 
 
 /**
@@ -179,7 +180,7 @@ public class BrrOp extends MerisBasisOp {
                                         l1bDetectorIndex,
                                         l1bFlagRaster);
 
-            if (!AlbedoUtils.isFlagSet(pixel.l2flags, Constants.F_INVALID)) {
+            if (!BitSetter.isFlagSet(pixel.l2flags, Constants.F_INVALID)) {
                 pixelid.rad2reflect(pixel);
                 classcloud.classify_cloud(pixel);
             }
@@ -312,69 +313,69 @@ public class BrrOp extends MerisBasisOp {
 
     protected static FlagCoding createFlagCodingP1() {
         FlagCoding flagCoding = new FlagCoding("l2_flags_p1");
-        flagCoding.addFlag("F_BRIGHT", AlbedoUtils.setFlag(0, Constants.F_BRIGHT), null);
-        flagCoding.addFlag("F_CASE2_S", AlbedoUtils.setFlag(0, Constants.F_CASE2_S), null);
-        flagCoding.addFlag("F_CASE2ANOM", AlbedoUtils.setFlag(0, Constants.F_CASE2ANOM), null);
-        flagCoding.addFlag("F_CASE2Y", AlbedoUtils.setFlag(0, Constants.F_CASE2Y), null);
-        flagCoding.addFlag("F_CHL1RANGE_IN", AlbedoUtils.setFlag(0, Constants.F_CHL1RANGE_IN), null);
-        flagCoding.addFlag("F_CHL1RANGE_OUT", AlbedoUtils.setFlag(0, Constants.F_CHL1RANGE_OUT), null);
-        flagCoding.addFlag("F_CIRRUS", AlbedoUtils.setFlag(0, Constants.F_CIRRUS), null);
-        flagCoding.addFlag("F_CLOUD", AlbedoUtils.setFlag(0, Constants.F_CLOUD), null);
-        flagCoding.addFlag("F_CLOUDPART", AlbedoUtils.setFlag(0, Constants.F_CLOUDPART), null);
-        flagCoding.addFlag("F_COASTLINE", AlbedoUtils.setFlag(0, Constants.F_COASTLINE), null);
-        flagCoding.addFlag("F_COSMETIC", AlbedoUtils.setFlag(0, Constants.F_COSMETIC), null);
-        flagCoding.addFlag("F_DDV", AlbedoUtils.setFlag(0, Constants.F_DDV), null);
-        flagCoding.addFlag("F_DUPLICATED", AlbedoUtils.setFlag(0, Constants.F_DUPLICATED), null);
-        flagCoding.addFlag("F_HIINLD", AlbedoUtils.setFlag(0, Constants.F_HIINLD), null);
-        flagCoding.addFlag("F_ICE_HIGHAERO", AlbedoUtils.setFlag(0, Constants.F_ICE_HIGHAERO), null);
-        flagCoding.addFlag("F_INVALID", AlbedoUtils.setFlag(0, Constants.F_INVALID), null);
-        flagCoding.addFlag("F_ISLAND", AlbedoUtils.setFlag(0, Constants.F_ISLAND), null);
-        flagCoding.addFlag("F_LAND", AlbedoUtils.setFlag(0, Constants.F_LAND), null);
-        flagCoding.addFlag("F_LANDCONS", AlbedoUtils.setFlag(0, Constants.F_LANDCONS), null);
-        flagCoding.addFlag("F_LOINLD", AlbedoUtils.setFlag(0, Constants.F_LOINLD), null);
-        flagCoding.addFlag("F_MEGLINT", AlbedoUtils.setFlag(0, Constants.F_MEGLINT), null);
-        flagCoding.addFlag("F_ORINP1", AlbedoUtils.setFlag(0, Constants.F_ORINP1), null);
-        flagCoding.addFlag("F_ORINP2", AlbedoUtils.setFlag(0, Constants.F_ORINP2), null);
-        flagCoding.addFlag("F_ORINPWV", AlbedoUtils.setFlag(0, Constants.F_ORINPWV), null);
-        flagCoding.addFlag("F_OROUT1", AlbedoUtils.setFlag(0, Constants.F_OROUT1), null);
-        flagCoding.addFlag("F_OROUT2", AlbedoUtils.setFlag(0, Constants.F_OROUT2), null);
-        flagCoding.addFlag("F_OROUTWV", AlbedoUtils.setFlag(0, Constants.F_OROUTWV), null);
-        flagCoding.addFlag("F_SUSPECT", AlbedoUtils.setFlag(0, Constants.F_SUSPECT), null);
-        flagCoding.addFlag("F_UNCGLINT", AlbedoUtils.setFlag(0, Constants.F_UNCGLINT), null);
-        flagCoding.addFlag("F_WHITECAPS", AlbedoUtils.setFlag(0, Constants.F_WHITECAPS), null);
-        flagCoding.addFlag("F_WVAP", AlbedoUtils.setFlag(0, Constants.F_WVAP), null);
-        flagCoding.addFlag("F_ACFAIL", AlbedoUtils.setFlag(0, Constants.F_ACFAIL), null);
+        flagCoding.addFlag("F_BRIGHT", BitSetter.setFlag(0, Constants.F_BRIGHT), null);
+        flagCoding.addFlag("F_CASE2_S", BitSetter.setFlag(0, Constants.F_CASE2_S), null);
+        flagCoding.addFlag("F_CASE2ANOM", BitSetter.setFlag(0, Constants.F_CASE2ANOM), null);
+        flagCoding.addFlag("F_CASE2Y", BitSetter.setFlag(0, Constants.F_CASE2Y), null);
+        flagCoding.addFlag("F_CHL1RANGE_IN", BitSetter.setFlag(0, Constants.F_CHL1RANGE_IN), null);
+        flagCoding.addFlag("F_CHL1RANGE_OUT", BitSetter.setFlag(0, Constants.F_CHL1RANGE_OUT), null);
+        flagCoding.addFlag("F_CIRRUS", BitSetter.setFlag(0, Constants.F_CIRRUS), null);
+        flagCoding.addFlag("F_CLOUD", BitSetter.setFlag(0, Constants.F_CLOUD), null);
+        flagCoding.addFlag("F_CLOUDPART", BitSetter.setFlag(0, Constants.F_CLOUDPART), null);
+        flagCoding.addFlag("F_COASTLINE", BitSetter.setFlag(0, Constants.F_COASTLINE), null);
+        flagCoding.addFlag("F_COSMETIC", BitSetter.setFlag(0, Constants.F_COSMETIC), null);
+        flagCoding.addFlag("F_DDV", BitSetter.setFlag(0, Constants.F_DDV), null);
+        flagCoding.addFlag("F_DUPLICATED", BitSetter.setFlag(0, Constants.F_DUPLICATED), null);
+        flagCoding.addFlag("F_HIINLD", BitSetter.setFlag(0, Constants.F_HIINLD), null);
+        flagCoding.addFlag("F_ICE_HIGHAERO", BitSetter.setFlag(0, Constants.F_ICE_HIGHAERO), null);
+        flagCoding.addFlag("F_INVALID", BitSetter.setFlag(0, Constants.F_INVALID), null);
+        flagCoding.addFlag("F_ISLAND", BitSetter.setFlag(0, Constants.F_ISLAND), null);
+        flagCoding.addFlag("F_LAND", BitSetter.setFlag(0, Constants.F_LAND), null);
+        flagCoding.addFlag("F_LANDCONS", BitSetter.setFlag(0, Constants.F_LANDCONS), null);
+        flagCoding.addFlag("F_LOINLD", BitSetter.setFlag(0, Constants.F_LOINLD), null);
+        flagCoding.addFlag("F_MEGLINT", BitSetter.setFlag(0, Constants.F_MEGLINT), null);
+        flagCoding.addFlag("F_ORINP1", BitSetter.setFlag(0, Constants.F_ORINP1), null);
+        flagCoding.addFlag("F_ORINP2", BitSetter.setFlag(0, Constants.F_ORINP2), null);
+        flagCoding.addFlag("F_ORINPWV", BitSetter.setFlag(0, Constants.F_ORINPWV), null);
+        flagCoding.addFlag("F_OROUT1", BitSetter.setFlag(0, Constants.F_OROUT1), null);
+        flagCoding.addFlag("F_OROUT2", BitSetter.setFlag(0, Constants.F_OROUT2), null);
+        flagCoding.addFlag("F_OROUTWV", BitSetter.setFlag(0, Constants.F_OROUTWV), null);
+        flagCoding.addFlag("F_SUSPECT", BitSetter.setFlag(0, Constants.F_SUSPECT), null);
+        flagCoding.addFlag("F_UNCGLINT", BitSetter.setFlag(0, Constants.F_UNCGLINT), null);
+        flagCoding.addFlag("F_WHITECAPS", BitSetter.setFlag(0, Constants.F_WHITECAPS), null);
+        flagCoding.addFlag("F_WVAP", BitSetter.setFlag(0, Constants.F_WVAP), null);
+        flagCoding.addFlag("F_ACFAIL", BitSetter.setFlag(0, Constants.F_ACFAIL), null);
         return flagCoding;
     }
 
     protected static FlagCoding createFlagCodingP2() {
         FlagCoding flagCoding = new FlagCoding("l2_flags_p2");
-        flagCoding.addFlag("F_CONSOLID", AlbedoUtils.setFlag(0, Constants.F_CONSOLID), null);
-        flagCoding.addFlag("F_ORINP0", AlbedoUtils.setFlag(0, Constants.F_ORINP0), null);
-        flagCoding.addFlag("F_OROUT0", AlbedoUtils.setFlag(0, Constants.F_OROUT0), null);
-        flagCoding.addFlag("F_LOW_NN_P", AlbedoUtils.setFlag(0, Constants.F_LOW_NN_P), null);
-        flagCoding.addFlag("F_PCD_NN_P", AlbedoUtils.setFlag(0, Constants.F_PCD_NN_P), null);
-        flagCoding.addFlag("F_LOW_POL_P", AlbedoUtils.setFlag(0, Constants.F_LOW_POL_P), null);
-        flagCoding.addFlag("F_PCD_POL_P", AlbedoUtils.setFlag(0, Constants.F_PCD_POL_P), null);
-        flagCoding.addFlag("F_CONFIDENCE_P", AlbedoUtils.setFlag(0, Constants.F_CONFIDENCE_P), null);
-        flagCoding.addFlag("F_SLOPE_1", AlbedoUtils.setFlag(0, Constants.F_SLOPE_1), null);
-        flagCoding.addFlag("F_SLOPE_2", AlbedoUtils.setFlag(0, Constants.F_SLOPE_2), null);
-        flagCoding.addFlag("F_UNCERTAIN", AlbedoUtils.setFlag(0, Constants.F_UNCERTAIN), null);
-        flagCoding.addFlag("F_SUN70", AlbedoUtils.setFlag(0, Constants.F_SUN70), null);
-        flagCoding.addFlag("F_WVHIGLINT", AlbedoUtils.setFlag(0, Constants.F_WVHIGLINT), null);
-        flagCoding.addFlag("F_TOAVIVEG", AlbedoUtils.setFlag(0, Constants.F_TOAVIVEG), null);
-        flagCoding.addFlag("F_TOAVIBAD", AlbedoUtils.setFlag(0, Constants.F_TOAVIBAD), null);
-        flagCoding.addFlag("F_TOAVICSI", AlbedoUtils.setFlag(0, Constants.F_TOAVICSI), null);
-        flagCoding.addFlag("F_TOAVIWS", AlbedoUtils.setFlag(0, Constants.F_TOAVIWS), null);
-        flagCoding.addFlag("F_TOAVIBRIGHT", AlbedoUtils.setFlag(0, Constants.F_TOAVIBRIGHT), null);
-        flagCoding.addFlag("F_TOAVIINVALREC", AlbedoUtils.setFlag(0, Constants.F_TOAVIINVALREC), null);
+        flagCoding.addFlag("F_CONSOLID", BitSetter.setFlag(0, Constants.F_CONSOLID), null);
+        flagCoding.addFlag("F_ORINP0", BitSetter.setFlag(0, Constants.F_ORINP0), null);
+        flagCoding.addFlag("F_OROUT0", BitSetter.setFlag(0, Constants.F_OROUT0), null);
+        flagCoding.addFlag("F_LOW_NN_P", BitSetter.setFlag(0, Constants.F_LOW_NN_P), null);
+        flagCoding.addFlag("F_PCD_NN_P", BitSetter.setFlag(0, Constants.F_PCD_NN_P), null);
+        flagCoding.addFlag("F_LOW_POL_P", BitSetter.setFlag(0, Constants.F_LOW_POL_P), null);
+        flagCoding.addFlag("F_PCD_POL_P", BitSetter.setFlag(0, Constants.F_PCD_POL_P), null);
+        flagCoding.addFlag("F_CONFIDENCE_P", BitSetter.setFlag(0, Constants.F_CONFIDENCE_P), null);
+        flagCoding.addFlag("F_SLOPE_1", BitSetter.setFlag(0, Constants.F_SLOPE_1), null);
+        flagCoding.addFlag("F_SLOPE_2", BitSetter.setFlag(0, Constants.F_SLOPE_2), null);
+        flagCoding.addFlag("F_UNCERTAIN", BitSetter.setFlag(0, Constants.F_UNCERTAIN), null);
+        flagCoding.addFlag("F_SUN70", BitSetter.setFlag(0, Constants.F_SUN70), null);
+        flagCoding.addFlag("F_WVHIGLINT", BitSetter.setFlag(0, Constants.F_WVHIGLINT), null);
+        flagCoding.addFlag("F_TOAVIVEG", BitSetter.setFlag(0, Constants.F_TOAVIVEG), null);
+        flagCoding.addFlag("F_TOAVIBAD", BitSetter.setFlag(0, Constants.F_TOAVIBAD), null);
+        flagCoding.addFlag("F_TOAVICSI", BitSetter.setFlag(0, Constants.F_TOAVICSI), null);
+        flagCoding.addFlag("F_TOAVIWS", BitSetter.setFlag(0, Constants.F_TOAVIWS), null);
+        flagCoding.addFlag("F_TOAVIBRIGHT", BitSetter.setFlag(0, Constants.F_TOAVIBRIGHT), null);
+        flagCoding.addFlag("F_TOAVIINVALREC", BitSetter.setFlag(0, Constants.F_TOAVIINVALREC), null);
         return flagCoding;
     }
 
     protected static FlagCoding createFlagCodingP3() {
         FlagCoding flagCoding = new FlagCoding("l2_flags_p3");
         for (int i = 0; i < Constants.L1_BAND_NUM; i++) {
-            flagCoding.addFlag("F_INVALID_REFLEC_" + (i + 1), AlbedoUtils.setFlag(0, i), null);
+            flagCoding.addFlag("F_INVALID_REFLEC_" + (i + 1), BitSetter.setFlag(0, i), null);
         }
         return flagCoding;
     }

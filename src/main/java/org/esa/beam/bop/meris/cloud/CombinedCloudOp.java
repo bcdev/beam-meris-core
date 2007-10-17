@@ -13,6 +13,7 @@ import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.util.BitSetter;
 
 import com.bc.ceres.core.ProgressMonitor;
 
@@ -81,17 +82,17 @@ public class CombinedCloudOp extends MerisBasisOp {
                     byte combined = FLAG_CLEAR;
                     final byte blueBand = blueBandData[i];
                     if (cloudProb == CloudProbabilityOp.FLAG_CLOUDY
-                            || isSet(blueBand, BlueBandOp.DENSE_CLOUD_BIT)
-                            || isSet(blueBand, BlueBandOp.THIN_CLOUD_BIT)) {
+                            || BitSetter.isFlagSet(blueBand, BlueBandOp.DENSE_CLOUD_BIT)
+                            || BitSetter.isFlagSet(blueBand, BlueBandOp.THIN_CLOUD_BIT)) {
                         combined = FLAG_CLOUD;
                     }
-                    if (isSet(blueBand, BlueBandOp.SNOW_BIT)) {
+                    if (BitSetter.isFlagSet(blueBand, BlueBandOp.SNOW_BIT)) {
                         combined = FLAG_SNOW;
                     }
                     
-                    boolean snowPlausible = isSet(blueBand, BlueBandOp.SNOW_PLAUSIBLE_BIT);
-                    boolean snowIndex = isSet(blueBand, BlueBandOp.SNOW_INDEX_BIT);
-                    boolean brightLand = isSet(blueBand, BlueBandOp.BRIGHT_LAND_BIT);
+                    boolean snowPlausible = BitSetter.isFlagSet(blueBand, BlueBandOp.SNOW_PLAUSIBLE_BIT);
+                    boolean snowIndex = BitSetter.isFlagSet(blueBand, BlueBandOp.SNOW_INDEX_BIT);
+                    boolean brightLand = BitSetter.isFlagSet(blueBand, BlueBandOp.BRIGHT_LAND_BIT);
 
                     if (snowPlausible && (snowIndex || combined == FLAG_SNOW)) {
                         result = FLAG_SNOW;
@@ -117,10 +118,6 @@ public class CombinedCloudOp extends MerisBasisOp {
         }
     }
     
-    private boolean isSet(int flags, int bitIndex) {
-        return (flags & (1 << bitIndex)) != 0;
-    }
-
     private FlagCoding createFlagCoding() {
         MetadataAttribute cloudAttr;
         final FlagCoding flagCoding = new FlagCoding(FLAG_BAND_NAME);

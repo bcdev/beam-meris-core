@@ -6,8 +6,8 @@
  */
 package org.esa.beam.bop.meris.brr.dpm;
 
-import org.esa.beam.bop.meris.AlbedoUtils;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.util.BitSetter;
 
 /**
  * The MERIS Level 2 module for L1b data extraction.
@@ -67,40 +67,40 @@ public class L1bDataExtraction implements Constants {
         for (int band = 0; band < 15; band++) {
             pixel.TOAR[band] = toars[band].getSampleDouble(x, y);
             if (pixel.TOAR[band] > auxData.Saturation_L[band]) {
-                pixel.SATURATED_F = AlbedoUtils.setFlag(pixel.SATURATED_F, band);
+                pixel.SATURATED_F = BitSetter.setFlag(pixel.SATURATED_F, band);
             }
         }
         pixel.detector = detectorIndex.getSampleInt(x, y);
 
         pixel.l1flags = l1bFlags.getSampleInt(x, y);
         pixel.l2flags = 0L;
-        if (AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_COSMETIC)) {
-            pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_COSMETIC);
+        if (BitSetter.isFlagSet(pixel.l1flags, L1_F_COSMETIC)) {
+            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_COSMETIC);
         }
-        if (AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_DUPLICATED)) {
-            pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_DUPLICATED);
+        if (BitSetter.isFlagSet(pixel.l1flags, L1_F_DUPLICATED)) {
+            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_DUPLICATED);
         }
-        if (AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_LAND)) {
-            pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_LAND);
+        if (BitSetter.isFlagSet(pixel.l1flags, L1_F_LAND)) {
+            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_LAND);
         }
-        if (AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_BRIGHT)) {
-            pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_BRIGHT);
+        if (BitSetter.isFlagSet(pixel.l1flags, L1_F_BRIGHT)) {
+            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_BRIGHT);
         }
-        if (AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_COAST)) {
-            pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_COASTLINE);
+        if (BitSetter.isFlagSet(pixel.l1flags, L1_F_COAST)) {
+            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_COASTLINE);
         }
-        if (AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_INVALID)) {
-            pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_INVALID);
+        if (BitSetter.isFlagSet(pixel.l1flags, L1_F_INVALID)) {
+            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_INVALID);
         }
-        if (AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_SUSPECT)) {
-            pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_SUSPECT);
+        if (BitSetter.isFlagSet(pixel.l1flags, L1_F_SUSPECT)) {
+            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_SUSPECT);
         }
         if (pixel.detector < 0 || pixel.detector >= auxData.detector_count) {
             pixel.detector = -1; // OK
             // Make pixel invalid
-            if (!AlbedoUtils.isFlagSet(pixel.l1flags, L1_F_INVALID)) {
-                pixel.l1flags = AlbedoUtils.setFlag(pixel.l1flags, F_INVALID);
-                pixel.l2flags = AlbedoUtils.setFlag(pixel.l2flags, F_INVALID);
+            if (!BitSetter.isFlagSet(pixel.l1flags, L1_F_INVALID)) {
+                pixel.l1flags = BitSetter.setFlag(pixel.l1flags, F_INVALID);
+                pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_INVALID);
             }
         }
 
@@ -129,7 +129,7 @@ public class L1bDataExtraction implements Constants {
         // DPM #2.1.0-14
         pixel.delta_azimuth = DEG * Math.acos(Math.cos(RAD * (view_azimuth - pixel.sun_azimuth)));
         // DPM #2.1.0-15
-        if (AlbedoUtils.isFlagSet(pixel.l2flags, F_LAND)) {
+        if (BitSetter.isFlagSet(pixel.l2flags, F_LAND)) {
             // ECMWF pressure is only corrected for positive altitudes and only for land pixels */
             double f = Math.exp(-Math.max(0.0, pixel.altitude) / auxData.press_scale_height);
             pixel.press_ecmwf *= f;
