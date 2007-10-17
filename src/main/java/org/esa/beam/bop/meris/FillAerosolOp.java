@@ -201,7 +201,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
 	}
     
     private float[] getScaledArrayFromTile(Tile tile) {
-        ProductData valueDataBuffer = tile.getRawSampleData();
+        ProductData valueDataBuffer = tile.getRawSamples();
         float[] scaledValues = new float[valueDataBuffer.getNumElems()];
         RasterDataNode srcRasterDataNode = tile.getRasterDataNode();
 		boolean scaled = srcRasterDataNode.isScalingApplied();
@@ -217,7 +217,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     }
     
     private float[] getScaledArrayFromTileFRS(Tile tile) {
-        ProductData valueDataBuffer = tile.getRawSampleData();
+        ProductData valueDataBuffer = tile.getRawSamples();
         final int frsWidth = tile.getRectangle().width;
         final int frsHeight = tile.getRectangle().height;
         final int width = MathUtils.ceilInt(frsWidth / 4.0);
@@ -243,7 +243,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     }
     
     private boolean[] getArrayFromTileFRS(Tile tile) {
-        ProductData dataBuffer = tile.getRawSampleData();
+        ProductData dataBuffer = tile.getRawSamples();
         final int frsWidth = tile.getRectangle().width;
         final int frsHeight = tile.getRectangle().height;
         final int width = MathUtils.ceilInt(frsWidth / 4.0);
@@ -306,7 +306,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
             
             if (!config.frs) {
             	float[] scaledData = getScaledArrayFromTile(dataTile);
-                boolean[] validData = (boolean[]) validDataTile.getRawSampleData().getElems();
+                boolean[] validData = (boolean[]) validDataTile.getRawSamples().getElems();
                 
 				for (int y = targetRect.y; y < targetRect.y + targetRect.height; y++) {
 					for (int x = targetRect.x; x < targetRect.x

@@ -104,12 +104,12 @@ public class FillBandOp extends MerisBasisOp implements ParameterConverter {
 	
 	@Override
     public void computeTile(Band band, Tile targetTile) throws OperatorException {
-	    ProductData rawSampleData = targetTile.getRawSampleData();
+	    ProductData rawSampleData = targetTile.getRawSamples();
         float[] outValues = (float[]) rawSampleData.getElems();
 	    final float defaultValue = defaultMap.get(band);
 	    
 	    Arrays.fill(outValues, defaultValue);
-	    targetTile.setRawSampleData(rawSampleData);
+	    targetTile.setRawSamples(rawSampleData);
     }
 	
 	public static class Spi extends OperatorSpi {

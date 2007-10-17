@@ -121,18 +121,18 @@ public class AerosolMergerOp extends MerisBasisOp {
         ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", 1 + size);
         try {
-            float[] modAot = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getRawSampleData().getElems();
-			float[] modAng = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle).getRawSampleData().getElems();
-			byte[] modFlag = (byte[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle).getRawSampleData().getElems();
+            float[] modAot = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getRawSamples().getElems();
+			float[] modAng = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle).getRawSamples().getElems();
+			byte[] modFlag = (byte[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle).getRawSamples().getElems();
 			
-			float[] l2Aot = (float[]) getSourceTile(l2Product.getBand("aero_opt_thick_443"), rectangle).getRawSampleData().getElems();
-			float[] l2Ang = (float[]) getSourceTile(l2Product.getBand("aero_alpha"), rectangle).getRawSampleData().getElems();
+			float[] l2Aot = (float[]) getSourceTile(l2Product.getBand("aero_opt_thick_443"), rectangle).getRawSamples().getElems();
+			float[] l2Ang = (float[]) getSourceTile(l2Product.getBand("aero_alpha"), rectangle).getRawSamples().getElems();
 
-            ProductData rawSampleDataAot470 = targetTiles.get(aot470Band).getRawSampleData();
+            ProductData rawSampleDataAot470 = targetTiles.get(aot470Band).getRawSamples();
             float[] aot470 = (float[]) rawSampleDataAot470.getElems();
-            ProductData rawSampleDataAng = targetTiles.get(aot470Band).getRawSampleData();
+            ProductData rawSampleDataAng = targetTiles.get(aot470Band).getRawSamples();
             float[] ang = (float[]) rawSampleDataAng.getElems();
-            ProductData rawSampleDataFlag = targetTiles.get(flagBand).getRawSampleData();
+            ProductData rawSampleDataFlag = targetTiles.get(flagBand).getRawSamples();
             byte[] flag = (byte[]) rawSampleDataFlag.getElems();
 
             for (int i = 0; i < size; i++) {
@@ -151,9 +151,9 @@ public class AerosolMergerOp extends MerisBasisOp {
                 }
                 pm.worked(1);
             }
-            targetTiles.get(aot470Band).setRawSampleData(rawSampleDataAot470);
-            targetTiles.get(aot470Band).setRawSampleData(rawSampleDataAng);
-            targetTiles.get(flagBand).setRawSampleData(rawSampleDataFlag);
+            targetTiles.get(aot470Band).setRawSamples(rawSampleDataAot470);
+            targetTiles.get(aot470Band).setRawSamples(rawSampleDataAng);
+            targetTiles.get(flagBand).setRawSamples(rawSampleDataFlag);
         } finally {
             pm.done();
         }

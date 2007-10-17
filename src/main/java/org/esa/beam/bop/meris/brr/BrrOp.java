@@ -204,38 +204,38 @@ public class BrrOp extends MerisBasisOp {
 
         for (int bandIndex = 0; bandIndex < brrReflecBands.length; bandIndex++) {
             if (AlbedoUtils.isValidRhoSpectralIndex(bandIndex)) {
-                ProductData data = targetTiles.get(brrReflecBands[bandIndex]).getRawSampleData();
+                ProductData data = targetTiles.get(brrReflecBands[bandIndex]).getRawSamples();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
                     ddata[iP] = (float) frame[iP].rho_top[bandIndex];
                 }
-                targetTiles.get(brrReflecBands[bandIndex]).setRawSampleData(data);
+                targetTiles.get(brrReflecBands[bandIndex]).setRawSamples(data);
             }
         }
         if (outputToar) {
             for (int bandIndex = 0; bandIndex < toaReflecBands.length; bandIndex++) {
-                ProductData data = targetTiles.get(toaReflecBands[bandIndex]).getRawSampleData();
+                ProductData data = targetTiles.get(toaReflecBands[bandIndex]).getRawSamples();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
                     ddata[iP] = (float) frame[iP].rho_toa[bandIndex];
                 }
-                targetTiles.get(toaReflecBands[bandIndex]).setRawSampleData(data);
+                targetTiles.get(toaReflecBands[bandIndex]).setRawSamples(data);
             }
         }
-        ProductData flagData = targetTiles.get(l2FlagsP1).getRawSampleData();
+        ProductData flagData = targetTiles.get(l2FlagsP1).getRawSamples();
         int[] intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP1Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
-        targetTiles.get(l2FlagsP1).setRawSampleData(flagData);
+        targetTiles.get(l2FlagsP1).setRawSamples(flagData);
         
-        flagData = targetTiles.get(l2FlagsP2).getRawSampleData();
+        flagData = targetTiles.get(l2FlagsP2).getRawSamples();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP2Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
-        targetTiles.get(l2FlagsP2).setRawSampleData(flagData);
+        targetTiles.get(l2FlagsP2).setRawSamples(flagData);
 
-        flagData = targetTiles.get(l2FlagsP3).getRawSampleData();
+        flagData = targetTiles.get(l2FlagsP3).getRawSamples();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP3Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
-        targetTiles.get(l2FlagsP3).setRawSampleData(flagData);
+        targetTiles.get(l2FlagsP3).setRawSamples(flagData);
     }
 
     protected Band addFlagsBand(final FlagCoding flagCodingP1, final double rf1, final double gf1, final double bf1) {

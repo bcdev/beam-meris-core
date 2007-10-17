@@ -119,13 +119,13 @@ public class BlueBandOp extends MerisBasisOp {
     	ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rect.height);
         try {
-            float[] toar1 = (float[]) getSourceTile(brrProduct.getBand("toar_1"), rect).getRawSampleData().getElems();
-			float[] toar7 = (float[]) getSourceTile(brrProduct.getBand("toar_7"), rect).getRawSampleData().getElems();
-			float[] toar9 = (float[]) getSourceTile(brrProduct.getBand("toar_9"), rect).getRawSampleData().getElems();
-			float[] toar10 = (float[]) getSourceTile(brrProduct.getBand("toar_10"), rect).getRawSampleData().getElems();
-			float[] toar11 = (float[]) getSourceTile(brrProduct.getBand("toar_11"), rect).getRawSampleData().getElems();
-			float[] toar13 = (float[]) getSourceTile(brrProduct.getBand("toar_13"), rect).getRawSampleData().getElems();
-			float[] toar14 = (float[]) getSourceTile(brrProduct.getBand("toar_14"), rect).getRawSampleData().getElems();
+            float[] toar1 = (float[]) getSourceTile(brrProduct.getBand("toar_1"), rect).getRawSamples().getElems();
+			float[] toar7 = (float[]) getSourceTile(brrProduct.getBand("toar_7"), rect).getRawSamples().getElems();
+			float[] toar9 = (float[]) getSourceTile(brrProduct.getBand("toar_9"), rect).getRawSamples().getElems();
+			float[] toar10 = (float[]) getSourceTile(brrProduct.getBand("toar_10"), rect).getRawSamples().getElems();
+			float[] toar11 = (float[]) getSourceTile(brrProduct.getBand("toar_11"), rect).getRawSamples().getElems();
+			float[] toar13 = (float[]) getSourceTile(brrProduct.getBand("toar_13"), rect).getRawSamples().getElems();
+			float[] toar14 = (float[]) getSourceTile(brrProduct.getBand("toar_14"), rect).getRawSamples().getElems();
 			
 			Tile latitude;
 			Tile altitude;
@@ -137,7 +137,7 @@ public class BlueBandOp extends MerisBasisOp {
 			    latitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect);
 			    altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect);
 			}
-            ProductData rawSampleData = targetTile.getRawSampleData();
+            ProductData rawSampleData = targetTile.getRawSamples();
             byte[] cloudFlagScanLine = (byte[]) rawSampleData.getElems();
 
             boolean isSnowPlausible;
@@ -203,7 +203,7 @@ public class BlueBandOp extends MerisBasisOp {
             	}
                 pm.worked(1);
             }
-            targetTile.setRawSampleData(rawSampleData);
+            targetTile.setRawSamples(rawSampleData);
         } finally {
             pm.done();
         }
