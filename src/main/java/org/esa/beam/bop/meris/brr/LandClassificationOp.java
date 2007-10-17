@@ -117,13 +117,13 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 			Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
 			Tile windu = getSourceTile(l1bProduct.getTiePointGrid("zonal_wind"), rectangle);
 			Tile windv = getSourceTile(l1bProduct.getTiePointGrid("merid_wind"), rectangle);
-			FlagWrapper l1Flags = new FlagWrapper.Byte((byte[])getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getRawSampleData().getElems());
+			FlagWrapper l1Flags = new FlagWrapper.Byte((byte[])getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getRawSamples().getElems());
 			
 			Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i = 0; i < rhoNg.length; i++) {
 			    rhoNg[i] = getSourceTile(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
 			}
-            ProductData rawSampleData = targetTile.getRawSampleData();
+            ProductData rawSampleData = targetTile.getRawSamples();
             FlagWrapper landFlags = new FlagWrapper.Byte((byte[]) rawSampleData.getElems());
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y += Constants.SUBWIN_HEIGHT) {
@@ -207,7 +207,7 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
                 }
                 pm.worked(1);
             }
-            targetTile.setRawSampleData(rawSampleData);
+            targetTile.setRawSamples(rawSampleData);
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {

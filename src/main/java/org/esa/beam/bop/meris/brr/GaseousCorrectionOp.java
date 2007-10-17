@@ -147,16 +147,16 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 			Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
 			Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle);
 			Tile ecmwfOzone = getSourceTile(l1bProduct.getTiePointGrid("ozone"), rectangle);
-			l1Flags = new FlagWrapper.Byte((byte[]) getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getRawSampleData().getElems());
+			l1Flags = new FlagWrapper.Byte((byte[]) getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getRawSamples().getElems());
 			
 			Tile[] rhoToa = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i1 = 0; i1 < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i1++) {
 			    rhoToa[i1] = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i1 + 1)), rectangle);
 			}
 			
-			cloudFlags = new FlagWrapper.Short((short[])getSourceTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle).getRawSampleData().getElems());
+			cloudFlags = new FlagWrapper.Short((short[])getSourceTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle).getRawSamples().getElems());
 
-            ProductData rawSampleData = targetTiles.get(flagBand).getRawSampleData();
+            ProductData rawSampleData = targetTiles.get(flagBand).getRawSamples();
             gasFlags = new FlagWrapper.Byte((byte[]) rawSampleData.getElems());
             Tile[] rhoNg = new Tile[rhoNgBands.length];
             Tile[] tg = null;
@@ -282,7 +282,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
                 }
                 pm.worked(1);
             }
-            targetTiles.get(flagBand).setRawSampleData(rawSampleData);
+            targetTiles.get(flagBand).setRawSamples(rawSampleData);
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {

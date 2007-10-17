@@ -200,7 +200,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 				sphAlbRData = getTargetTileGroup(sphAlbRBands, targetTiles);
             }
             Tile[] brr = getTargetTileGroup(brrBands, targetTiles);
-            brrFlags = new FlagWrapper.Short((short[]) getSourceTile(flagBand, rectangle).getRawSampleData().getElems());
+            brrFlags = new FlagWrapper.Short((short[]) getSourceTile(flagBand, rectangle).getRawSamples().getElems());
             
             boolean[][] do_corr = new boolean[SUBWIN_HEIGHT][SUBWIN_WIDTH];
             // rayleigh phase function coefficients, PR in DPM

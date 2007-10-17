@@ -128,7 +128,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     	sd.radiance = new Tile[3];
     	
         for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
-            sd.rhoToa[i] = (float[]) getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle).getRawSampleData().getElems();
+            sd.rhoToa[i] = (float[]) getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle).getRawSamples().getElems();
         }
         sd.radiance[BAND_BRIGHT_N] = getSourceTile(
 				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_bright_n]),
@@ -141,14 +141,14 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 				rectangle);
         sd.detectorIndex = (short[]) getSourceTile(
 				l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME),
-				rectangle).getRawSampleData().getElems();
-        sd.sza = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getRawSampleData().getElems();
-        sd.vza = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getRawSampleData().getElems();
-        sd.saa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getRawSampleData().getElems();
-        sd.vaa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getRawSampleData().getElems();
-        sd.altitude = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getRawSampleData().getElems();
-        sd.ecmwfPressure = (float[]) getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle).getRawSampleData().getElems();
-        sd.l1Flags = new FlagWrapper.Byte((byte[]) getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getRawSampleData().getElems());
+				rectangle).getRawSamples().getElems();
+        sd.sza = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getRawSamples().getElems();
+        sd.vza = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getRawSamples().getElems();
+        sd.saa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getRawSamples().getElems();
+        sd.vaa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getRawSamples().getElems();
+        sd.altitude = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getRawSamples().getElems();
+        sd.ecmwfPressure = (float[]) getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle).getRawSamples().getElems();
+        sd.l1Flags = new FlagWrapper.Byte((byte[]) getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle).getRawSamples().getElems());
         
         return sd;
     }
@@ -161,7 +161,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
             SourceData sd = loadSourceTiles(rectangle);
-            ProductData rawSampleData = targetTile.getRawSampleData();
+            ProductData rawSampleData = targetTile.getRawSamples();
             FlagWrapper cloudFlags = new FlagWrapper.Short((short[]) rawSampleData.getElems());
 
             PixelInfo pixelInfo = new PixelInfo();
@@ -190,7 +190,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 				}
 				pm.worked(1);
 			}
-			targetTile.setRawSampleData(rawSampleData);
+			targetTile.setRawSamples(rawSampleData);
         } catch (Exception e) {
             throw new OperatorException(e);
         } finally {
