@@ -88,21 +88,20 @@ public class CloudShadowOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
     	
     	Rectangle targetRectangle = targetTile.getRectangle();
         Rectangle sourceRectangle = rectCalculator.computeSourceRectangle(targetRectangle);
-        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", sourceRectangle.height);
         try {
-        	Tile szaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle);
-        	Tile saaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle);
-        	Tile vzaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), sourceRectangle);
-        	Tile vaaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle);
-        	Tile cloudTile = getSourceTile(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle);
-        	Tile ctpTile = getSourceTile(ctpProduct.getBand("cloud_top_press"), sourceRectangle);
+        	Tile szaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle, pm);
+        	Tile saaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle, pm);
+        	Tile vzaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), sourceRectangle, pm);
+        	Tile vaaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle, pm);
+        	Tile cloudTile = getSourceTile(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle, pm);
+        	Tile ctpTile = getSourceTile(ctpProduct.getBand("cloud_top_press"), sourceRectangle, pm);
 
-        	Tile cloudTargetRaster = getSourceTile(targetTile.getRasterDataNode(), targetRectangle);
+        	Tile cloudTargetRaster = getSourceTile(targetTile.getRasterDataNode(), targetRectangle, pm);
 
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
                 for (int x = targetRectangle.x; x < targetRectangle.x + targetRectangle.width; x++) {

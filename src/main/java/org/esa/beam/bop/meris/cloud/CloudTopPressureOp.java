@@ -144,25 +144,24 @@ public class CloudTopPressureOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
     	
     	Rectangle rectangle = targetTile.getRectangle();
-    	ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height);
         try {
-        	Tile detector = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
-        	Tile sza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
-			Tile saa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
-			Tile vza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
-			Tile vaa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
+        	Tile detector = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle, pm);
+        	Tile sza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
+			Tile saa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle, pm);
+			Tile vza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm);
+			Tile vaa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm);
 			
-			Tile lat = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle);
-			Tile lon = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle);
+			Tile lat = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle, pm);
+			Tile lon = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle, pm);
 			
-			Tile toar10 = getSourceTile(sourceProduct.getBand("radiance_10"), rectangle);
-			Tile toar11 = getSourceTile(sourceProduct.getBand("radiance_11"), rectangle);
+			Tile toar10 = getSourceTile(sourceProduct.getBand("radiance_10"), rectangle, pm);
+			Tile toar11 = getSourceTile(sourceProduct.getBand("radiance_11"), rectangle, pm);
 			
-			Tile isInvalid = getSourceTile(invalidBand, rectangle);
+			Tile isInvalid = getSourceTile(invalidBand, rectangle, pm);
 
             final double[] nnIn = new double[7];
             final double[] nnOut = new double[1];

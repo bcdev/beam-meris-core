@@ -287,22 +287,21 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
     }
     
     @Override
-    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle targetRect = targetTile.getRectangle();
         Rectangle sourceRect = rectCalculator.computeSourceRectangle(targetRect);
-        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", sourceRect.height + 1);
         try {
         	Tile maskTile = null;
             boolean useMask = false;
             if (maskProduct != null && StringUtils.isNotNullAndNotEmpty(config.maskBand)) {
-            	maskTile = getSourceTile(maskProduct.getBand(config.maskBand), sourceRect);
+            	maskTile = getSourceTile(maskProduct.getBand(config.maskBand), sourceRect, pm);
             	useMask = true;
             }
-            Tile defaultTile = getSourceTile(defaultBands.get(band), sourceRect);
-            Tile validDataTile = getSourceTile(validProduct.getBand(band.getName()), sourceRect);
-            Tile dataTile = getSourceTile(sourceBands.get(band), sourceRect);
+            Tile defaultTile = getSourceTile(defaultBands.get(band), sourceRect, pm);
+            Tile validDataTile = getSourceTile(validProduct.getBand(band.getName()), sourceRect, pm);
+            Tile dataTile = getSourceTile(sourceBands.get(band), sourceRect, pm);
             
             if (!config.frs) {
             	float[] scaledData = getScaledArrayFromTile(dataTile);

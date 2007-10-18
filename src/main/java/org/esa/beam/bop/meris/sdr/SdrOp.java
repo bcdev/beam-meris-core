@@ -136,32 +136,31 @@ public class SdrOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final double[] sdrAlgoInput = new double[9];
         final double[] sdrAlgoOutput = new double[1];
-        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height);
         try {
-            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
-            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
-            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
-            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
+            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
+            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle, pm);
+            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm);
+            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm);
 
             Tile ang = null;
             if (StringUtils.isNotNullAndNotEmpty(angName)) {
-            	ang = getSourceTile(aerosolProduct.getBand(angName), rectangle);
+            	ang = getSourceTile(aerosolProduct.getBand(angName), rectangle, pm);
             }
-            Tile aot470 = getSourceTile(aerosolProduct.getBand(aot470Name), rectangle);
+            Tile aot470 = getSourceTile(aerosolProduct.getBand(aot470Name), rectangle, pm);
 
 
             Tile[] reflectance = new Tile[sdrBandNo.length];
             Tile[] sdr = new Tile[sdrBandNo.length];
             
             for (int i = 0; i < sdrBandNo.length; i++) {
-                reflectance[i] = getSourceTile(reflectanceBands[i], rectangle);
+                reflectance[i] = getSourceTile(reflectanceBands[i], rectangle, pm);
             }
-            Tile isValidPixel = getSourceTile(validBand, rectangle);
+            Tile isValidPixel = getSourceTile(validBand, rectangle, pm);
 
             for (int i = 0; i < sdrBands.length; i++) {
             	sdr[i] = targetTiles.get(sdrBands[i]);

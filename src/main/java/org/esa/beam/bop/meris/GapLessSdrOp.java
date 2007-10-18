@@ -93,15 +93,14 @@ public class GapLessSdrOp extends MerisBasisOp {
 	}
 
     @Override
-    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle rectangle = targetTile.getRectangle();
-    	ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-        	Tile sdrTile = getSourceTile(sdrBands.get(band), rectangle);
-        	Tile toarTile = getSourceTile(toarBands.get(band), rectangle);
-        	Tile invalid = getSourceTile(invalidBand, rectangle);
+        	Tile sdrTile = getSourceTile(sdrBands.get(band), rectangle, pm);
+        	Tile toarTile = getSourceTile(toarBands.get(band), rectangle, pm);
+        	Tile invalid = getSourceTile(invalidBand, rectangle, pm);
         	
         	pm.worked(1);
 

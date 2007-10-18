@@ -34,6 +34,7 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
+import com.bc.ceres.core.ProgressMonitor;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.XppDomReader;
 import com.thoughtworks.xstream.io.xml.xppdom.Xpp3Dom;
@@ -103,7 +104,7 @@ public class FillBandOp extends MerisBasisOp implements ParameterConverter {
 	}
 	
 	@Override
-    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 	    ProductData rawSampleData = targetTile.getRawSamples();
         float[] outValues = (float[]) rawSampleData.getElems();
 	    final float defaultValue = defaultMap.get(band);

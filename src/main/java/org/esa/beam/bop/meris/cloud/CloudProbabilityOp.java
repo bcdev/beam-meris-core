@@ -270,29 +270,28 @@ public class CloudProbabilityOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final double[] cloudIn = new double[15];
-        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height);
         try {
         	//sources
         	Tile[] radiance = new Tile[radianceBands.length];
             for (int i1 = 0; i1 < radianceBands.length; i1++) {
-			    radiance[i1] = getSourceTile(radianceBands[i1], rectangle);
+			    radiance[i1] = getSourceTile(radianceBands[i1], rectangle, pm);
 			}
 			
-            Tile detector = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
-            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
-            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
-            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
-            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
-            Tile pressure = getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle);
-            Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle);
+            Tile detector = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle, pm);
+            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
+            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle, pm);
+            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm);
+            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm);
+            Tile pressure = getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle, pm);
+            Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle, pm);
 			
-            Tile isValidLand = getSourceTile(validLandBand, rectangle);
-            Tile isValidOcean = getSourceTile(validOceanBand, rectangle);
-            Tile isLand = getSourceTile(landBand, rectangle);
+            Tile isValidLand = getSourceTile(validLandBand, rectangle, pm);
+            Tile isValidOcean = getSourceTile(validOceanBand, rectangle, pm);
+            Tile isLand = getSourceTile(landBand, rectangle, pm);
 			
 			//targets
             Tile cloudTile = targetTiles.get(cloudBand);

@@ -113,29 +113,28 @@ public class BlueBandOp extends MerisBasisOp {
     }
     
     @Override
-    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
     	
     	Rectangle rect = targetTile.getRectangle();
-    	ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rect.height);
         try {
-            float[] toar1 = (float[]) getSourceTile(brrProduct.getBand("toar_1"), rect).getRawSamples().getElems();
-			float[] toar7 = (float[]) getSourceTile(brrProduct.getBand("toar_7"), rect).getRawSamples().getElems();
-			float[] toar9 = (float[]) getSourceTile(brrProduct.getBand("toar_9"), rect).getRawSamples().getElems();
-			float[] toar10 = (float[]) getSourceTile(brrProduct.getBand("toar_10"), rect).getRawSamples().getElems();
-			float[] toar11 = (float[]) getSourceTile(brrProduct.getBand("toar_11"), rect).getRawSamples().getElems();
-			float[] toar13 = (float[]) getSourceTile(brrProduct.getBand("toar_13"), rect).getRawSamples().getElems();
-			float[] toar14 = (float[]) getSourceTile(brrProduct.getBand("toar_14"), rect).getRawSamples().getElems();
+            float[] toar1 = (float[]) getSourceTile(brrProduct.getBand("toar_1"), rect, pm).getRawSamples().getElems();
+			float[] toar7 = (float[]) getSourceTile(brrProduct.getBand("toar_7"), rect, pm).getRawSamples().getElems();
+			float[] toar9 = (float[]) getSourceTile(brrProduct.getBand("toar_9"), rect, pm).getRawSamples().getElems();
+			float[] toar10 = (float[]) getSourceTile(brrProduct.getBand("toar_10"), rect, pm).getRawSamples().getElems();
+			float[] toar11 = (float[]) getSourceTile(brrProduct.getBand("toar_11"), rect, pm).getRawSamples().getElems();
+			float[] toar13 = (float[]) getSourceTile(brrProduct.getBand("toar_13"), rect, pm).getRawSamples().getElems();
+			float[] toar14 = (float[]) getSourceTile(brrProduct.getBand("toar_14"), rect, pm).getRawSamples().getElems();
 			
 			Tile latitude;
 			Tile altitude;
 			if (l1bProduct.getProductType().equals(
 			        EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
-			    latitude = getSourceTile(l1bProduct.getBand("corr_latitude"), rect);
-			    altitude = getSourceTile(l1bProduct.getBand("altitude"), rect);
+			    latitude = getSourceTile(l1bProduct.getBand("corr_latitude"), rect, pm);
+			    altitude = getSourceTile(l1bProduct.getBand("altitude"), rect, pm);
 			} else {
-			    latitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect);
-			    altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect);
+			    latitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect, pm);
+			    altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect, pm);
 			}
             ProductData rawSampleData = targetTile.getRawSamples();
             byte[] cloudFlagScanLine = (byte[]) rawSampleData.getElems();

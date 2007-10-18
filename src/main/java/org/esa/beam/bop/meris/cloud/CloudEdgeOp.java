@@ -75,16 +75,15 @@ public class CloudEdgeOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
         Rectangle targetRectangle = targetTile.getRectangle();
 		Rectangle sourceRectangle = rectCalculator.computeSourceRectangle(targetRectangle);
         final int size = sourceRectangle.height * sourceRectangle.width;
-        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", size + 1);
         try {
-            Tile cloudSource = getSourceTile(sourceBand, sourceRectangle);
-            Tile cloudTarget = getSourceTile(targetBand, targetRectangle);
+            Tile cloudSource = getSourceTile(sourceBand, sourceRectangle, pm);
+            Tile cloudTarget = getSourceTile(targetBand, targetRectangle, pm);
 
             int i = 0;
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {

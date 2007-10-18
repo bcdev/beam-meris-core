@@ -59,15 +59,14 @@ public class CombinedCloudOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle rectangle = targetTile.getRectangle();
         final int size = rectangle.height * rectangle.width;
-        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", size + 1);
         try {
-        	byte[] cloudProbData = (byte[]) getSourceTile(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle).getRawSamples().getElems();
-        	byte[] blueBandData = (byte[]) getSourceTile(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle).getRawSamples().getElems();
+        	byte[] cloudProbData = (byte[]) getSourceTile(cloudProduct.getBand(CloudProbabilityOp.CLOUD_FLAG_BAND), rectangle, pm).getRawSamples().getElems();
+        	byte[] blueBandData = (byte[]) getSourceTile(blueBandProduct.getBand(BlueBandOp.BLUE_FLAG_BAND), rectangle, pm).getRawSamples().getElems();
 
             ProductData flagData = targetTile.getRawSamples();
             byte[] combinedCloudData = (byte[]) flagData.getElems();

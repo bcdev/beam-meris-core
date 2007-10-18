@@ -32,6 +32,8 @@ import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.BitSetter;
 
+import com.bc.ceres.core.ProgressMonitor;
+
 
 /**
  * A processing node to compute the BRR of a meris Lib product.
@@ -144,7 +146,7 @@ public class BrrOp extends MerisBasisOp {
     }
     
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final int frameSize = rectangle.height * rectangle.width;
         DpmPixel[] frame = new DpmPixel[frameSize];
@@ -161,14 +163,14 @@ public class BrrOp extends MerisBasisOp {
         int[] l2FlagsP3Frame = new int[frameSize];
         Tile[] l1bTiePoints = new Tile[tpGrids.length];
         for (int i = 0; i < tpGrids.length; i++) {
-            l1bTiePoints[i] = getSourceTile(tpGrids[i], rectangle);
+            l1bTiePoints[i] = getSourceTile(tpGrids[i], rectangle, pm);
         }
         Tile[] l1bRadiances = new Tile[l1bRadiance.length];
         for (int i = 0; i < l1bRadiance.length; i++) {
-            l1bRadiances[i] = getSourceTile(l1bRadiance[i], rectangle);
+            l1bRadiances[i] = getSourceTile(l1bRadiance[i], rectangle, pm);
         }
-        Tile l1bDetectorIndex = getSourceTile(detectorIndex, rectangle);
-        Tile l1bFlagRaster = getSourceTile(l1bFlags, rectangle);
+        Tile l1bDetectorIndex = getSourceTile(detectorIndex, rectangle, pm);
+        Tile l1bFlagRaster = getSourceTile(l1bFlags, rectangle, pm);
         
         for (int pixelIndex = 0; pixelIndex < frameSize; pixelIndex++) {
             DpmPixel pixel = frame[pixelIndex];

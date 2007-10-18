@@ -115,18 +115,17 @@ public class AerosolMergerOp extends MerisBasisOp {
     }
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final int size = rectangle.height * rectangle.width;
-        ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", 1 + size);
         try {
-            float[] modAot = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle).getRawSamples().getElems();
-			float[] modAng = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle).getRawSamples().getElems();
-			byte[] modFlag = (byte[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle).getRawSamples().getElems();
+            float[] modAot = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_AOT_470), rectangle, pm).getRawSamples().getElems();
+			float[] modAng = (float[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_ANG), rectangle, pm).getRawSamples().getElems();
+			byte[] modFlag = (byte[]) getSourceTile(mod08Product.getBand(ModisAerosolOp.BAND_NAME_FLAGS), rectangle, pm).getRawSamples().getElems();
 			
-			float[] l2Aot = (float[]) getSourceTile(l2Product.getBand("aero_opt_thick_443"), rectangle).getRawSamples().getElems();
-			float[] l2Ang = (float[]) getSourceTile(l2Product.getBand("aero_alpha"), rectangle).getRawSamples().getElems();
+			float[] l2Aot = (float[]) getSourceTile(l2Product.getBand("aero_opt_thick_443"), rectangle, pm).getRawSamples().getElems();
+			float[] l2Ang = (float[]) getSourceTile(l2Product.getBand("aero_alpha"), rectangle, pm).getRawSamples().getElems();
 
             ProductData rawSampleDataAot470 = targetTiles.get(aot470Band).getRawSamples();
             float[] aot470 = (float[]) rawSampleDataAot470.getElems();

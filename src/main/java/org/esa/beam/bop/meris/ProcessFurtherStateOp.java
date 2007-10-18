@@ -32,6 +32,8 @@ import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
+import com.bc.ceres.core.ProgressMonitor;
+
 
 /**
  * Created by marcoz.
@@ -95,12 +97,12 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     }
     
     @Override
-    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle rectangle = targetTile.getRectangle();
     	Tile[] isValid = new Tile[EXPRESSIONS.length];
     	for (int i = 0; i < isValid.length; i++) {
-    	    isValid[i] = getSourceTile(bands[i], rectangle);
+    	    isValid[i] = getSourceTile(bands[i], rectangle, pm);
     	}
 
     	for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
