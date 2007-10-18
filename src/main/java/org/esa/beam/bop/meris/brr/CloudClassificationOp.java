@@ -121,46 +121,45 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         return flagCoding;
     }
 
-    private SourceData loadSourceTiles(Rectangle rectangle) throws OperatorException {
+    private SourceData loadSourceTiles(Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
     	SourceData sd = new SourceData();
     	sd.rhoToa = new float[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS][0];
     	sd.radiance = new Tile[3];
     	
         for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
-            sd.rhoToa[i] = (float[]) getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle).getRawSamples().getElems();
+            sd.rhoToa[i] = (float[]) getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1)), rectangle, pm).getRawSamples().getElems();
         }
         sd.radiance[BAND_BRIGHT_N] = getSourceTile(
 				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_bright_n]),
-				rectangle);
+				rectangle, pm);
         sd.radiance[BAND_SLOPE_N_1] = getSourceTile(
 				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_slope_n_1]),
-				rectangle);
+				rectangle, pm);
         sd.radiance[BAND_SLOPE_N_2] = getSourceTile(
 				l1bProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[auxData.band_slope_n_2]),
-				rectangle);
+				rectangle, pm);
         sd.detectorIndex = (short[]) getSourceTile(
 				l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME),
-				rectangle).getRawSamples().getElems();
-        sd.sza = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle).getRawSamples().getElems();
-        sd.vza = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle).getRawSamples().getElems();
-        sd.saa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle).getRawSamples().getElems();
-        sd.vaa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle).getRawSamples().getElems();
-        sd.altitude = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle).getRawSamples().getElems();
-        sd.ecmwfPressure = (float[]) getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle).getRawSamples().getElems();
-        sd.l1Flags = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle);
+				rectangle, pm).getRawSamples().getElems();
+        sd.sza = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm).getRawSamples().getElems();
+        sd.vza = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm).getRawSamples().getElems();
+        sd.saa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle, pm).getRawSamples().getElems();
+        sd.vaa = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm).getRawSamples().getElems();
+        sd.altitude = (float[]) getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle, pm).getRawSamples().getElems();
+        sd.ecmwfPressure = (float[]) getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle, pm).getRawSamples().getElems();
+        sd.l1Flags = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle, pm);
         
         return sd;
     }
 
     @Override
-    public void computeTile(Band band, Tile targetTile) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle rectangle = targetTile.getRectangle();
-    	ProgressMonitor pm = createProgressMonitor();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            SourceData sd = loadSourceTiles(rectangle);
+            SourceData sd = loadSourceTiles(rectangle, pm);
 
             PixelInfo pixelInfo = new PixelInfo();
 			int i = 0;

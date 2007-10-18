@@ -167,25 +167,24 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     }
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
-        ProgressMonitor pm = createProgressMonitor();
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
-            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
-            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
-            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
-            Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle);
-            Tile ecmwfPressure = getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle);
+            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
+            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm);
+            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle, pm);
+            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm);
+            Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle, pm);
+            Tile ecmwfPressure = getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle, pm);
 			
             Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i = 0; i < rhoNg.length; i++) {
 			    if (i == bb11 || i == bb15) {
 			        continue;
 			    }
-			    rhoNg[i] = getSourceTile(gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
+			    rhoNg[i] = getSourceTile(gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle, pm);
 			}
-			Tile isLandCons = getSourceTile(isLandBand, rectangle);
+			Tile isLandCons = getSourceTile(isLandBand, rectangle, pm);
 
 			Tile[] transRvData = null;
 			Tile[] transRsData = null;
@@ -198,7 +197,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 				sphAlbRData = getTargetTileGroup(sphAlbRBands, targetTiles);
             }
             Tile[] brr = getTargetTileGroup(brrBands, targetTiles);
-            Tile brrFlags = getSourceTile(flagBand, rectangle);
+            Tile brrFlags = getSourceTile(flagBand, rectangle, pm);
             
             boolean[][] do_corr = new boolean[SUBWIN_HEIGHT][SUBWIN_WIDTH];
             // rayleigh phase function coefficients, PR in DPM

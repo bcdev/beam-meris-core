@@ -123,16 +123,15 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 	}
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
-        ProgressMonitor pm = createProgressMonitor();
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
         pm.beginTask("Processing frame...", rectangle.height);
         try {
-        	Tile detectorIndex = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
+        	Tile detectorIndex = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle, pm);
         	Tile[] rho = new Tile[rhoCorectedBands.length];
             for (int i = 0; i < rhoCorectedBands.length; i++) {
-                rho[i] = getSourceTile(gascorProduct.getBand(rhoCorectedBands[i].getName()), rectangle);
+                rho[i] = getSourceTile(gascorProduct.getBand(rhoCorectedBands[i].getName()), rectangle, pm);
             }
-            Tile isLandCons = getSourceTile(isLandBand, rectangle);
+            Tile isLandCons = getSourceTile(isLandBand, rectangle, pm);
             
             Tile[] rhoCorrected = new Tile[rhoCorectedBands.length];
             for (int i = 0; i < rhoCorectedBands.length; i++) {

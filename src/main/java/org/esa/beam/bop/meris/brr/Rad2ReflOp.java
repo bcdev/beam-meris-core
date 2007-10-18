@@ -118,17 +118,16 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 
 
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle) throws OperatorException {
-        ProgressMonitor pm = createProgressMonitor();
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
         pm.beginTask("Processing frame...", rectangle.height);
         try {
         	Tile[] radiance = new Tile[radianceBands.length];
         	for (int i = 0; i < radiance.length; i++) {
-        		radiance[i] = getSourceTile(radianceBands[i], rectangle);
+        		radiance[i] = getSourceTile(radianceBands[i], rectangle, pm);
             }
-        	Tile detectorIndex = getSourceTile(detectorIndexBand, rectangle);
-        	Tile sza = getSourceTile(sunZenihTPG, rectangle);
-        	Tile isInvalid = getSourceTile(invalidBand, rectangle);
+        	Tile detectorIndex = getSourceTile(detectorIndexBand, rectangle, pm);
+        	Tile sza = getSourceTile(sunZenihTPG, rectangle, pm);
+        	Tile isInvalid = getSourceTile(invalidBand, rectangle, pm);
 
             Tile[] rhoToa = new Tile[rhoToaBands.length];
             for (int i = 0; i < rhoToaBands.length; i++) {
