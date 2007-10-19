@@ -172,7 +172,7 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         
         for (int iy = iyStart; iy < iyEnd; iy++) {
             final int yDist = Math.abs(iy - y);
-            int index = TileRectCalculator.convertToIndex(ixStart, iy, sourceRect);
+            int index = convertToIndex(ixStart, iy, sourceRect);
             for (int ix = ixStart; ix < ixEnd; ix++, index++) {
             	final int xDist = Math.abs(ix - x);
                 final double weight = weights[xDist][yDist];
@@ -199,6 +199,11 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
         }
         return mean;
 	}
+    
+    private static int convertToIndex(int x, int y, Rectangle rectangle) {
+        final int index = (y - rectangle.y) * rectangle.width + (x - rectangle.x);
+        return index;
+    }
     
     private float[] getScaledArrayFromTile(Tile tile) {
         ProductData valueDataBuffer = tile.getRawSamples();
