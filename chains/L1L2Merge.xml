@@ -26,7 +26,7 @@
         </sources>
         <parameters>
             <productType>MER_L2</productType>
-            <baseGeoInfo>l1b</baseGeoInfo>
+            <copyGeoCodingFrom>l1b</copyGeoCodingFrom>
             <band>
                 <product>l1b</product>
                 <nameExp>.*</nameExp>

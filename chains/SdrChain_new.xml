@@ -162,7 +162,7 @@
         </sources>
         <parameters>
             <productType>MER_L2_SDR</productType>
-            <baseGeoInfo>l1b</baseGeoInfo>
+            <copyGeoCodingFrom>l1b</copyGeoCodingFrom>
             <band>
                 <product>sdr</product>
                 <nameExp>.*</nameExp>
