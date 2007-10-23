@@ -39,7 +39,8 @@ public class GaseousAbsorptionCorrection implements Constants {
      * @param x2        ratio TOAR(900)/TOAR(885)
      * @param rhoToa    reflectance (15 bands)
      * @param detector  pixel detector id
-     * @param rho_ag    gas corrected reflectance (15 bands), output
+     * @param rhoNg     gas corrected reflectance (15 bands), output
+     * @param tg2       total gaseous transmission (15 bands), output
      * @param PCD_POL_F
      * @return success code (1: out or range output)
      */

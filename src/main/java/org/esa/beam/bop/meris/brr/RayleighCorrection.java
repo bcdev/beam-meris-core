@@ -29,7 +29,7 @@ public class RayleighCorrection implements Constants {
     /**
      * Computes Rayleigh reflectance for all bands for a given geometry and pressure.
      * <p/>
-     * <b>Input:</b> all parameters without <code>refRayl</code>, {@link org.esa.beam.dataproc.meris.sdr.dpm.L2AuxData#Rayscatt_coeff_s}
+     * <b>Input:</b> all parameters without <code>refRayl</code>, {@link L2AuxData#Rayscatt_coeff_s}
      * <br> <b>Output:</b> parameter <code>refRayl</code><br> <b>DPM ref.:</b> DPM L2, section 7.3.3.3.2 <br> <b>MEGS
      * ref.:</b> <code>ray_cor.c</code>, function <code>ref_rayleigh</code><br>
      *
@@ -117,7 +117,7 @@ public class RayleighCorrection implements Constants {
      * Computes three Fourier components of Rayleigh function.
      * <p/>
      * <p/>
-     * <b>Input:</b> all arguments and {@link org.esa.beam.dataproc.meris.sdr.dpm.L2AuxData#AB}<br> <b>Output:</b>
+     * <b>Input:</b> all arguments and {@link L2AuxData#AB}<br> <b>Output:</b>
      * <code>phaseRayl</code><br> <b>DPM ref.:</b> DPM L2, section 7.3.3.3.2 <br> <b>MEGS ref.:</b>
      * <code>ray_cor.c</code>, function <code>phase_rayleigh</code><br>
      *
@@ -139,8 +139,8 @@ public class RayleighCorrection implements Constants {
     /**
      * Computes Rayleigh optical thickness.
      * <p/>
-     * <b>Input:</b> variable <code>press</code>, {@link org.esa.beam.dataproc.meris.sdr.dpm.L2AuxData#Pstd},{@link
-     * org.esa.beam.dataproc.meris.sdr.dpm.L2AuxData#tau_R} <br> <b>Output:</b> <code>tauRayl</code> <br> <b>DPM
+     * <b>Input:</b> variable <code>press</code>, {@link L2AuxData#Pstd},{@link
+     * L2AuxData#tau_R} <br> <b>Output:</b> <code>tauRayl</code> <br> <b>DPM
      * ref.:</b> L2 DPM section 7.3.3.3.3.2 <br> <b>MEGS ref.:</b> <code>ray_cor.c</code>, function
      * <code>tau_rayleigh</code><br>
      *
