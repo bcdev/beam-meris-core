@@ -29,20 +29,20 @@ import com.bc.ceres.core.NullProgressMonitor;
  */
 public class DpmConfig {
 
-    public static final String SYMBOLIC_NAME = "beam-meris-l2auxdata";
-    public static final String AUXDATA_DIRNAME = "meris_l2";
-
+    private static final String SYMBOLIC_NAME = "beam-meris-l2auxdata";
+    private static final String AUXDATA_DIRNAME = "meris_l2";
+    private static final String MERIS_L2_CONF = "meris_l2_config.xml";
+    
     private Element _rootElement;
     private File auxdataTargetDir;
 
     /**
      * Constructs a new configuration.
      *
-     * @param configFileName the configuration file name, must not be <code>null</code>
-     * @throws org.esa.beam.dataproc.meris.sdr.dpm.DpmConfigException
+     * @throws DpmConfigException
      *          if the configuration could not be loaded from the file
      */
-    public DpmConfig(String configFileName) throws DpmConfigException {
+    public DpmConfig() throws DpmConfigException {
         String auxdataSrcPath = "auxdata" + File.separator + AUXDATA_DIRNAME;
         final String auxdataDestPath = ".beam" + File.separator +
                 SYMBOLIC_NAME + File.separator +
@@ -57,7 +57,7 @@ public class DpmConfig {
         } catch (IOException e) {
             throw new DpmConfigException("Could not install auxdata", e);
         }
-        File configFile = new File(auxdataTargetDir, configFileName);
+        File configFile = new File(auxdataTargetDir, MERIS_L2_CONF);
         FileReader reader = null;
         try {
             reader = new FileReader(configFile);
@@ -73,17 +73,6 @@ public class DpmConfig {
             }
         }
     }
-
-    /**
-     * Constructs a new configuration. Note that the reader is not closed after the configuration has been loaded.
-     * TODO NOT used anymore remove ??
-     * @param reader the reader used to load the configuration, must not be <code>null</code>
-     * @throws DpmConfigException if the configuration could not be loaded from the reader
-     */
-//    public DpmConfig(Reader reader) throws DpmConfigException {
-//        auxdata = new Auxdata(SYMBOLIC_NAME, AUXDATA_DIRNAME);
-//        init(reader);
-//    }
 
     /**
      * Gets the directory of the MERIS Level 2 auxiliary databases.

@@ -242,7 +242,6 @@ public final class L2AuxData implements Constants {
         public final int[][] derivative_band_id = new int[L1_BAND_NUM][2];
     }
 
-    //todo remove
     private Product sourceProduct;
 
     public L2AuxData(DpmConfig config, Product product) throws DpmConfigException, IOException {
