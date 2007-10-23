@@ -33,6 +33,9 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.meris.l2auxdata.Constants;
+import org.esa.beam.meris.l2auxdata.DpmConfig;
+import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.util.ProductUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
@@ -115,7 +118,7 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 		bandDescriptor.expression = expression;
 		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
 		bandDescriptors[0] = bandDescriptor;
-		parameters.put("bandDescriptors", bandDescriptors);
+		parameters.put("targetBands", bandDescriptors);
 
 		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product);
 		addSourceProduct("x", expProduct);

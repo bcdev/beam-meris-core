@@ -30,11 +30,11 @@ import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.operator.util.HelperFunctions;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
+import org.esa.beam.meris.l2auxdata.*;
 
 import com.bc.ceres.core.ProgressMonitor;
 
@@ -557,6 +557,11 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         int y;
         double airMass;
         float ecmwfPressure;
+    }
+    
+    private static class ReturnValue {
+        public double value;
+        public boolean error;
     }
 
 

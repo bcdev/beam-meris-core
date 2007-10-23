@@ -32,7 +32,9 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.framework.gpf.support.TileRectCalculator;
-import org.esa.beam.operator.util.HelperFunctions;
+import org.esa.beam.meris.l2auxdata.Constants;
+import org.esa.beam.meris.l2auxdata.DpmConfig;
+import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.ProductUtils;
 
@@ -60,11 +62,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     private DpmConfig dpmConfig;
     private L2AuxData auxData;
 
-//    private FlagWrapper cloudFlags;
-//    private FlagWrapper l1Flags;
-
     private Band flagBand;
-//    private FlagWrapper gasFlags;
     private Band[] rhoNgBands;
     private Band[] tgBands;
 

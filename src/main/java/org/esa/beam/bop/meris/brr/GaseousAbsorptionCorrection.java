@@ -8,6 +8,8 @@ package org.esa.beam.bop.meris.brr;
 
 
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.meris.l2auxdata.Constants;
+import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 
