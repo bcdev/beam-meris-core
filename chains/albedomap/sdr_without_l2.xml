@@ -11,14 +11,6 @@
     </node>
     
     <node>
-      <id>l2rr</id>
-      <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
-      <configuration>
-          <filePath>${inputFile2}</filePath>
-      </configuration>
-    </node>
-    
-    <node>
       <id>l3</id>
       <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
       <configuration>
@@ -118,7 +110,7 @@
     </node>    
 
     <node>
-      <id>l3ForRR</id>
+      <id>aerosol</id>
       <operator>org.esa.beam.framework.gpf.operators.meris.L3ToL1Op$Spi</operator>
       <sources>
         <l1>l1b</l1>
@@ -130,26 +122,6 @@
       </configuration>
     </node>
     
-     <node>
-      <id>aerosol</id>
-      <operator>org.esa.beam.bop.meris.FillAerosolOp$Spi</operator>
-      <sources>
-        <input>l2rr</input>
-        <default>l3ForRR</default>
-        <mask>sdrMask</mask>
-      </sources>
-      <configuration>
-        <pixelWidth>50</pixelWidth>        
-        <maskBand>sdrmask</maskBand>
-        <band>
-          <name>aero_opt_thick_443</name>
-          <inputBand>aero_opt_thick_443</inputBand>
-          <validExp>!l2_flags.PCD_19 AND l2_flags.LAND</validExp>
-          <defaultBand>aero_opt_thick_443</defaultBand>          
-        </band>
-      </configuration>
-    </node>
-        
     
     <node>
       <id>sdr</id>
