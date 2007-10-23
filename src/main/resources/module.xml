@@ -8,6 +8,9 @@
         <module>beam-gpf</module>
     </dependency>
     <dependency>
+        <module>beam-meris-l2auxdata</module>
+    </dependency>
+    <dependency>
         <module>beam-envisat-reader</module>
     </dependency>
 
