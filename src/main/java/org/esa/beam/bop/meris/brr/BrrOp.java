@@ -4,15 +4,11 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.Map;
 
-import org.esa.beam.bop.meris.AlbedoUtils;
 import org.esa.beam.bop.meris.brr.dpm.AtmosphericCorrectionLand;
 import org.esa.beam.bop.meris.brr.dpm.CloudClassification;
-import org.esa.beam.bop.meris.brr.dpm.Constants;
-import org.esa.beam.bop.meris.brr.dpm.DpmConfig;
 import org.esa.beam.bop.meris.brr.dpm.DpmPixel;
 import org.esa.beam.bop.meris.brr.dpm.GaseousAbsorptionCorrection;
 import org.esa.beam.bop.meris.brr.dpm.L1bDataExtraction;
-import org.esa.beam.bop.meris.brr.dpm.L2AuxData;
 import org.esa.beam.bop.meris.brr.dpm.PixelIdentification;
 import org.esa.beam.bop.meris.brr.dpm.RayleighCorrection;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
@@ -30,6 +26,9 @@ import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.meris.l2auxdata.Constants;
+import org.esa.beam.meris.l2auxdata.DpmConfig;
+import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.util.BitSetter;
 
 import com.bc.ceres.core.ProgressMonitor;
@@ -206,7 +205,7 @@ public class BrrOp extends MerisBasisOp {
 
 
         for (int bandIndex = 0; bandIndex < brrReflecBands.length; bandIndex++) {
-            if (AlbedoUtils.isValidRhoSpectralIndex(bandIndex)) {
+            if (isValidRhoSpectralIndex(bandIndex)) {
                 ProductData data = targetTiles.get(brrReflecBands[bandIndex]).getRawSamples();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
@@ -272,7 +271,7 @@ public class BrrOp extends MerisBasisOp {
         final int sceneHeight = targetProduct.getSceneRasterHeight();
 
         for (int bandId = 0; bandId < bands.length; bandId++) {
-            if (AlbedoUtils.isValidRhoSpectralIndex(bandId) || name.equals("toar")) {
+            if (isValidRhoSpectralIndex(bandId) || name.equals("toar")) {
                 Band aNewBand = new Band(name + "_" + (bandId + 1), ProductData.TYPE_FLOAT32, sceneWidth,
                                          sceneHeight);
                 aNewBand.setNoDataValueUsed(true);
@@ -380,6 +379,10 @@ public class BrrOp extends MerisBasisOp {
             flagCoding.addFlag("F_INVALID_REFLEC_" + (i + 1), BitSetter.setFlag(0, i), null);
         }
         return flagCoding;
+    }
+    
+    static boolean isValidRhoSpectralIndex(int i) {
+        return i >= Constants.bb1 && i < Constants.bb15 && i != Constants.bb11;
     }
 
     public static class Spi extends OperatorSpi {

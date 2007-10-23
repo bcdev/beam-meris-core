@@ -1,5 +1,6 @@
 package org.esa.beam.bop.meris.brr.dpm;
 
+import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.util.BitSetter;
 
 /**

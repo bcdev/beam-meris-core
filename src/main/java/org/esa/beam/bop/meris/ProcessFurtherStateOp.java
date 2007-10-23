@@ -82,7 +82,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
 			bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
 			bandDescriptions[i] = bandDescriptor;
     	}
-		parameters.put("bandDescriptors", bandDescriptions);
+		parameters.put("targetBands", bandDescriptions);
 		
 		Map<String, Product> products = new HashMap<String, Product>();
 		products.put(getSourceProductId(l1bProduct), l1bProduct);

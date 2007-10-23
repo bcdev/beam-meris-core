@@ -5,7 +5,10 @@
     <name>BEAM MERIS Albedomap</name>
 
     <dependency>
-        <module>bop-meris-brr</module>
+        <module>beam-gpf</module>
+    </dependency>
+    <dependency>
+        <module>beam-meris-l2auxdata</module>
     </dependency>
     <dependency>
         <module>beam-envisat-reader</module>

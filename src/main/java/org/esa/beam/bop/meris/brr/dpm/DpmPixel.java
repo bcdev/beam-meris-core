@@ -6,6 +6,8 @@
  */
 package org.esa.beam.bop.meris.brr.dpm;
 
+import org.esa.beam.meris.l2auxdata.Constants;
+
 
 /**
  * The <code>DpmPixel</code> class is a collection of all relevant MERIS Level 2 DPM pixel variables.

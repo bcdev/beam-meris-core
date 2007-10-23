@@ -6,7 +6,8 @@
  */
 package org.esa.beam.bop.meris.brr.dpm;
 
-import org.esa.beam.bop.meris.brr.ReturnValue;
+import org.esa.beam.meris.l2auxdata.Constants;
+import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
@@ -416,5 +417,10 @@ public class CloudClassification implements Constants {
          * Array of flags used as return value by some functions. Local helper variable used in {@link CloudClassification#spec_slopes}.
          */
         final boolean[] resultFlags = new boolean[3];
+    }
+    
+    private static class ReturnValue {
+        public double value;
+        public boolean error;
     }
 }

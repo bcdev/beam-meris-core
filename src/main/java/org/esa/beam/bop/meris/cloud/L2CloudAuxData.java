@@ -16,10 +16,10 @@
  */
 package org.esa.beam.bop.meris.cloud;
 
-import org.esa.beam.bop.meris.brr.auxdata.AuxFile;
-import org.esa.beam.bop.meris.brr.dpm.DpmConfig;
-import org.esa.beam.bop.meris.brr.dpm.DpmConfigException;
 import org.esa.beam.framework.datamodel.ProductData;
+import org.esa.beam.meris.l2auxdata.AuxFile;
+import org.esa.beam.meris.l2auxdata.DpmConfig;
+import org.esa.beam.meris.l2auxdata.DpmConfigException;
 import org.esa.beam.util.math.LUT;
 
 import java.io.IOException;

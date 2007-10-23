@@ -21,13 +21,12 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.esa.beam.bop.meris.AlbedomapConstants;
-import org.esa.beam.bop.meris.brr.dpm.DpmConfig;
-import org.esa.beam.bop.meris.brr.dpm.L2AuxData;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
@@ -40,11 +39,15 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.framework.gpf.support.Auxdata;
+import org.esa.beam.meris.l2auxdata.DpmConfig;
+import org.esa.beam.meris.l2auxdata.L2AuxData;
+import org.esa.beam.util.ResourceInstaller;
+import org.esa.beam.util.SystemUtils;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
 
+import com.bc.ceres.core.NullProgressMonitor;
 import com.bc.ceres.core.ProgressMonitor;
 import com.bc.jnn.Jnn;
 import com.bc.jnn.JnnException;
@@ -85,11 +88,17 @@ public class CloudTopPressureOp extends MerisBasisOp {
     }
 
     private void loadNeuralNet() throws IOException, JnnException {
-        Auxdata ctpAuxdata = new Auxdata(AlbedomapConstants.SYMBOLIC_NAME, "ctp");
-        ctpAuxdata.installAuxdata(this);
-        File ctpAuxDataDir = ctpAuxdata.getDefaultAuxdataDir();
+        String auxdataSrcPath = "auxdata" + File.separator + "ctp";
+        final String auxdataDestPath = ".beam" + File.separator +
+                AlbedomapConstants.SYMBOLIC_NAME + File.separator +
+                auxdataSrcPath;
+        File auxdataTargetDir = new File(SystemUtils.getUserHomeDir(), auxdataDestPath);
+        URL sourceUrl = ResourceInstaller.getSourceUrl(this.getClass());
 
-        File nnFile = new File(ctpAuxDataDir, "ctp.nna");
+        ResourceInstaller resourceInstaller = new ResourceInstaller(sourceUrl, auxdataSrcPath, auxdataTargetDir);
+        resourceInstaller.install(".*", new NullProgressMonitor());
+        
+        File nnFile = new File(auxdataTargetDir, "ctp.nna");
         final InputStreamReader reader = new FileReader(nnFile);
         try {
             Jnn.setOptimizing(true);
@@ -118,7 +127,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
 		bandDescriptor.expression = expression;
 		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
 		bandDescriptors[0] = bandDescriptor;
-		parameters.put("bandDescriptors", bandDescriptors);
+		parameters.put("targetBands", bandDescriptors);
 
 		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product);
 		addSourceProduct("x", expProduct);

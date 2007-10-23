@@ -6,6 +6,8 @@
  */
 package org.esa.beam.bop.meris.brr.dpm;
 
+import org.esa.beam.meris.l2auxdata.Constants;
+import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
@@ -286,8 +288,8 @@ public class PixelIdentification implements Constants {
      * Converts TOA radiance to reflectance.
      * <p/>
      * <b>Input:</b> {@link DpmPixel#TOAR}, {@link DpmPixel#detector}, {@link DpmPixel#mus} {@link
-     * org.esa.beam.dataproc.meris.sdr.dpm.L2AuxData#detector_solar_irradiance}, {@link
-     * org.esa.beam.dataproc.meris.sdr.dpm.L2AuxData#seasonal_factor}<br> <b>Output:</b> {@link DpmPixel#rho_toa}, {@link
+     * org.esa.beam.meris.l2auxdata.L2AuxData#detector_solar_irradiance}, {@link
+     * org.esa.beam.meris.l2auxdata.L2AuxData#seasonal_factor}<br> <b>Output:</b> {@link DpmPixel#rho_toa}, {@link
      * DpmPixel#rho_toa}<br> <b>DPM ref.:</b> section 3.5 step 2.1.4<br> <b>MEGS ref.:</b> <code>pixel_classification.c</code>,
      * function <code>rad2reflect</code><br>
      *

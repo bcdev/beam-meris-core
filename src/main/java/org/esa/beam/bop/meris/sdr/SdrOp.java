@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.Map;
 
 import org.esa.beam.bop.meris.AlbedoUtils;
@@ -24,11 +25,13 @@ import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.framework.gpf.support.Auxdata;
 import org.esa.beam.util.ProductUtils;
+import org.esa.beam.util.ResourceInstaller;
 import org.esa.beam.util.StringUtils;
+import org.esa.beam.util.SystemUtils;
 import org.esa.beam.util.math.MathUtils;
 
+import com.bc.ceres.core.NullProgressMonitor;
 import com.bc.ceres.core.ProgressMonitor;
 import com.bc.jnn.Jnn;
 import com.bc.jnn.JnnException;
@@ -69,8 +72,6 @@ public class SdrOp extends MerisBasisOp {
     private Product aerosolProduct;
     @SourceProduct(alias="mask")
     private Product maskProduct;//for expression only
-//    @SourceProducts
-//    private Product[] sourceProducts;
     @TargetProduct
     private Product targetProduct;
     @Parameter
@@ -231,11 +232,17 @@ public class SdrOp extends MerisBasisOp {
     }
 
     private void loadNeuralNet() throws IOException, JnnException {
-        Auxdata auxdata = new Auxdata(AlbedomapConstants.SYMBOLIC_NAME, "sdr");
-        auxdata.installAuxdata(this);
-        File auxDataDir = auxdata.getDefaultAuxdataDir();
+        String auxdataSrcPath = "auxdata" + File.separator + "sdr";
+        final String auxdataDestPath = ".beam" + File.separator +
+                AlbedomapConstants.SYMBOLIC_NAME + File.separator +
+                auxdataSrcPath;
+        File auxdataTargetDir = new File(SystemUtils.getUserHomeDir(), auxdataDestPath);
+        URL sourceUrl = ResourceInstaller.getSourceUrl(this.getClass());
 
-        File nnFile = new File(auxDataDir, neuralNetFile);
+        ResourceInstaller resourceInstaller = new ResourceInstaller(sourceUrl, auxdataSrcPath, auxdataTargetDir);
+        resourceInstaller.install(".*", new NullProgressMonitor());
+        
+        File nnFile = new File(auxdataTargetDir, neuralNetFile);
         final InputStreamReader reader = new FileReader(nnFile);
         final JnnNet neuralNet;
         try {

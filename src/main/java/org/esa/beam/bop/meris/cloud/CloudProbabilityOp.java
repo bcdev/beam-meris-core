@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -44,10 +45,11 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.framework.gpf.support.Auxdata;
-import org.esa.beam.util.StringUtils;
+import org.esa.beam.util.ResourceInstaller;
+import org.esa.beam.util.SystemUtils;
 import org.esa.beam.util.math.MathUtils;
 
+import com.bc.ceres.core.NullProgressMonitor;
 import com.bc.ceres.core.ProgressMonitor;
 
 
@@ -101,8 +103,6 @@ public class CloudProbabilityOp extends MerisBasisOp {
     private Product l1bProduct;
     @TargetProduct
     private Product targetProduct;
-    @Parameter
-    private String auxdataDir;
     @Parameter
     private String configFile = DEFAULT_CONFIG_FILE;
     @Parameter
@@ -174,7 +174,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
 		bandDescriptors[2].expression = "l1_flags.LAND_OCEAN";
 		bandDescriptors[2].type = ProductData.TYPESTRING_BOOLEAN;
 		
-		parameters.put("bandDescriptors", bandDescriptors);
+		parameters.put("targetBands", bandDescriptors);
 
 		Product expProduct = GPF.createProduct("BandArithmetic", parameters, l1bProduct);
 		addSourceProduct("x", expProduct);
@@ -185,30 +185,33 @@ public class CloudProbabilityOp extends MerisBasisOp {
 	}
 
     private void loadAuxdata() throws IOException {
-        Auxdata auxdata = new Auxdata(AlbedomapConstants.SYMBOLIC_NAME, "cloudprob");
-        File auxDir;
-        if (StringUtils.isNullOrEmpty(auxdataDir)) {
-            auxDir = auxdata.getDefaultAuxdataDir();
-            auxdata.installAuxdata(this);
-        } else {
-            auxDir = new File(auxdataDir);
-        }
+        String auxdataSrcPath = "auxdata" + File.separator + "cloudprob";
+        final String auxdataDestPath = ".beam" + File.separator +
+                AlbedomapConstants.SYMBOLIC_NAME + File.separator +
+                auxdataSrcPath;
+        File auxdataTargetDir = new File(SystemUtils.getUserHomeDir(), auxdataDestPath);
+        URL sourceUrl = ResourceInstaller.getSourceUrl(this.getClass());
 
-        final File configPropFile = new File(auxDir, configFile);
+        ResourceInstaller resourceInstaller = new ResourceInstaller(sourceUrl, auxdataSrcPath, auxdataTargetDir);
+        resourceInstaller.install(".*", new NullProgressMonitor());
+        
+        
+
+        final File configPropFile = new File(auxdataTargetDir, configFile);
         final InputStream propertiesStream = new FileInputStream(configPropFile);
         Properties configProperties = new Properties();
         configProperties.load(propertiesStream);
 
-        landAlgo = new CloudAlgorithm(auxDir, configProperties
+        landAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties
                 .getProperty("land"));
-        oceanAlgo = new CloudAlgorithm(auxDir, configProperties
+        oceanAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties
                 .getProperty("ocean"));
 
         pressScaleHeight = Integer.parseInt(configProperties
                 .getProperty(PRESS_SCALE_HEIGHT_KEY));
 
         centralWavelengthProvider = new CentralWavelengthProvider();
-        centralWavelengthProvider.readAuxData(auxDir);
+        centralWavelengthProvider.readAuxData(auxdataTargetDir);
     }
 
     private static FlagCoding createCloudFlagCoding(Product outputProduct) {
