@@ -27,10 +27,8 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.GPF;
-import org.esa.beam.framework.gpf.Operator;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
-import org.esa.beam.framework.gpf.ParameterConverter;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -41,9 +39,6 @@ import org.esa.beam.util.StringUtils;
 import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.io.xml.XppDomReader;
-import com.thoughtworks.xstream.io.xml.xppdom.Xpp3Dom;
 
 /**
  * Created by marcoz.
@@ -51,7 +46,7 @@ import com.thoughtworks.xstream.io.xml.xppdom.Xpp3Dom;
  * @author marcoz
  * @version $Revision: 1.1 $ $Date: 2007/05/14 12:26:01 $
  */
-public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
+public class FillAerosolOp extends MerisBasisOp {
 
     private TileRectCalculator rectCalculator;
     private Map<Band, Band> sourceBands;
@@ -93,19 +88,6 @@ public class FillAerosolOp extends MerisBasisOp implements ParameterConverter {
 
     public FillAerosolOp() {
         config = new Configuration();
-    }
-
-    public void getParameterValues(Operator operator, Xpp3Dom configuration) throws OperatorException {
-        // todo - implement
-    }
-
-    public void setParameterValues(Operator operator, Xpp3Dom configuration) throws OperatorException {
-        XStream xStream = new XStream();
-        xStream.setClassLoader(this.getClass().getClassLoader());
-        xStream.alias(configuration.getName(), Configuration.class);
-        xStream.alias("band", BandDesc.class);
-        xStream.addImplicitCollection(Configuration.class, "bands");
-        xStream.unmarshal(new XppDomReader(configuration), config);
     }
 
     @Override
