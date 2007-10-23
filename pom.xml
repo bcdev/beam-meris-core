@@ -15,7 +15,7 @@
     <dependencies>
         <dependency>
             <groupId>org.esa.beam</groupId>
-            <artifactId>beam-gpf</artifactId>
+            <artifactId>beam-core</artifactId>
             <version>4.1-SNAPSHOT</version>
         </dependency>
         <dependency>

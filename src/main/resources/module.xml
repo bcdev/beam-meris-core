@@ -7,6 +7,9 @@
     <dependency>
         <module>beam-core</module>
     </dependency>
+    <dependency>
+        <module>beam-envisat-reader</module>
+    </dependency>
 
     <categories>System,Processing</categories>
 
