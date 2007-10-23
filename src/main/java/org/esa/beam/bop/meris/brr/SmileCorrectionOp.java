@@ -28,14 +28,13 @@ import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
-import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
-import org.esa.beam.meris.l2auxdata.DpmConfig;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
+import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.ProductUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
@@ -49,17 +48,10 @@ import com.bc.ceres.core.ProgressMonitor;
  */
 public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 
-    private static final String MERIS_L2_CONF = "meris_l2_config.xml";
-
-    private DpmConfig dpmConfig;
     private L2AuxData auxData;
 
-//    private float[][] rho;
-//    private short[] detectorIndex;
     private Band isLandBand;
-
     private Band[] rhoCorectedBands;
-//    private float[][] rhoCorrected;
 
     @SourceProduct(alias="l1b")
     private Product l1bProduct;
@@ -69,19 +61,11 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
     private Product landProduct;
     @TargetProduct
     private Product targetProduct;
-    @Parameter
-    private String configFile = MERIS_L2_CONF;
-
 
     @Override
     public Product initialize() throws OperatorException {
         try {
-            dpmConfig = new DpmConfig(configFile);
-        } catch (Exception e) {
-            throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
-        }
-        try {
-            auxData = new L2AuxData(dpmConfig, l1bProduct);
+            auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);
         }

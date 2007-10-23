@@ -32,8 +32,8 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
-import org.esa.beam.meris.l2auxdata.DpmConfig;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
+import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.ProductUtils;
 
@@ -51,14 +51,12 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     public static final String RHO_NG_BAND_PREFIX = "rho_ng";
     public static final String GAS_FLAGS = "gas_flags";
     public static final String TG_BAND_PREFIX = "tg";
-    private static final String MERIS_L2_CONF = "meris_l2_config.xml";
 
     public static final int F_DO_CORRECT = 0;
     public static final int F_SUN70 = 1;
     public static final int F_ORINP0 = 2;
     public static final int F_OROUT0 = 3;
 
-    private DpmConfig dpmConfig;
     private L2AuxData auxData;
 
     private Band flagBand;
@@ -76,8 +74,6 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     @TargetProduct
     private Product targetProduct;
     @Parameter
-    private String configFile = MERIS_L2_CONF;
-    @Parameter
     boolean correctWater = false;
     @Parameter
     boolean exportTg = false;
@@ -85,12 +81,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     @Override
     public Product initialize() throws OperatorException {
         try {
-            dpmConfig = new DpmConfig(configFile);
-        } catch (Exception e) {
-            throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
-        }
-        try {
-            auxData = new L2AuxData(dpmConfig, l1bProduct);
+            auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
             gasCor = new GaseousAbsorptionCorrection(auxData);
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);

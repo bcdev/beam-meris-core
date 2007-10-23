@@ -35,8 +35,8 @@ import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
-import org.esa.beam.meris.l2auxdata.DpmConfig;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
+import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
@@ -54,9 +54,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     public static final String BRR_BAND_PREFIX = "brr";
     public static final String RAY_CORR_FLAGS = "ray_corr_flags";
-    private static final String MERIS_L2_CONF = "meris_l2_config.xml";
 
-    private DpmConfig dpmConfig;
     protected L2AuxData auxData;
     protected RayleighCorrection rayleighCorrection;
     
@@ -78,8 +76,6 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     @TargetProduct
     private Product targetProduct;
     @Parameter
-    private String configFile = MERIS_L2_CONF;
-    @Parameter
     boolean correctWater = false;
     @Parameter
     boolean exportRayCoeffs = false;
@@ -88,12 +84,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     @Override
     public Product initialize() throws OperatorException {
         try {
-            dpmConfig = new DpmConfig(configFile);
-        } catch (Exception e) {
-            throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
-        }
-        try {
-            auxData = new L2AuxData(dpmConfig, l1bProduct);
+            auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
             rayleighCorrection = new RayleighCorrection(auxData);
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);

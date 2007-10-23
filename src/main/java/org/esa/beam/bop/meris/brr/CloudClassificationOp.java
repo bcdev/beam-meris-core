@@ -26,15 +26,17 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
-import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.meris.l2auxdata.Constants;
+import org.esa.beam.meris.l2auxdata.DpmConfigException;
+import org.esa.beam.meris.l2auxdata.L2AuxData;
+import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
-import org.esa.beam.meris.l2auxdata.*;
 
 import com.bc.ceres.core.ProgressMonitor;
 
@@ -48,7 +50,6 @@ import com.bc.ceres.core.ProgressMonitor;
 public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
     public static final String CLOUD_FLAGS = "cloud_classif_flags";
-    private static final String MERIS_L2_CONF = "meris_l2_config.xml";
 
     private static final int BAND_BRIGHT_N = 0;
     private static final int BAND_SLOPE_N_1 = 1;
@@ -64,7 +65,6 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     public static final int F_SLOPE_1 = 7;
     public static final int F_SLOPE_2 = 8;
 
-    private DpmConfig dpmConfig;
     private L2AuxData auxData;
     
     private RayleighCorrection rayleighCorrection;
@@ -75,24 +75,16 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     private Product rhoToaProduct;
     @TargetProduct
     private Product targetProduct;
-    @Parameter
-    private String configFile = MERIS_L2_CONF;
 
 
     @Override
     public Product initialize() throws OperatorException {
         try {
-            dpmConfig = new DpmConfig(configFile);
-        } catch (Exception e) {
-            throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
+            auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
+        } catch (DpmConfigException e) {
+            throw new OperatorException("Could not load L2Auxdata", e);
         }
-        try {
-            auxData = new L2AuxData(dpmConfig, l1bProduct);
-            rayleighCorrection = new RayleighCorrection(auxData);
-        } catch (Exception e) {
-            throw new OperatorException("could not load L2Auxdata", e);
-        }
-        
+        rayleighCorrection = new RayleighCorrection(auxData);
         return createTargetProduct();
     }
 

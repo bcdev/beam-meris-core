@@ -29,14 +29,13 @@ import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
-import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
-import org.esa.beam.meris.l2auxdata.DpmConfig;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
+import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
 
@@ -53,9 +52,6 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 
     public static final String RHO_TOA_BAND_PREFIX = "rho_toa";
 
-    private static final String MERIS_L2_CONF = "meris_l2_config.xml";
-
-    private transient DpmConfig dpmConfig;
     private transient L2AuxData auxData;
     
     private transient Band[] radianceBands;
@@ -69,18 +65,11 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
     private Product sourceProduct;
     @TargetProduct
     private Product targetProduct;
-    @Parameter
-    private String configFile = MERIS_L2_CONF;
 
     @Override
     public Product initialize() throws OperatorException {
         try {
-            dpmConfig = new DpmConfig(configFile);
-        } catch (Exception e) {
-            throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
-        }
-        try {
-            auxData = new L2AuxData(dpmConfig, sourceProduct);
+            auxData = L2AuxdataProvider.getInstance().getAuxdata(sourceProduct);
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);
         }
