@@ -27,8 +27,8 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
-import org.esa.beam.meris.l2auxdata.DpmConfig;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
+import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.BitSetter;
 
 import com.bc.ceres.core.ProgressMonitor;
@@ -39,16 +39,12 @@ import com.bc.ceres.core.ProgressMonitor;
  */
 public class BrrOp extends MerisBasisOp {
 
-    protected static final String MERIS_L2_CONF = "meris_l2_config.xml";
-
     protected L1bDataExtraction extdatl1;
     protected PixelIdentification pixelid;
     protected CloudClassification classcloud;
     protected GaseousAbsorptionCorrection gaz_cor;
     protected RayleighCorrection ray_cor;
     protected AtmosphericCorrectionLand landac;
-
-    protected DpmConfig dpmConfig;
 
     // source product
     private RasterDataNode[] tpGrids;
@@ -69,8 +65,6 @@ public class BrrOp extends MerisBasisOp {
     @TargetProduct
     private Product targetProduct;
     @Parameter
-    public String configFile = MERIS_L2_CONF;
-    @Parameter
     public boolean outputToar = false;
     @Parameter
     public boolean correctWater = false;
@@ -78,14 +72,7 @@ public class BrrOp extends MerisBasisOp {
 
     @Override
     public Product initialize() throws OperatorException {
-        try {
-            dpmConfig = new DpmConfig(configFile);
-        } catch (Exception e) {
-            throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
-        }
-
         // todo - tell someone else that we need a 4x4 subwindow
-        // operatorContext.addMinDimensions(new Dimension(4, 4));
 
         checkInputProduct(sourceProduct);
         prepareSourceProducts();
@@ -110,7 +97,7 @@ public class BrrOp extends MerisBasisOp {
 
     private void initAlgorithms(Product inputProduct) throws IllegalArgumentException {
         try {
-            final L2AuxData auxData = new L2AuxData(dpmConfig, inputProduct);
+            final L2AuxData auxData = L2AuxdataProvider.getInstance().getAuxdata(inputProduct);
             extdatl1 = new L1bDataExtraction(auxData);
             gaz_cor = new GaseousAbsorptionCorrection(auxData);
             pixelid = new PixelIdentification(auxData, gaz_cor);

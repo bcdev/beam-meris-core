@@ -39,8 +39,8 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.meris.l2auxdata.DpmConfig;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
+import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.ResourceInstaller;
 import org.esa.beam.util.SystemUtils;
 import org.esa.beam.util.math.FractIndex;
@@ -135,17 +135,11 @@ public class CloudTopPressureOp extends MerisBasisOp {
 	}
 
     private void initAuxData() throws OperatorException {
-        String configFile = "meris_l2_config.xml";
-        DpmConfig dpmConfig;
         try {
-            dpmConfig = new DpmConfig(configFile);
-        } catch (Exception e) {
-            throw new OperatorException("Failed to load configuration from " + configFile + ":\n" + e.getMessage(), e);
-        }
-        try {
-            auxData = new L2AuxData(dpmConfig, sourceProduct);
+            L2AuxdataProvider auxdataProvider = L2AuxdataProvider.getInstance();
+            auxData = auxdataProvider.getAuxdata(sourceProduct);
             int month = sourceProduct.getStartTime().getAsCalendar().get(Calendar.MONTH);
-            cloudAuxData = new L2CloudAuxData(dpmConfig, month);
+            cloudAuxData = new L2CloudAuxData(auxdataProvider.getDpmConfig(), month);
         } catch (Exception e) {
             throw new OperatorException("Failed to load L2AuxData:\n" + e.getMessage(), e);
         }
