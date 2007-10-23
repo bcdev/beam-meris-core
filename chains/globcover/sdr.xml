@@ -115,12 +115,12 @@
         <operator>org.esa.beam.framework.gpf.operators.common.BandArithmeticOp$Spi</operator>
         <sources>            
             <brr>brr</brr>            
-            <cloud>combinedCloud</cloud>
+            <cloud>cloudShadow</cloud>
         </sources>
         <configuration>
                 <bandDescriptor>
             		<name>sdrmask</name>
-            		<expression>$brr.l2_flags_p1.F_LANDCONS AND (not ($cloud.combined_cloud.cloud or $cloud.combined_cloud.cloud_edge or $cloud.combined_cloud.cloud_shadow))</expression>
+            		<expression>($brr.l2_flags_p1.F_LANDCONS or $cloud.combined_cloud.snow) AND (not ($cloud.combined_cloud.cloud or $cloud.combined_cloud.cloud_edge or $cloud.combined_cloud.cloud_shadow))</expression>
             		<type>boolean</type>
                 </bandDescriptor>
         </configuration>
@@ -177,14 +177,6 @@
       </configuration>
     </node>
     
-    <node>
-      <id>gaplesssdr</id>
-      <operator>org.esa.beam.bop.meris.GapLessSdrOp$Spi</operator>
-      <sources>
-        <sdr>sdr</sdr>
-        <toar>brr</toar>
-      </sources>
-    </node>
             
     <node>
       <id>mergedSDR</id>
@@ -193,7 +185,6 @@
             <l1b>l1b</l1b>
             <brr>brr</brr>
             <sdr>sdr</sdr>
-            <gaplesssdr>gaplesssdr</gaplesssdr>
             <cloud>cloudShadow</cloud>
             <processFurther>processFurther</processFurther>
         </sources>
@@ -201,12 +192,8 @@
            <productType>MER_L2_SDR</productType>
            <baseGeoInfo>l1b</baseGeoInfo>           
            <band>
-              <product>gaplesssdr</product>
-              <nameExp>.*</nameExp>
-          </band>
-          <band>
               <product>sdr</product>
-              <name>sdr_flags</name>
+              <nameExp>.*</nameExp>
           </band>
           <band>
               <product>l1b</product>
@@ -223,7 +210,7 @@
           <band>
               <product>l1b</product>
               <name>altitude</name>
-          </band>          
+          </band>
           <band>
               <product>brr</product>
               <nameExp>l2_flags.*</nameExp>
