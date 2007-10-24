@@ -84,31 +84,13 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
             rhoCorectedBands[i].setNoDataValueUsed(true);
             rhoCorectedBands[i].setNoDataValue(BAD_VALUE);
         }
-        
-//        rhoCorrected = new float[rhoCorectedBands.length][0];
-//        rho = new float[rhoCorectedBands.length][0];
-        isLandBand = createBooleanBandForExpression(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
+        BandArithmeticOp bandArithmeticOp = 
+            BandArithmeticOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
+        isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
         
         return targetProduct;
     }
     
-    private Band createBooleanBandForExpression(String expression,
-			Product product) throws OperatorException {
-    	
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
-		BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
-		bandDescriptor.name = "bBand";
-		bandDescriptor.expression = expression;
-		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
-		bandDescriptors[0] = bandDescriptor;
-		parameters.put("targetBands", bandDescriptors);
-
-		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product);
-		addSourceProduct("x", expProduct);
-		return expProduct.getBand("bBand");
-	}
-
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
         pm.beginTask("Processing frame...", rectangle.height);

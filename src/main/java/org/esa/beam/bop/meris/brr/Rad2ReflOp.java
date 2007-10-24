@@ -17,7 +17,6 @@
 package org.esa.beam.bop.meris.brr;
 
 import java.awt.Rectangle;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.esa.beam.dataio.envisat.EnvisatConstants;
@@ -25,7 +24,6 @@ import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.RasterDataNode;
-import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
@@ -89,26 +87,11 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
         detectorIndexBand = sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME);
         sunZenihTPG = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
         
-		invalidBand = createBooleanBandForExpression("l1_flags.INVALID");
+        BandArithmeticOp bandArithmeticOp = BandArithmeticOp.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
+        invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
         return targetProduct;
     }
     
-    private Band createBooleanBandForExpression(String expression) throws OperatorException {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
-        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
-		bandDescriptor.name = "bBand";
-		bandDescriptor.expression = expression;
-		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
-		bandDescriptors[0] = bandDescriptor;
-		parameters.put("targetBands", bandDescriptors);
-		
-		Product invalidProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
-		addSourceProduct("x", invalidProduct);
-		return invalidProduct.getBand("bBand");
-	}
-
-
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
         pm.beginTask("Processing frame...", rectangle.height);

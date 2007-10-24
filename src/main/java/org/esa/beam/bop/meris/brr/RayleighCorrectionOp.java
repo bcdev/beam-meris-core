@@ -17,7 +17,6 @@
 package org.esa.beam.bop.meris.brr;
 
 import java.awt.Rectangle;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.esa.beam.dataio.envisat.EnvisatConstants;
@@ -25,7 +24,6 @@ import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
@@ -108,27 +106,12 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         	tauRBands = addBandGroup("tauR");
 	        sphAlbRBands = addBandGroup("sphAlbR");
 		}
-        isLandBand = createBooleanBandForExpression(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
-		
+        BandArithmeticOp bandArithmeticOp = 
+            BandArithmeticOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
+        isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
+        
         return targetProduct;
     }
-    
-    private Band createBooleanBandForExpression(String expression,
-			Product product) throws OperatorException {
-    	
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
-		BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
-		bandDescriptor.name = "bBand";
-		bandDescriptor.expression = expression;
-		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
-		bandDescriptors[0] = bandDescriptor;
-		parameters.put("targetBands", bandDescriptors);
-
-		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product);
-		addSourceProduct("x", expProduct);
-		return expProduct.getBand("bBand");
-	}
     
     private Band[] addBandGroup(String prefix) {
         Band[] bands = new Band[L1_BAND_NUM];
