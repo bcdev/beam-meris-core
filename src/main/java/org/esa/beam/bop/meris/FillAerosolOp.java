@@ -112,7 +112,7 @@ public class FillAerosolOp extends MerisBasisOp {
             BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
     		bandDescriptor.name = bandDesc.name;
     		bandDescriptor.expression = bandDesc.validExp;
-    		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
+    		bandDescriptor.type = ProductData.TYPESTRING_INT8;
     		bandDescriptors[i] = bandDescriptor;
             
     		i++;

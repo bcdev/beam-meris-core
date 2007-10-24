@@ -23,15 +23,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.esa.beam.bop.meris.AlbedomapConstants;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
@@ -112,28 +109,14 @@ public class CloudTopPressureOp extends MerisBasisOp {
         targetProduct = createCompatibleProduct(sourceProduct, "MER_CTP", "MER_L2");
         targetProduct.addBand("cloud_top_press", ProductData.TYPE_FLOAT32);
 
-        invalidBand = createBooleanBandForExpression(INVALID_EXPRESSION, sourceProduct);
+        BandArithmeticOp bandArithmeticOp = 
+            BandArithmeticOp.createBooleanExpressionBand(INVALID_EXPRESSION, sourceProduct);
+        invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
+        
         
         return targetProduct;
     }
     
-    private Band createBooleanBandForExpression(String expression,
-			Product product) throws OperatorException {
-    	
-		Map<String, Object> parameters = new HashMap<String, Object>();
-		BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
-		BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
-		bandDescriptor.name = "bBand";
-		bandDescriptor.expression = expression;
-		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
-		bandDescriptors[0] = bandDescriptor;
-		parameters.put("targetBands", bandDescriptors);
-
-		Product expProduct = GPF.createProduct("BandArithmetic", parameters, product);
-		addSourceProduct("x", expProduct);
-		return expProduct.getBand("bBand");
-	}
-
     private void initAuxData() throws OperatorException {
         try {
             L2AuxdataProvider auxdataProvider = L2AuxdataProvider.getInstance();

@@ -162,17 +162,17 @@ public class CloudProbabilityOp extends MerisBasisOp {
 		bandDescriptors[0] = new BandArithmeticOp.BandDescriptor();
 		bandDescriptors[0].name = "validLand";
 		bandDescriptors[0].expression = validLandExpression;
-		bandDescriptors[0].type = ProductData.TYPESTRING_BOOLEAN;
+		bandDescriptors[0].type = ProductData.TYPESTRING_INT8;
 		
 		bandDescriptors[1] = new BandArithmeticOp.BandDescriptor();
 		bandDescriptors[1].name = "validOcean";
 		bandDescriptors[1].expression = validOceanExpression;
-		bandDescriptors[1].type = ProductData.TYPESTRING_BOOLEAN;
+		bandDescriptors[1].type = ProductData.TYPESTRING_INT8;
 		
 		bandDescriptors[2] = new BandArithmeticOp.BandDescriptor();
 		bandDescriptors[2].name = "land";
 		bandDescriptors[2].expression = "l1_flags.LAND_OCEAN";
-		bandDescriptors[2].type = ProductData.TYPESTRING_BOOLEAN;
+		bandDescriptors[2].type = ProductData.TYPESTRING_INT8;
 		
 		parameters.put("targetBands", bandDescriptors);
 

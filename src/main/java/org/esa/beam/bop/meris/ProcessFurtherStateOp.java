@@ -79,7 +79,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
         	BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
 			bandDescriptor.name = "b"+i;
 			bandDescriptor.expression = EXPRESSIONS[i];
-			bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
+			bandDescriptor.type = ProductData.TYPESTRING_INT8;
 			bandDescriptions[i] = bandDescriptor;
     	}
 		parameters.put("targetBands", bandDescriptions);

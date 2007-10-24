@@ -22,8 +22,6 @@ import java.util.Map;
 
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
-import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
@@ -73,25 +71,13 @@ public class GapLessSdrOp extends MerisBasisOp {
                 toarBands.put(targetBand, toarBand);
             }
         }
-        invalidBand = createBooleanBandForExpression("l2_flags_p1.F_INVALID");
+        BandArithmeticOp bandArithmeticOp = 
+            BandArithmeticOp.createBooleanExpressionBand("l2_flags_p1.F_INVALID", toarProduct);
+        invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
+        
         return targetProduct;
     }
     
-    private Band createBooleanBandForExpression(String expression) throws OperatorException {
-		Map<String, Object> parameters = new HashMap<String, Object>();
-        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
-        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
-		bandDescriptor.name = "bBand";
-		bandDescriptor.expression = expression;
-		bandDescriptor.type = ProductData.TYPESTRING_BOOLEAN;
-		bandDescriptors[0] = bandDescriptor;
-		parameters.put("targetBands", bandDescriptors);
-		
-		Product validLandProduct = GPF.createProduct("BandArithmetic", parameters, toarProduct);
-		addSourceProduct("x", validLandProduct);
-		return validLandProduct.getBand("bBand");
-	}
-
     @Override
     public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
