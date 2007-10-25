@@ -89,7 +89,6 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
 		products.put(getSourceProductId(brrProduct), brrProduct);
 		products.put(getSourceProductId(cloudProduct), cloudProduct);
 		Product expressionProduct = GPF.createProduct("BandArithmetic", parameters, products);
-		addSourceProduct("x", expressionProduct);
 		
 		bands = expressionProduct.getBands();
         

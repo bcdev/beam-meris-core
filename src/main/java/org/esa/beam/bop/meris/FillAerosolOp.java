@@ -120,7 +120,6 @@ public class FillAerosolOp extends MerisBasisOp {
 		
         parameters.put("targetBands", bandDescriptors);
         validProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
-		addSourceProduct("x", validProduct);
 		
 		if (config.frs) {
 			rectCalculator = new TileRectCalculator(sourceProduct, config.pixelWidth*4, config.pixelWidth*4);
