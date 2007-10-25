@@ -53,7 +53,7 @@ public class FillBandOp extends MerisBasisOp {
 			bands = new ArrayList<BandDesc>();
 		}
 	}
-	public class BandDesc {
+	public static class BandDesc {
 		String name;
 		float defaultValue;
 	}

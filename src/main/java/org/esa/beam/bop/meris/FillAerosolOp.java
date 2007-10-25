@@ -79,7 +79,7 @@ public class FillAerosolOp extends MerisBasisOp {
         }
     }
 
-    public class BandDesc {
+    public static class BandDesc {
         String name;
         String inputBand;
         String validExp;
