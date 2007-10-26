@@ -112,7 +112,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
 	
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         try {
             loadAuxdata();
         } catch (IOException e) {
@@ -150,8 +150,6 @@ public class CloudProbabilityOp extends MerisBasisOp {
             }
         }
         createBooleanBands();
-        
-        return targetProduct;
     }
     
     private void createBooleanBands() throws OperatorException {

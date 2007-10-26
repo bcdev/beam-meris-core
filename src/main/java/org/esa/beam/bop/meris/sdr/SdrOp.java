@@ -86,7 +86,7 @@ public class SdrOp extends MerisBasisOp {
     private double angValue;
 	
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         if (StringUtils.isNullOrEmpty(neuralNetFile)) {
             throw new OperatorException("No neural net specified.");
         }
@@ -98,10 +98,10 @@ public class SdrOp extends MerisBasisOp {
         } catch (Exception e) {
             throw new OperatorException("Failed to load neural net " + neuralNetFile + ":\n" + e.getMessage());
         }
-        return createTargetProduct();
+        createTargetProduct();
     }
 
-    private Product createTargetProduct() {
+    private void createTargetProduct() {
         targetProduct = createCompatibleProduct(l1bProduct, DEFAULT_OUTPUT_PRODUCT_NAME, SDR_PRODUCT_TYPE);
         
         reflectanceBands = new Band[sdrBandNo.length];
@@ -133,7 +133,6 @@ public class SdrOp extends MerisBasisOp {
         sdrFlagBand.setFlagCoding(sdiFlagCoding);
 
         validBand = maskProduct.getBand(validBandName);
-		return targetProduct;
     }
 
     @Override

@@ -80,7 +80,7 @@ public class ModisAerosolOp extends MerisBasisOp {
     private String auxdataDir;
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         if (StringUtils.isNullOrEmpty(auxdataDir)) {
             throw new OperatorException("'auxdataDir' not set.");
         }
@@ -102,10 +102,10 @@ public class ModisAerosolOp extends MerisBasisOp {
         } catch (IOException e) {
             throw new OperatorException("Could not load MOD08 data files", e);
         }
-        return createTargetProduct();
+        createTargetProduct();
     }
 
-    private Product createTargetProduct() {
+    private void createTargetProduct() {
     	targetProduct = createCompatibleProduct(sourceProduct, "AEROSOL", "AEROSOL");
         _aot470Band = targetProduct.addBand(BAND_NAME_AOT_470, ProductData.TYPE_FLOAT32);
         _aot660Band = targetProduct.addBand(BAND_NAME_AOT_660, ProductData.TYPE_FLOAT32);
@@ -119,8 +119,6 @@ public class ModisAerosolOp extends MerisBasisOp {
         _flagsBand = targetProduct.addBand(BAND_NAME_FLAGS, ProductData.TYPE_UINT8);
         _flagsBand.setDescription("Aerosol specific flags");
         _flagsBand.setFlagCoding(cloudFlagCoding);
-
-        return targetProduct;
     }
 
     @Override

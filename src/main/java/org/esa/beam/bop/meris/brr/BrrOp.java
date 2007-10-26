@@ -71,7 +71,7 @@ public class BrrOp extends MerisBasisOp {
 
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         // todo - tell someone else that we need a 4x4 subwindow
 
         checkInputProduct(sourceProduct);
@@ -92,7 +92,6 @@ public class BrrOp extends MerisBasisOp {
         initAlgorithms(sourceProduct); 
         pixelid.setCorrectWater(correctWater);
         landac.setCorrectWater(correctWater);
-        return targetProduct;
     }
 
     private void initAlgorithms(Product inputProduct) throws IllegalArgumentException {

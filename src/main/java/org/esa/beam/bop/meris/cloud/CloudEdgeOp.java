@@ -59,7 +59,7 @@ public class CloudEdgeOp extends MerisBasisOp {
 
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "cloude_edge", "MER_L2");
         targetBand = ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, sourceProduct, targetProduct);
         sourceBand = sourceProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME);
@@ -71,7 +71,6 @@ public class CloudEdgeOp extends MerisBasisOp {
             cloudWidth = 1;
         }
         rectCalculator = new TileRectCalculator(sourceProduct, cloudWidth, cloudWidth);
-        return targetProduct;
     }
 
     @Override

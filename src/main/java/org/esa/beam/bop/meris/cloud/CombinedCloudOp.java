@@ -43,7 +43,7 @@ public class CombinedCloudOp extends MerisBasisOp {
     private Product targetProduct;
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
 
         targetProduct = createCompatibleProduct(cloudProduct, "MER_COMBINED_CLOUD", "MER_L2");
         // create and add the flags coding
@@ -54,8 +54,6 @@ public class CombinedCloudOp extends MerisBasisOp {
         Band combinedCloudBand = targetProduct.addBand(FLAG_BAND_NAME, ProductData.TYPE_UINT8);
         combinedCloudBand.setDescription("combined cloud flags");
         combinedCloudBand.setFlagCoding(flagCoding);
-
-        return targetProduct;
     }
 
     @Override

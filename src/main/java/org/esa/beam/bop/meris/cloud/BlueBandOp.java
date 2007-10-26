@@ -95,7 +95,7 @@ public class BlueBandOp extends MerisBasisOp {
     
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         month = l1bProduct.getStartTime().getAsCalendar().get(Calendar.MONTH);
 
         targetProduct = createCompatibleProduct(l1bProduct, "MER_BLUEBAND_CLOUD", "MER_L2");
@@ -108,8 +108,6 @@ public class BlueBandOp extends MerisBasisOp {
         Band cloudFlagBand = targetProduct.addBand(BLUE_FLAG_BAND, ProductData.TYPE_UINT8);
         cloudFlagBand.setDescription("blue band cloud flags");
         cloudFlagBand.setFlagCoding(flagCoding);
-
-        return targetProduct;
     }
     
     @Override

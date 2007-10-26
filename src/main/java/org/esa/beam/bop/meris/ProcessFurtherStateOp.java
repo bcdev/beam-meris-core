@@ -68,7 +68,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     private Product targetProduct;
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
         Band processFurtherBand = targetProduct.addBand(PROCESS_FURTHER_BAND_NAME, ProductData.TYPE_INT8);
         processFurtherBand.setDescription("process further state");
@@ -91,8 +91,6 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
 		Product expressionProduct = GPF.createProduct("BandArithmetic", parameters, products);
 		
 		bands = expressionProduct.getBands();
-        
-        return targetProduct;
     }
     
     @Override

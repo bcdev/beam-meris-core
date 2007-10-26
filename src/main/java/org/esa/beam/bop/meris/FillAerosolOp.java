@@ -91,7 +91,7 @@ public class FillAerosolOp extends MerisBasisOp {
     }
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "fill_aerosol", "MER_L2");
         sourceBands = new HashMap<Band, Band>(config.bands.size());
         defaultBands = new HashMap<Band, Band>(config.bands.size());
@@ -127,7 +127,6 @@ public class FillAerosolOp extends MerisBasisOp {
 			rectCalculator = new TileRectCalculator(sourceProduct, config.pixelWidth, config.pixelWidth);
 		}
         computeWeightMatrix();
-        return targetProduct;
     }
     
     private void computeWeightMatrix() {

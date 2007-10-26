@@ -64,7 +64,7 @@ public class AerosolMergerOp extends MerisBasisOp {
     
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(mod08Product, "AEROSOL", "AEROSOL");
         aot470Band = targetProduct.addBand("aot_470", ProductData.TYPE_FLOAT32);
         angstrBand = targetProduct.addBand("ang", ProductData.TYPE_FLOAT32);
@@ -75,8 +75,6 @@ public class AerosolMergerOp extends MerisBasisOp {
         flagBand = targetProduct.addBand("aerosol_flags", ProductData.TYPE_UINT8);
         flagBand.setDescription("Aerosol specific flags");
         flagBand.setFlagCoding(cloudFlagCoding);
-
-        return targetProduct;
     }
 
     private FlagCoding createFlagCoding(Product outputProduct) {

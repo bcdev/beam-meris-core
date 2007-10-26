@@ -54,7 +54,7 @@ public class GapLessSdrOp extends MerisBasisOp {
     private Product targetProduct;
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sdrProduct, "MER_SDR", "MER_SDR");
 
         sdrBands = new HashMap<Band, Band>();
@@ -74,8 +74,6 @@ public class GapLessSdrOp extends MerisBasisOp {
         BandArithmeticOp bandArithmeticOp = 
             BandArithmeticOp.createBooleanExpressionBand("l2_flags_p1.F_INVALID", toarProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
-        
-        return targetProduct;
     }
     
     @Override

@@ -74,14 +74,14 @@ public class CloudTopPressureOp extends MerisBasisOp {
 	
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         try {
             loadNeuralNet();
         } catch (Exception e) {
             throw new OperatorException("Failed to load neural net ctp.nna:\n" + e.getMessage());
         }
         initAuxData();
-        return createTargetProduct();
+        createTargetProduct();
     }
 
     private void loadNeuralNet() throws IOException, JnnException {
@@ -105,16 +105,13 @@ public class CloudTopPressureOp extends MerisBasisOp {
         }
     }
 
-    private Product createTargetProduct() throws OperatorException {
+    private void createTargetProduct() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "MER_CTP", "MER_L2");
         targetProduct.addBand("cloud_top_press", ProductData.TYPE_FLOAT32);
 
         BandArithmeticOp bandArithmeticOp = 
             BandArithmeticOp.createBooleanExpressionBand(INVALID_EXPRESSION, sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
-        
-        
-        return targetProduct;
     }
     
     private void initAuxData() throws OperatorException {

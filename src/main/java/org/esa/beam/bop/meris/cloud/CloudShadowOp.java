@@ -70,7 +70,7 @@ public class CloudShadowOp extends MerisBasisOp {
     private int shadowWidth;
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(cloudProduct, "MER_CLOUD_SHADOW", "MER_L2");
         Band cloudBand = ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, cloudProduct, targetProduct);
         FlagCoding sourceFlagCoding = cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME).getFlagCoding();
@@ -83,8 +83,6 @@ public class CloudShadowOp extends MerisBasisOp {
         rectCalculator = new TileRectCalculator(l1bProduct, shadowWidth, shadowWidth);
         geoCoding = l1bProduct.getGeoCoding();
         tpAltitude = l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME);
-
-        return targetProduct;
     }
 
     @Override

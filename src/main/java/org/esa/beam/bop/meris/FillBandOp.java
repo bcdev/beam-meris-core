@@ -74,7 +74,7 @@ public class FillBandOp extends MerisBasisOp {
 	}
 
 	@Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         
 		targetProduct = createCompatibleProduct(sourceProduct, "fille_band", "FILL");
 		defaultMap = new HashMap<Band, Float>(config.bands.size());
@@ -82,7 +82,6 @@ public class FillBandOp extends MerisBasisOp {
 			Band targetBand = targetProduct.addBand(bandDesc.name, ProductData.TYPE_FLOAT32);
 			defaultMap.put(targetBand, bandDesc.defaultValue);
 		}
-		return targetProduct;
 	}
 	
 	@Override
