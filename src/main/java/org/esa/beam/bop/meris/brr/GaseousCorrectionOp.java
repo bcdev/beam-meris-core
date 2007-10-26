@@ -79,17 +79,17 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     boolean exportTg = false;
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         try {
             auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
             gasCor = new GaseousAbsorptionCorrection(auxData);
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);
         }
-        return createTargetProduct();
+        createTargetProduct();
     }
 
-    private Product createTargetProduct() {
+    private void createTargetProduct() {
     	targetProduct = createCompatibleProduct(rhoToaProduct, "MER", "MER_L2");
     	
     	rhoNgBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
@@ -113,7 +113,6 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
                 tgBands[i].setNoDataValue(BAD_VALUE);
             }
         }
-        return targetProduct;
     }
 
     private static FlagCoding createFlagCoding() {

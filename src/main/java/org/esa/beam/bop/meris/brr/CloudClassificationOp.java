@@ -78,25 +78,23 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         try {
             auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
         } catch (DpmConfigException e) {
             throw new OperatorException("Could not load L2Auxdata", e);
         }
         rayleighCorrection = new RayleighCorrection(auxData);
-        return createTargetProduct();
+        createTargetProduct();
     }
 
-    private Product createTargetProduct() {
+    private void createTargetProduct() {
         targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
         Band band = targetProduct.addBand(CLOUD_FLAGS, ProductData.TYPE_INT16);
         FlagCoding flagCoding = createFlagCoding();
         band.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
-
-        return targetProduct;
     }
 
     protected static FlagCoding createFlagCoding() {

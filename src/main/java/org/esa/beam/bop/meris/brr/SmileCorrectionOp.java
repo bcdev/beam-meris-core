@@ -63,17 +63,17 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
     private Product targetProduct;
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         try {
             auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);
         }
         
-        return createTargetProduct();
+        createTargetProduct();
     }
 
-    private Product createTargetProduct() throws OperatorException {
+    private void createTargetProduct() throws OperatorException {
         targetProduct = createCompatibleProduct(gascorProduct, "MER", "MER_L2");
         rhoCorectedBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
         for (int i = 0; i < rhoCorectedBands.length; i++) {
@@ -87,8 +87,6 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
         BandArithmeticOp bandArithmeticOp = 
             BandArithmeticOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
         isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
-        
-        return targetProduct;
     }
     
     @Override

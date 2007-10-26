@@ -65,7 +65,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
     private Product targetProduct;
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         try {
             auxData = L2AuxdataProvider.getInstance().getAuxdata(sourceProduct);
         } catch (Exception e) {
@@ -89,7 +89,6 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
         
         BandArithmeticOp bandArithmeticOp = BandArithmeticOp.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
-        return targetProduct;
     }
     
     @Override

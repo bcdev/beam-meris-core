@@ -65,25 +65,22 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
     private Product targetProduct;
 
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         try {
             auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);
         }
-        return createTargetProduct();
+        createTargetProduct();
     }
 
-    private Product createTargetProduct() {
+    private void createTargetProduct() {
         targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
         Band band = targetProduct.addBand(LAND_FLAGS, ProductData.TYPE_INT8);
         FlagCoding flagCoding = createFlagCoding();
         band.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
-        
-        
-        return targetProduct;
     }
 
     protected static FlagCoding createFlagCoding() {

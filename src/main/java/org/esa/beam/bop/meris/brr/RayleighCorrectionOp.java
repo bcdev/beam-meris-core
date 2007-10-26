@@ -80,17 +80,17 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 	
     
     @Override
-    public Product initialize() throws OperatorException {
+    public void initialize() throws OperatorException {
         try {
             auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
             rayleighCorrection = new RayleighCorrection(auxData);
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);
         }
-        return createTargetProduct();
+        createTargetProduct();
     }
 
-    private Product createTargetProduct() throws OperatorException {
+    private void createTargetProduct() throws OperatorException {
     	targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
     	brrBands = addBandGroup(BRR_BAND_PREFIX);
@@ -109,8 +109,6 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         BandArithmeticOp bandArithmeticOp = 
             BandArithmeticOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
         isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
-        
-        return targetProduct;
     }
     
     private Band[] addBandGroup(String prefix) {
