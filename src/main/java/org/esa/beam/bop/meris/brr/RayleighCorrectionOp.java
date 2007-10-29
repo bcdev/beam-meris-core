@@ -171,7 +171,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 				sphAlbRData = getTargetTileGroup(sphAlbRBands, targetTiles);
             }
             Tile[] brr = getTargetTileGroup(brrBands, targetTiles);
-            Tile brrFlags = getSourceTile(flagBand, rectangle, pm);
+            Tile brrFlags = targetTiles.get(flagBand);
             
             boolean[][] do_corr = new boolean[SUBWIN_HEIGHT][SUBWIN_WIDTH];
             // rayleigh phase function coefficients, PR in DPM
