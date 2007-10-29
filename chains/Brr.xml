@@ -65,7 +65,7 @@
 
     <node>
         <id>target</id>
-        <operator>org.esa.beam.framework.gpf.operators.common.ProductMergeOp$Spi</operator>
+        <operator>Merge</operator>
         <sources>
             <l1b>${l1b}</l1b>
             <cloudclassif>cloudclassif</cloudclassif>
