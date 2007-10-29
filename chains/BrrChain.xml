@@ -19,7 +19,7 @@
 
     <node>
         <id>merged</id>
-        <operator>org.esa.beam.framework.gpf.operators.common.ProductMergeOp$Spi</operator>
+        <operator>Merge</operator>
         <sources>
             <l1b>load</l1b>
             <brr>brr</brr>
