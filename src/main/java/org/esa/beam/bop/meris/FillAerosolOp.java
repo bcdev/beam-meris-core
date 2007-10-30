@@ -34,7 +34,7 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.framework.gpf.support.TileRectCalculator;
+import org.esa.beam.util.RectangleExtender;
 import org.esa.beam.util.StringUtils;
 import org.esa.beam.util.math.MathUtils;
 
@@ -48,7 +48,7 @@ import com.bc.ceres.core.ProgressMonitor;
  */
 public class FillAerosolOp extends MerisBasisOp {
 
-    private TileRectCalculator rectCalculator;
+    private RectangleExtender rectCalculator;
     private Map<Band, Band> sourceBands;
     private Map<Band, Band> defaultBands;
     private Product validProduct;
@@ -122,9 +122,9 @@ public class FillAerosolOp extends MerisBasisOp {
         validProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
 		
 		if (config.frs) {
-			rectCalculator = new TileRectCalculator(sourceProduct, config.pixelWidth*4, config.pixelWidth*4);
+			rectCalculator = new RectangleExtender(new Rectangle(sourceProduct.getSceneRasterWidth(), sourceProduct.getSceneRasterHeight()), config.pixelWidth*4, config.pixelWidth*4);
 		} else {
-			rectCalculator = new TileRectCalculator(sourceProduct, config.pixelWidth, config.pixelWidth);
+			rectCalculator = new RectangleExtender(new Rectangle(sourceProduct.getSceneRasterWidth(), sourceProduct.getSceneRasterHeight()), config.pixelWidth, config.pixelWidth);
 		}
         computeWeightMatrix();
     }
@@ -275,7 +275,7 @@ public class FillAerosolOp extends MerisBasisOp {
     public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle targetRect = targetTile.getRectangle();
-        Rectangle sourceRect = rectCalculator.computeSourceRectangle(targetRect);
+        Rectangle sourceRect = rectCalculator.extend(targetRect);
         pm.beginTask("Processing frame...", sourceRect.height + 1);
         try {
         	Tile maskTile = null;

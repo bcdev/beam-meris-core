@@ -28,8 +28,8 @@ import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.framework.gpf.support.TileRectCalculator;
 import org.esa.beam.util.ProductUtils;
+import org.esa.beam.util.RectangleExtender;
 
 import com.bc.ceres.core.ProgressMonitor;
 
@@ -42,7 +42,7 @@ import com.bc.ceres.core.ProgressMonitor;
  */
 public class CloudEdgeOp extends MerisBasisOp {
 
-    private TileRectCalculator rectCalculator;
+    private RectangleExtender rectCalculator;
 
 //    private int[] cloudSource;
 //    private byte[] cloudTarget;
@@ -70,14 +70,14 @@ public class CloudEdgeOp extends MerisBasisOp {
         if (cloudWidth == 0) {
             cloudWidth = 1;
         }
-        rectCalculator = new TileRectCalculator(sourceProduct, cloudWidth, cloudWidth);
+        rectCalculator = new RectangleExtender(new Rectangle(sourceProduct.getSceneRasterWidth(), sourceProduct.getSceneRasterHeight()), cloudWidth, cloudWidth);
     }
 
     @Override
     public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
         Rectangle targetRectangle = targetTile.getRectangle();
-		Rectangle sourceRectangle = rectCalculator.computeSourceRectangle(targetRectangle);
+		Rectangle sourceRectangle = rectCalculator.extend(targetRectangle);
         final int size = sourceRectangle.height * sourceRectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {

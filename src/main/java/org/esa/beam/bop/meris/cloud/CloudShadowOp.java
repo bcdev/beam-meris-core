@@ -33,8 +33,8 @@ import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.framework.gpf.support.TileRectCalculator;
 import org.esa.beam.util.ProductUtils;
+import org.esa.beam.util.RectangleExtender;
 import org.esa.beam.util.math.MathUtils;
 
 import com.bc.ceres.core.ProgressMonitor;
@@ -54,7 +54,7 @@ public class CloudShadowOp extends MerisBasisOp {
 
     private static final double DIST_THRESHOLD = 1 / 740.0;
 
-    private TileRectCalculator rectCalculator;
+    private RectangleExtender rectCalculator;
     private GeoCoding geoCoding;
     private TiePointGrid tpAltitude;
 
@@ -80,7 +80,7 @@ public class CloudShadowOp extends MerisBasisOp {
         if (shadowWidth == 0) {
             shadowWidth = 16;
         }
-        rectCalculator = new TileRectCalculator(l1bProduct, shadowWidth, shadowWidth);
+        rectCalculator = new RectangleExtender(new Rectangle(l1bProduct.getSceneRasterWidth(), l1bProduct.getSceneRasterHeight()), shadowWidth, shadowWidth);
         geoCoding = l1bProduct.getGeoCoding();
         tpAltitude = l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME);
     }
@@ -89,7 +89,7 @@ public class CloudShadowOp extends MerisBasisOp {
     public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
     	
     	Rectangle targetRectangle = targetTile.getRectangle();
-        Rectangle sourceRectangle = rectCalculator.computeSourceRectangle(targetRectangle);
+        Rectangle sourceRectangle = rectCalculator.extend(targetRectangle);
         pm.beginTask("Processing frame...", sourceRectangle.height);
         try {
         	Tile szaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle, pm);
