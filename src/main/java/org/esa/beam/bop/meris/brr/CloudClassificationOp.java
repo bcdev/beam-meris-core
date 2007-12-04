@@ -26,6 +26,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -41,12 +42,12 @@ import org.esa.beam.util.math.MathUtils;
 import com.bc.ceres.core.ProgressMonitor;
 
 
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.1 $ $Date: 2007/03/27 12:51:41 $
- */
+@OperatorMetadata(alias = "Meris.CloudClassification",
+        version = "1.0",
+        internal = true,
+        authors = "Marco Zühlke",
+        copyright = "(c) 2007 by Brockmann Consult",
+        description = "MERIS L2 cloud classification.")
 public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
     public static final String CLOUD_FLAGS = "cloud_classif_flags";
@@ -557,7 +558,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(CloudClassificationOp.class, "Meris.CloudClassification");
+            super(CloudClassificationOp.class);
         }
     }
 }

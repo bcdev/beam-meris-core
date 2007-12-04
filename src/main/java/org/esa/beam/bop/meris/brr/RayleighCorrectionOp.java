@@ -27,6 +27,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -42,12 +43,12 @@ import org.esa.beam.util.math.MathUtils;
 import com.bc.ceres.core.ProgressMonitor;
 
 
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.3 $ $Date: 2007/04/27 15:30:03 $
- */
+@OperatorMetadata(alias = "Meris.RayleighCorrection",
+        version = "1.0",
+        internal = true,
+        authors = "Marco Zühlke",
+        copyright = "(c) 2007 by Brockmann Consult",
+        description = "MERIS L2 rayleigh correction.")
 public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     public static final String BRR_BAND_PREFIX = "brr";
@@ -316,7 +317,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(RayleighCorrectionOp.class, "Meris.RayleighCorrection");
+            super(RayleighCorrectionOp.class);
         }
     }
 }

@@ -26,6 +26,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -40,12 +41,12 @@ import org.esa.beam.util.math.MathUtils;
 import com.bc.ceres.core.ProgressMonitor;
 
 
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.2 $ $Date: 2007/05/08 08:03:52 $
- */
+@OperatorMetadata(alias = "Meris.LandClassification",
+        version = "1.0",
+        internal = true,
+        authors = "Marco Zühlke",
+        copyright = "(c) 2007 by Brockmann Consult",
+        description = "MERIS L2 land/water reclassification.")
 public class LandClassificationOp extends MerisBasisOp implements Constants {
 
     public static final String LAND_FLAGS = "land_classif_flags";
@@ -254,13 +255,10 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
      * {@link L2AuxData#lap_beta_l}
      *
      * @param r7thresh_val threshold at 665nm
-     * @param y TODO
+     * @param x
+     * @param y
      * @param b_thresh
      * @param a_thresh
-     * @param pixel        the pixel in order to read from
-     *                     {@link org.esa.beam.dataproc.meris.sdr.dpm.DpmPixel#rho_ag pixel.rho_ag}
-     *                     and write to
-     *                     {@link org.esa.beam.dataproc.meris.sdr.dpm.DpmPixel#l2flags pixel.l2flags}
      * @return inland water flag
      */
     private boolean inland_waters(double r7thresh_val, Tile[] rhoNg, int x, int y, int b_thresh, double a_thresh) {
@@ -279,7 +277,7 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(LandClassificationOp.class, "Meris.LandClassification");
+            super(LandClassificationOp.class);
         }
     }
 }
