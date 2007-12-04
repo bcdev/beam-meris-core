@@ -19,7 +19,7 @@
 
     <node>
         <id>brr</id>
-        <operator>org.esa.beam.bop.meris.brr.BrrOp$Spi</operator>
+        <operator>org.esa.beam.meris.brr.BrrOp$Spi</operator>
         <sources>
             <input>l1b</input>
         </sources>
@@ -31,7 +31,7 @@
 
     <node>
         <id>blue</id>
-        <operator>org.esa.beam.bop.meris.cloud.BlueBandOp$Spi</operator>
+        <operator>org.esa.beam.meris.cloud.BlueBandOp$Spi</operator>
         <sources>
             <toar>brr</toar>
             <l1b>l1b</l1b>
@@ -40,7 +40,7 @@
 
     <node>
         <id>cloudProb</id>
-        <operator>org.esa.beam.bop.meris.cloud.CloudProbabilityOp$Spi</operator>
+        <operator>org.esa.beam.meris.cloud.CloudProbabilityOp$Spi</operator>
         <sources>
             <input>l1b</input>
         </sources>
@@ -48,7 +48,7 @@
 
     <node>
         <id>combinedCloud</id>
-        <operator>org.esa.beam.bop.meris.cloud.CombinedCloudOp$Spi</operator>
+        <operator>org.esa.beam.meris.cloud.CombinedCloudOp$Spi</operator>
         <sources>
             <cloudProb>cloudProb</cloudProb>
             <blueBand>blue</blueBand>
@@ -57,7 +57,7 @@
 
     <node>
         <id>cloudEdge</id>
-        <operator>org.esa.beam.bop.meris.cloud.CloudEdgeOp$Spi</operator>
+        <operator>org.esa.beam.meris.cloud.CloudEdgeOp$Spi</operator>
         <sources>
             <input>combinedCloud</input>
         </sources>
@@ -65,7 +65,7 @@
 
     <node>
         <id>ctp</id>
-        <operator>org.esa.beam.bop.meris.cloud.CloudTopPressureOp$Spi</operator>
+        <operator>org.esa.beam.meris.cloud.CloudTopPressureOp$Spi</operator>
         <sources>
             <input>l1b</input>
         </sources>
@@ -74,7 +74,7 @@
 
     <node>
         <id>cloudShadow</id>
-        <operator>org.esa.beam.bop.meris.cloud.CloudShadowOp$Spi</operator>
+        <operator>org.esa.beam.meris.cloud.CloudShadowOp$Spi</operator>
         <sources>
             <cloud>cloudEdge</cloud>
             <l1b>l1b</l1b>
@@ -108,7 +108,7 @@
 
     <node>
         <id>processFurther</id>
-        <operator>org.esa.beam.bop.meris.ProcessFurtherStateOp$Spi</operator>
+        <operator>org.esa.beam.meris.ProcessFurtherStateOp$Spi</operator>
         <sources>
             <input>mergedFlags</input>
         </sources>
@@ -116,7 +116,7 @@
 
     <node>
         <id>sdr</id>
-        <operator>org.esa.beam.bop.meris.sdr.SdrOp$Spi</operator>
+        <operator>org.esa.beam.meris.sdr.SdrOp$Spi</operator>
         <sources>
             <l1b>l1b</l1b>
             <brr>brr</brr>
@@ -136,7 +136,7 @@
 
     <node>
         <id>gaplesssdr</id>
-        <operator>org.esa.beam.bop.meris.GapLessSdrOp$Spi</operator>
+        <operator>org.esa.beam.meris.GapLessSdrOp$Spi</operator>
         <sources>
             <sdr>sdr</sdr>
             <toar>brr</toar>

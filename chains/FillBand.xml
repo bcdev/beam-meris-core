@@ -12,7 +12,7 @@
     
     <node>
       <id>climatology</id>
-      <operator>org.esa.beam.bop.meris.FillBandOp$Spi</operator>
+      <operator>org.esa.beam.meris.FillBandOp$Spi</operator>
       <sources>
         <input>l1b</input>
       </sources>

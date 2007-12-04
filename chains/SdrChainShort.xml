@@ -19,7 +19,7 @@
 
     <node>
         <id>brr</id>
-        <operator>org.esa.beam.bop.meris.brr.BrrOp$Spi</operator>
+        <operator>org.esa.beam.meris.brr.BrrOp$Spi</operator>
         <sources>
             <input>l1b</input>
         </sources>
@@ -27,7 +27,7 @@
 
     <node>
         <id>blue</id>
-        <operator>org.esa.beam.bop.meris.cloud.BlueBandOp$Spi</operator>
+        <operator>org.esa.beam.meris.cloud.BlueBandOp$Spi</operator>
         <sources>
             <toar>brr</toar>
             <l1b>l1b</l1b>
@@ -36,7 +36,7 @@
 
     <node>
         <id>cloudProb</id>
-        <operator>org.esa.beam.bop.meris.cloud.CloudProbabilityOp$Spi</operator>
+        <operator>org.esa.beam.meris.cloud.CloudProbabilityOp$Spi</operator>
         <sources>
             <input>l1b</input>
         </sources>
@@ -44,7 +44,7 @@
 
     <node>
         <id>combinedCloud</id>
-        <operator>org.esa.beam.bop.meris.cloud.CombinedCloudOp$Spi</operator>
+        <operator>org.esa.beam.meris.cloud.CombinedCloudOp$Spi</operator>
         <sources>
             <cloudProb>cloudProb</cloudProb>
             <blueBand>blue</blueBand>
@@ -53,7 +53,7 @@
 
     <node>
         <id>sdr</id>
-        <operator>org.esa.beam.bop.meris.sdr.SdrOp$Spi</operator>
+        <operator>org.esa.beam.meris.sdr.SdrOp$Spi</operator>
         <sources>
             <l1b>l1b</l1b>
             <brr>brr</brr>

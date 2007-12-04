@@ -11,7 +11,7 @@
 
     <node>
         <id>cloudProb</id>
-        <operator>org.esa.beam.bop.meris.cloud.CloudProbabilityOp$Spi</operator>
+        <operator>org.esa.beam.meris.cloud.CloudProbabilityOp$Spi</operator>
         <sources>
             <input>l1b</input>
         </sources>

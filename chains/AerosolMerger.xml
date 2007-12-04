@@ -19,7 +19,7 @@
 
     <node>
         <id>aerosol</id>
-        <operator>org.esa.beam.bop.meris.aerosol.ModisAerosolOp$Spi</operator>
+        <operator>org.esa.beam.meris.aerosol.ModisAerosolOp$Spi</operator>
         <sources>
             <input>l1</input>
         </sources>
@@ -30,7 +30,7 @@
 
     <node>
         <id>aerosolMerger</id>
-        <operator>org.esa.beam.bop.meris.aerosol.AerosolMergerOp$Spi</operator>
+        <operator>org.esa.beam.meris.aerosol.AerosolMergerOp$Spi</operator>
         <sources>
             <mod08>aerosol</mod08>
             <l2>l2</l2>

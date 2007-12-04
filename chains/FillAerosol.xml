@@ -11,7 +11,7 @@
     
     <node>
       <id>climatology</id>
-      <operator>org.esa.beam.bop.meris.FillBandOp$Spi</operator>
+      <operator>org.esa.beam.meris.FillBandOp$Spi</operator>
       <sources>
         <input>l2</input>
       </sources>
@@ -29,7 +29,7 @@
     
      <node>
       <id>fillL2</id>
-      <operator>org.esa.beam.bop.meris.FillAerosolOp$Spi</operator>
+      <operator>org.esa.beam.meris.FillAerosolOp$Spi</operator>
       <sources>
         <input>l2</input>
         <default>climatology</default>
