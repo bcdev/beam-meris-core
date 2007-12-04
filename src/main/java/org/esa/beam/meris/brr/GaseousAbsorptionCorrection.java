@@ -4,7 +4,7 @@
  * Copyright (c) 2003 Brockmann Consult GmbH. All right reserved.
  * http://www.brockmann-consult.de
  */
-package org.esa.beam.bop.meris.brr;
+package org.esa.beam.meris.brr;
 
 
 import org.esa.beam.framework.gpf.Tile;

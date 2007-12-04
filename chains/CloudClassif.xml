@@ -11,7 +11,7 @@
 
     <node>
         <id>refl</id>
-        <operator>org.esa.beam.bop.meris.brr.Rad2ReflOp$Spi</operator>
+        <operator>org.esa.beam.meris.brr.Rad2ReflOp$Spi</operator>
         <sources>
             <input>l1b</input>
         </sources>
@@ -19,7 +19,7 @@
 
     <node>
         <id>cloudclassif</id>
-        <operator>org.esa.beam.bop.meris.brr.CloudClassificationOp$Spi</operator>
+        <operator>org.esa.beam.meris.brr.CloudClassificationOp$Spi</operator>
         <sources>
             <l1b>l1b</l1b>
             <rhotoa>refl</rhotoa>

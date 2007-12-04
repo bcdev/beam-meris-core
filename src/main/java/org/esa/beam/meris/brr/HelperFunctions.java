@@ -1,4 +1,4 @@
-package org.esa.beam.bop.meris.brr;
+package org.esa.beam.meris.brr;
 
 import org.esa.beam.util.math.MathUtils;
 

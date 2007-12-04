@@ -14,7 +14,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
-package org.esa.beam.bop.meris.brr;
+package org.esa.beam.meris.brr;
 
 import java.awt.Rectangle;
 
@@ -230,8 +230,8 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     /**
      * Computes the pressure.
      * <p/>
-     * <b>Input:</b> {@link org.esa.beam.bop.meris.brr.dpm.DpmPixel#rho_toa}, {@link org.esa.beam.bop.meris.brr.dpm.DpmPixel#mus}, {@link org.esa.beam.bop.meris.brr.dpm.DpmPixel#muv}<br> <b>Output:</b> {@link
-     * DpmPixel#eta}, {@link org.esa.beam.bop.meris.brr.dpm.DpmPixel#TOAR} (exceptional)<br> <b>DPM ref.:</b> section 3.5 step
+     * <b>Input:</b> {@link org.esa.beam.meris.brr.dpm.DpmPixel#rho_toa}, {@link org.esa.beam.meris.brr.dpm.DpmPixel#mus}, {@link org.esa.beam.meris.brr.dpm.DpmPixel#muv}<br> <b>Output:</b> {@link
+     * DpmPixel#eta}, {@link org.esa.beam.meris.brr.dpm.DpmPixel#TOAR} (exceptional)<br> <b>DPM ref.:</b> section 3.5 step
      * 2.1.4<br> <b>MEGS ref.:</b> <code>pixelid.c</code>, function <code>Comp_Pressure</code><br>
      *
      * @param pixelInfo the pixel structure
