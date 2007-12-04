@@ -50,8 +50,14 @@ public class AtmosphericCorrectionLand implements Constants {
                 flags = pixel.l2flags;
                 /* do NOT correct invalid + DO correct land */
                 if (!BitSetter.isFlagSet(flags, F_INVALID) &&
+                        (correctWater || 
                         (BitSetter.isFlagSet(flags, F_LANDCONS) ||
-                                (correctWater && !BitSetter.isFlagSet(flags, F_CLOUD)))) {
+                                (BitSetter.isFlagSet(flags, F_LAND) && BitSetter.isFlagSet(flags, F_CLOUD))))) {
+// test was: (changed for better snow detection)                    
+//                  if (!AlbedoUtils.isFlagSet(flags, F_INVALID) &&
+//                  (AlbedoUtils.isFlagSet(flags, F_LANDCONS) ||
+//                          (correctWater && !AlbedoUtils.isFlagSet(flags, F_CLOUD)*/))) {
+                    
                     correctPixel = true;
                     lh.do_corr[il - il0][ic - ic0] = true;
                 } else {

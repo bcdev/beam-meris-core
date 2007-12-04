@@ -36,14 +36,15 @@ public final class DpmPixel {
      * Camera detector index
      */
     public int detector;
+    // mz 2007-11-22 at the moment lat and lon are not used for any computation  
     /**
      * Latitude
      */
-    public double lat;
+    // public double lat;
     /**
      * Longitude
      */
-    public double lon;
+    // public double lon;
     /**
      * Viewing zenith angle
      */

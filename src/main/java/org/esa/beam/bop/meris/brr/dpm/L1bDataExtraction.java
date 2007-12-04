@@ -114,10 +114,11 @@ public class L1bDataExtraction implements Constants {
         double view_azimuth = tpdata[VIEW_AZIMUTH_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-6
         pixel.sun_azimuth = tpdata[SUN_AZIMUTH_TPG_INDEX].getSampleDouble(x, y);
+        // mz 2007-11-22 at the moment lat and lon are not used for any computation  
         // DPM #2.1.0-7
-        pixel.lat = tpdata[LATITUDE_TPG_INDEX].getSampleDouble(x, y);
+        // pixel.lat = tpdata[LATITUDE_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-8
-        pixel.lon = tpdata[LONGITUDE_TPG_INDEX].getSampleDouble(x, y);
+        // pixel.lon = tpdata[LONGITUDE_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-9
         pixel.altitude = tpdata[DEM_ALT_TPG_INDEX].getSampleDouble(x, y);
         // DPM #2.1.0-10

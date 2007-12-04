@@ -116,11 +116,11 @@ public class BrrOp extends MerisBasisOp {
             tpGrids[i] = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_TIE_POINT_GRID_NAMES[i]);
         }
 
-        if (sourceProduct.getProductType().equals(EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
-            tpGrids[Constants.LATITUDE_TPG_INDEX] = sourceProduct.getBand("corr_latitude");
-            tpGrids[Constants.LONGITUDE_TPG_INDEX] = sourceProduct.getBand("corr_longitude");
-            tpGrids[Constants.DEM_ALT_TPG_INDEX] = sourceProduct.getBand("altitude");
-        }
+// mz 2007-11-22 at the moment lat and lon are not used for any computation        
+//        if (sourceProduct.getProductType().equals(EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
+//            tpGrids[Constants.LATITUDE_TPG_INDEX] = sourceProduct.getBand("corr_latitude");
+//            tpGrids[Constants.LONGITUDE_TPG_INDEX] = sourceProduct.getBand("corr_longitude");
+//        }
         
         l1bRadiance = new RasterDataNode[EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES.length];
         for (int i = 0; i < l1bRadiance.length; i++) {

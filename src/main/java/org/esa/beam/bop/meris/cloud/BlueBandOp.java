@@ -18,6 +18,8 @@ package org.esa.beam.bop.meris.cloud;
 
 import java.awt.Rectangle;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
@@ -25,11 +27,13 @@ import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.MetadataAttribute;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
+import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
 import com.bc.ceres.core.ProgressMonitor;
@@ -73,10 +77,11 @@ public class BlueBandOp extends MerisBasisOp {
     private static final float R5_ASS = 0.5f;
 
     // for plausibility test
-    private static final float LAT_ALWAYS_SNOW = 50.0f;
+    private static final float LAT_ALWAYS_SNOW = 60.0f;
     private static final float LAT_TROPIC = 30.0f;
     private static final float ALT_MEDIAL = 1000.0f;
     private static final float ALT_TROPIC = 2000.0f;
+    private static final int MIN_LAND_ALT = -50;
 
     // for bright sand test
     private static final float SLOPE2_LOW = 0.65f;
@@ -84,6 +89,7 @@ public class BlueBandOp extends MerisBasisOp {
 
     private static final float TOAR_9_SAT = 0.99f;
    
+    private Band landBand;
     public int month;
     
     @SourceProduct(alias="l1b")
@@ -108,7 +114,30 @@ public class BlueBandOp extends MerisBasisOp {
         Band cloudFlagBand = targetProduct.addBand(BLUE_FLAG_BAND, ProductData.TYPE_UINT8);
         cloudFlagBand.setDescription("blue band cloud flags");
         cloudFlagBand.setFlagCoding(flagCoding);
+        
+        landBand = createBooleanBandForExpression("$toar.l2_flags_p1.F_LANDCONS or (($toar.l2_flags_p1.F_LAND or $l1b.dem_alt > "
+                + MIN_LAND_ALT + " )and $toar.l2_flags_p1.F_CLOUD)");
     }
+    
+    private Band createBooleanBandForExpression(String expression) throws OperatorException {
+        Map<String, Object> parameters = new HashMap<String, Object>();
+        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
+        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+        bandDescriptor.name = "bBand";
+        bandDescriptor.expression = expression;
+        bandDescriptor.type = ProductData.TYPESTRING_INT8;
+        bandDescriptors[0] = bandDescriptor;
+        parameters.put("bandDescriptors", bandDescriptors);
+
+        Map<String, Product> products = new HashMap<String, Product>();
+        products.put(getSourceProductId(l1bProduct), l1bProduct);
+        products.put(getSourceProductId(brrProduct), brrProduct);
+        
+        Product validLandProduct = GPF.createProduct("BandArithmetic",
+                parameters, products);
+        return validLandProduct.getBand("bBand");
+    }
+
     
     @Override
     public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
@@ -134,6 +163,7 @@ public class BlueBandOp extends MerisBasisOp {
 			    latitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect, pm);
 			    altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect, pm);
 			}
+			boolean[] safeLand = (boolean[]) getSourceTile(landBand, rect, pm).getRawSamples().getElems();
             ProductData rawSampleData = targetTile.getRawSamples();
             byte[] cloudFlagScanLine = (byte[]) rawSampleData.getElems();
 
@@ -143,8 +173,10 @@ public class BlueBandOp extends MerisBasisOp {
             for (int y = rect.y; y < rect.y+rect.height; y++) {
             	for (int x = rect.x; x < rect.x+rect.width; x++, i++) {
             		final float po2 = toar11[i] / toar10[i];
+            		final float alt = altitude.getSampleFloat(x, y);
+                    boolean assuredLand = safeLand[i];
+                    isSnowPlausible = isSnowPlausible(latitude.getSampleFloat(x, y), alt, assuredLand);
 
-            		isSnowPlausible = isSnowPlausible(latitude.getSampleFloat(x, y), altitude.getSampleFloat(x, y));
             		isBrightLand = isBrightLand(toar9[i], toar14[i]);
 
             		// blue band test
@@ -168,9 +200,8 @@ public class BlueBandOp extends MerisBasisOp {
             			}
             		} else {
             			// altitude of scattering surface
-            			// ToDo: introduce RR/FR specific altitude
-            			if ((altitude.getSampleFloat(x, y) < 1700 && po2 >= D_ASS)
-            					|| (altitude.getSampleFloat(x, y) >= 1700 && po2 > 0.04 + (0.31746 + 0.00003814 * altitude.getSampleFloat(x, y)))) {
+            			if ((alt < 1700 && po2 >= D_ASS)
+            					|| (alt >= 1700 && po2 > 0.04 + (0.31746 + 0.00003814 * alt))) {
             				// snow cover
             				if ((toar13[i] <= R1_ASS * toar7[i] + R2_ASS) && // snow test 3
             						(toar13[i] <= R3_ASS)) {
@@ -211,16 +242,35 @@ public class BlueBandOp extends MerisBasisOp {
         return ((bsRatio >= SLOPE2_LOW) && (bsRatio <= SLOPE2_UPPER)) || toar_9 > TOAR_9_SAT;
     }
 
-    private boolean isSnowPlausible(float lat, float alt) {
+    private boolean isSnowPlausible(float lat, float alt, boolean land) {
+        if (!land) {
+            return false;
+        }
         if (lat > LAT_ALWAYS_SNOW || lat < -LAT_ALWAYS_SNOW) {
             return true;
-        }
-        if ((((lat <= LAT_ALWAYS_SNOW && lat >= LAT_TROPIC) && (month >= 4) && (month <= 10)) ||   // northern hemisphere
-                (((-1 * lat) <= LAT_ALWAYS_SNOW && (-1 * lat) >= LAT_TROPIC && lat < 0.) && ((month >= 10) || (month <= 4)))) && alt > ALT_MEDIAL)
-        {     // southern hemisphere
-            return true;
-        }
-        if (lat < LAT_TROPIC && lat > -LAT_TROPIC && alt > ALT_TROPIC) {
+        } else if (lat <= LAT_ALWAYS_SNOW && lat >= LAT_TROPIC) {
+            // northern hemisphere
+            if (month >= 4 && month <= 10) {
+                //summer
+                if (alt > ALT_MEDIAL) {
+                    return true;
+                }
+            } else {
+                // winter
+                return true;
+            }
+        } else if (lat >= -LAT_ALWAYS_SNOW && lat <= -LAT_TROPIC) {
+            // southern hemisphere
+            if (month >= 10 || month <= 4) {
+                //summer
+                if (alt > ALT_MEDIAL) {
+                    return true;
+                }
+            } else {
+                // winter
+                return true;
+            }
+        } else if (lat < LAT_TROPIC && lat > -LAT_TROPIC && alt > ALT_TROPIC) {
             return true;
         }
         return false;
@@ -245,6 +295,18 @@ public class BlueBandOp extends MerisBasisOp {
 
         cloudAttr = new MetadataAttribute("thin_cloud", ProductData.TYPE_UINT8);
         cloudAttr.getData().setElemInt(FLAG_THIN_CLOUD);
+        flagCoding.addAttribute(cloudAttr);
+
+        cloudAttr = new MetadataAttribute("snow_index", ProductData.TYPE_UINT8);
+        cloudAttr.getData().setElemInt(FLAG_SNOW_INDEX);
+        flagCoding.addAttribute(cloudAttr);
+
+        cloudAttr = new MetadataAttribute("snow_plausible", ProductData.TYPE_UINT8);
+        cloudAttr.getData().setElemInt(FLAG_SNOW_PLAUSIBLE);
+        flagCoding.addAttribute(cloudAttr);
+        
+        cloudAttr = new MetadataAttribute("bright_land", ProductData.TYPE_UINT8);
+        cloudAttr.getData().setElemInt(FLAG_BRIGHT_LAND);
         flagCoding.addAttribute(cloudAttr);
 
         return flagCoding;

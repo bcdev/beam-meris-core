@@ -44,11 +44,7 @@ public class CloudEdgeOp extends MerisBasisOp {
 
     private RectangleExtender rectCalculator;
 
-//    private int[] cloudSource;
-//    private byte[] cloudTarget;
-    
     private Band sourceBand;
-    private Band targetBand;
 
     @SourceProduct(alias="input")
     private Product sourceProduct;
@@ -61,7 +57,7 @@ public class CloudEdgeOp extends MerisBasisOp {
     @Override
     public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "cloude_edge", "MER_L2");
-        targetBand = ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, sourceProduct, targetProduct);
+        Band targetBand = ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, sourceProduct, targetProduct);
         sourceBand = sourceProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME);
 		FlagCoding sourceFlagCoding = sourceBand.getFlagCoding();
         ProductUtils.copyFlagCoding(sourceFlagCoding, targetProduct);
@@ -82,12 +78,11 @@ public class CloudEdgeOp extends MerisBasisOp {
         pm.beginTask("Processing frame...", size + 1);
         try {
             Tile cloudSource = getSourceTile(sourceBand, sourceRectangle, pm);
-            Tile cloudTarget = getSourceTile(targetBand, targetRectangle, pm);
 
             int i = 0;
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
                 for (int x = targetRectangle.x; x < targetRectangle.x + targetRectangle.width; x++) {
-                    cloudTarget.setSample(x, y, cloudSource.getSampleInt(x, y));
+                    targetTile.setSample(x, y, cloudSource.getSampleInt(x, y));
                     i++;
                 }
             }
@@ -95,8 +90,10 @@ public class CloudEdgeOp extends MerisBasisOp {
             int sourceIndex = 0;
             for (int y = sourceRectangle.y; y < sourceRectangle.y + sourceRectangle.height; y++) {
                 for (int x = sourceRectangle.x; x < sourceRectangle.x + sourceRectangle.width; x++) {
-                    if (cloudSource.getSampleInt(x, y) == CombinedCloudOp.FLAG_CLOUD) {
-                        markEdgeAround(x, y, cloudSource, cloudTarget);
+                    final int cloudFlag = cloudSource.getSampleInt(x, y);
+                    if ((cloudFlag & CombinedCloudOp.FLAG_CLOUD) != 0 ||
+                            (cloudFlag & CombinedCloudOp.FLAG_CLOUD_SHADOW) != 0) {
+                        markEdgeAround(x, y, cloudSource, targetTile);
                     }
                     sourceIndex++;
                 }
@@ -130,6 +127,7 @@ public class CloudEdgeOp extends MerisBasisOp {
                 int pixelValue = cloudSource.getSampleInt(x, y);
                 if (pixelValue != CombinedCloudOp.FLAG_INVALID
                         && (pixelValue & CombinedCloudOp.FLAG_CLOUD) == 0
+                        && (pixelValue & CombinedCloudOp.FLAG_CLOUD_SHADOW) == 0                        
                         && (pixelValue & CombinedCloudOp.FLAG_CLOUD_EDGE) == 0) {
                     pixelValue += CombinedCloudOp.FLAG_CLOUD_EDGE;
                     cloudTarget.setSample(x, y, pixelValue);

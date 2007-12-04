@@ -98,9 +98,6 @@ public class PixelIdentification implements Constants {
         double[] T_o3 = new double[L1_BAND_NUM];   /* ozone transmission */     // todo - rm new
         double r7thresh_val, r13thresh_val;
 
-        boolean is_land_consolidated;
-
-
         etaAverageForWater = 0.;
         x2AverageForWater = 0.;
 
@@ -223,46 +220,49 @@ public class PixelIdentification implements Constants {
                         /* exception handling */
                         pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_OROUT0, status != 0);
 
-                        /* Land /Water re-classification - v4.2, updated for v7 */
-                        /* DPM step 2.6.26 */
-                        /* TODO: restrict land-water reclassification to altitude > -50 */
+                        boolean is_land_consolidated = false;
+                        if (!BitSetter.isFlagSet(pixel.l2flags, F_CLOUD)) {
+                            /* Land /Water re-classification - v4.2, updated for v7 */
+                            /* DPM step 2.6.26 */
+                            /* TODO: restrict land-water reclassification to altitude > -50 */
 
-                        is_water = false;
-                        is_land = false;
-                        int b_thresh;           /*added V7 to manage 2 bands reclassif threshold LUT */
-                        double a_thresh;  /*added V7 to manage 2 bands reclassif threshold LUT */
-                        double rThresh;
+                            is_water = false;
+                            is_land = false;
+                            int b_thresh;           /*added V7 to manage 2 bands reclassif threshold LUT */
+                            double a_thresh;  /*added V7 to manage 2 bands reclassif threshold LUT */
+                            double rThresh;
 
-                        /* test if pixel is water */
-                        b_thresh = auxData.lap_b_thresh[0];
-                        a_thresh = auxData.alpha_thresh[0];
-                        is_water = inland_waters(r7thresh_val, pixel, b_thresh, a_thresh);
-                        /* the is_water flag is available in the output product as F_LOINLD */
-
-                        /* test if pixel is land */
-                        final float thresh_medg = 0.2f;
-                        boolean isGlint = (rhoGlint >= thresh_medg * pixel.rho_ag[bb865]);
-                        if (isGlint) {
-                            pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_MEGLINT, isGlint);
+                            /* test if pixel is water */
                             b_thresh = auxData.lap_b_thresh[0];
                             a_thresh = auxData.alpha_thresh[0];
-                            rThresh = r7thresh_val;
-                        } else {
-                            b_thresh = auxData.lap_b_thresh[1];
-                            a_thresh = auxData.alpha_thresh[1];
-                            rThresh = r13thresh_val;
-                        }
-                        is_land = island(rThresh, pixel, b_thresh, a_thresh);
-                        /* the is_land flag is available in the output product as F_ISLAND */
+                            is_water = inland_waters(r7thresh_val, pixel, b_thresh, a_thresh);
+                            /* the is_water flag is available in the output product as F_LOINLD */
 
-                        // DPM step 2.6.26-7
-                        // DPM #2.6.26-6
-                        // TODO: reconsider to user the is_land flag in decision; define logic in ambiguous cases!
-                        // the water test is less severe than the land test
-                        is_land_consolidated = !is_water;
-                        // the land test is more severe than the water test
-                        if (isGlint && !BitSetter.isFlagSet(pixel.l1flags, L1_F_LAND)) {
-                            is_land_consolidated = is_land;
+                            /* test if pixel is land */
+                            final float thresh_medg = 0.2f;
+                            boolean isGlint = (rhoGlint >= thresh_medg * pixel.rho_ag[bb865]);
+                            if (isGlint) {
+                                pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_MEGLINT, isGlint);
+                                b_thresh = auxData.lap_b_thresh[0];
+                                a_thresh = auxData.alpha_thresh[0];
+                                rThresh = r7thresh_val;
+                            } else {
+                                b_thresh = auxData.lap_b_thresh[1];
+                                a_thresh = auxData.alpha_thresh[1];
+                                rThresh = r13thresh_val;
+                            }
+                            is_land = island(rThresh, pixel, b_thresh, a_thresh);
+                            /* the is_land flag is available in the output product as F_ISLAND */
+
+                            // DPM step 2.6.26-7
+                            // DPM #2.6.26-6
+                            // TODO: reconsider to user the is_land flag in decision; define logic in ambiguous cases!
+                            // the water test is less severe than the land test
+                            is_land_consolidated = !is_water;
+                            // the land test is more severe than the water test
+                            if (isGlint && !BitSetter.isFlagSet(pixel.l1flags, L1_F_LAND)) {
+                                is_land_consolidated = is_land;
+                            }
                         }
                         pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_LANDCONS, is_land_consolidated);
 

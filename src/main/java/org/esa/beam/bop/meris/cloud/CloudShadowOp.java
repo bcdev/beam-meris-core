@@ -25,7 +25,7 @@ import org.esa.beam.framework.datamodel.GeoCoding;
 import org.esa.beam.framework.datamodel.GeoPos;
 import org.esa.beam.framework.datamodel.PixelPos;
 import org.esa.beam.framework.datamodel.Product;
-import org.esa.beam.framework.datamodel.TiePointGrid;
+import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
@@ -56,7 +56,7 @@ public class CloudShadowOp extends MerisBasisOp {
 
     private RectangleExtender rectCalculator;
     private GeoCoding geoCoding;
-    private TiePointGrid tpAltitude;
+    private RasterDataNode altitudeRDN;
 
     @SourceProduct(alias="l1b")
     private Product l1bProduct;
@@ -77,12 +77,20 @@ public class CloudShadowOp extends MerisBasisOp {
         ProductUtils.copyFlagCoding(sourceFlagCoding, targetProduct);
         cloudBand.setFlagCoding(targetProduct.getFlagCoding(sourceFlagCoding.getName()));
 
-        if (shadowWidth == 0) {
-            shadowWidth = 16;
+        if (l1bProduct.getProductType().equals(
+                EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
+            if (shadowWidth == 0) {
+                shadowWidth = 16;
+            }
+            altitudeRDN = l1bProduct.getBand("altitude");
+        } else {
+            if (shadowWidth == 0) {
+                shadowWidth = 64;
+            }
+            altitudeRDN = l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME);
         }
         rectCalculator = new RectangleExtender(new Rectangle(l1bProduct.getSceneRasterWidth(), l1bProduct.getSceneRasterHeight()), shadowWidth, shadowWidth);
         geoCoding = l1bProduct.getGeoCoding();
-        tpAltitude = l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME);
     }
 
     @Override
@@ -98,19 +106,18 @@ public class CloudShadowOp extends MerisBasisOp {
         	Tile vaaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle, pm);
         	Tile cloudTile = getSourceTile(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle, pm);
         	Tile ctpTile = getSourceTile(ctpProduct.getBand("cloud_top_press"), sourceRectangle, pm);
-
-        	Tile cloudTargetRaster = getSourceTile(targetTile.getRasterDataNode(), targetRectangle, pm);
+        	Tile altTile = getSourceTile(altitudeRDN, sourceRectangle, pm);
 
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
                 for (int x = targetRectangle.x; x < targetRectangle.x + targetRectangle.width; x++) {
-                    cloudTargetRaster.setSample(x, y, cloudTile.getSampleInt(x, y));
+                    targetTile.setSample(x, y, cloudTile.getSampleInt(x, y));
                 }
             }
 
             int sourceIndex = 0;
             for (int y = sourceRectangle.y; y < sourceRectangle.y + sourceRectangle.height; y++) {
                 for (int x = sourceRectangle.x; x < sourceRectangle.x + sourceRectangle.width; x++) {
-                    if (cloudTile.getSampleInt(x, y) == CombinedCloudOp.FLAG_CLOUD) {
+                    if ((cloudTile.getSampleInt(x, y) & CombinedCloudOp.FLAG_CLOUD) != 0 ) {
                         final float sza = szaTile.getSampleFloat(x, y) * MathUtils.DTOR_F;
                         final float saa = saaTile.getSampleFloat(x, y) * MathUtils.DTOR_F;
                         final float vza = vzaTile.getSampleFloat(x, y) * MathUtils.DTOR_F;
@@ -118,18 +125,21 @@ public class CloudShadowOp extends MerisBasisOp {
 
                         PixelPos pixelPos = new PixelPos(x, y);
                         final GeoPos geoPos = geoCoding.getGeoPos(pixelPos, null);
-                        float cloudAlt = computeHeightFromPressure(ctpTile.getSampleFloat(x, y));
-                        GeoPos shadowPos = getCloudShadow2(sza, saa, vza, vaa, cloudAlt, geoPos);
-                        if (shadowPos != null) {
-                            pixelPos = geoCoding.getPixelPos(shadowPos, pixelPos);
+                        float ctp = ctpTile.getSampleFloat(x, y);
+                        if (ctp >0) {
+                            float cloudAlt = computeHeightFromPressure(ctp);
+                            GeoPos shadowPos = getCloudShadow2(altTile, sza, saa, vza, vaa, cloudAlt, geoPos);
+                            if (shadowPos != null) {
+                                pixelPos = geoCoding.getPixelPos(shadowPos, pixelPos);
 
-                            if (targetRectangle.contains(pixelPos)) {
-                                final int pixelX = (int) Math.floor(pixelPos.x);
-                                final int pixelY = (int) Math.floor(pixelPos.y);
-                                int flagValue = cloudTile.getSampleInt(pixelX, pixelY);
-                                if ((flagValue & CombinedCloudOp.FLAG_CLOUD_SHADOW) == 0) {
-                                    flagValue += CombinedCloudOp.FLAG_CLOUD_SHADOW;
-                                    cloudTargetRaster.setSample(pixelX, pixelY, flagValue);
+                                if (targetRectangle.contains(pixelPos)) {
+                                    final int pixelX = MathUtils.floorInt(pixelPos.x);
+                                    final int pixelY = MathUtils.floorInt(pixelPos.y);
+                                    int flagValue = cloudTile.getSampleInt(pixelX, pixelY);
+                                    if ((flagValue & CombinedCloudOp.FLAG_CLOUD_SHADOW) == 0) {
+                                        flagValue += CombinedCloudOp.FLAG_CLOUD_SHADOW;
+                                        targetTile.setSample(pixelX, pixelY, flagValue);
+                                    }
                                 }
                             }
                         }
@@ -147,10 +157,10 @@ public class CloudShadowOp extends MerisBasisOp {
         return (float) (-8000 * Math.log(pressure / 1013f));
     }
 
-    private GeoPos getCloudShadow2(float sza, float saa, float vza,
+    private GeoPos getCloudShadow2(Tile altTile, float sza, float saa, float vza,
                                    float vaa, float cloudAlt, GeoPos appCloud) {
 
-        double surfaceAlt = getAltitude(appCloud);
+        double surfaceAlt = getAltitude(altTile, appCloud);
 
         // deltaX and deltaY are the corrections to apply to get the
         // real cloud position from the apparent one
@@ -185,7 +195,11 @@ public class CloudShadowOp extends MerisBasisOp {
             lat0 = lat;
             lon0 = lon;
             pos.setLocation((float) lat, (float) lon);
-            surfaceAlt = getAltitude(pos);
+            PixelPos pixelPos = geoCoding.getPixelPos(pos, null);
+            if (!(pixelPos.isValid()&& altTile.getRectangle().contains(pixelPos))) {
+                return null;
+            }
+            surfaceAlt = getAltitude(altTile, pos);
 
             double deltaProjX = (cloudAlt - surfaceAlt) * Math.tan(sza)
                     * Math.sin(saa);
@@ -209,17 +223,12 @@ public class CloudShadowOp extends MerisBasisOp {
         return null;
     }
 
-    private float getAltitude(GeoPos geoPos) {
-        float altitude;
+    private float getAltitude(Tile altTile, GeoPos geoPos) {
         final PixelPos pixelPos = geoCoding.getPixelPos(geoPos, null);
-        //TODO
-//		if (workProduct.getProductType().equals(EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
-//			resampling.computeIndex(pixelPos.x, pixelPos.y, width, height, resamplingIndex);
-//			altitude = resampling.resample(resamplingRaster, resamplingIndex);
-//		} else {
-        altitude = tpAltitude.getPixelFloat(pixelPos.x, pixelPos.y);
-//		}
-        return altitude;
+        Rectangle rectangle = altTile.getRectangle();
+        final int x = MathUtils.roundAndCrop(pixelPos.x, rectangle.x, rectangle.x + rectangle.width - 1);
+        final int y = MathUtils.roundAndCrop(pixelPos.y, rectangle.y, rectangle.y + rectangle.height -1);
+        return altTile.getSampleFloat(x, y);
     }
 
     public static class Spi extends OperatorSpi {

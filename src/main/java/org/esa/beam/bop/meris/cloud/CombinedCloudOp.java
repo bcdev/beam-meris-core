@@ -93,6 +93,8 @@ public class CombinedCloudOp extends MerisBasisOp {
 
                     if (snowPlausible && (snowIndex || combined == FLAG_SNOW)) {
                         result = FLAG_SNOW;
+                    } else if (!snowPlausible && (snowIndex || combined == FLAG_SNOW)) {
+                        result = FLAG_CLOUD;
                     } else if (brightLand && !snowPlausible &&
                                     ((snowIndex && combined != FLAG_CLOUD)
                                     || combined == FLAG_SNOW)) {
@@ -123,7 +125,6 @@ public class CombinedCloudOp extends MerisBasisOp {
         cloudAttr = new MetadataAttribute("clear", ProductData.TYPE_UINT8);
         cloudAttr.getData().setElemInt(FLAG_CLEAR);
         flagCoding.addAttribute(cloudAttr);
-
 
         cloudAttr = new MetadataAttribute("cloud", ProductData.TYPE_UINT8);
         cloudAttr.getData().setElemInt(FLAG_CLOUD);

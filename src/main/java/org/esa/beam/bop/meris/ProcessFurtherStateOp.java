@@ -46,14 +46,22 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     private static final String PROCESS_FURTHER_BAND_NAME = "process_further_state";
 
     private static final String[] EXPRESSIONS = {
+            // 0 == cloud-free land
             "not ($cloud.combined_cloud.cloud or $cloud.combined_cloud.cloud_edge or " +
             "$cloud.combined_cloud.cloud_shadow) and $brr.l2_flags_p1.F_LANDCONS",
-            // TODO: remove L1 land flag from process further
-            "$l1b.l1_flags.LAND_OCEAN and not $brr.l2_flags_p1.F_LANDCONS",
+            // 1 == flooded area
+            "($l1b.l1_flags.LAND_OCEAN or (not $l1b.l1_flags.LAND_OCEAN and $l1b.dem_alt > -50))" +
+            " and  not $brr.l2_flags_p1.F_LANDCONS and not ($cloud.combined_cloud.cloud or $cloud.combined_cloud.cloud_edge or " +
+            "$cloud.combined_cloud.cloud_shadow)",
+            // 2 == Cloud suspicion (cloud edge or shadow)
             "$cloud.combined_cloud.cloud_edge or $cloud.combined_cloud.cloud_shadow",
+            // 3 == cloud
             "$cloud.combined_cloud.cloud",
+            // 4 == water
             "not $l1b.l1_flags.LAND_OCEAN and not $brr.l2_flags_p1.F_LANDCONS",
+            // 5 == snow
             "$cloud.combined_cloud.snow",
+            // 6 == invalid
             "$l1b.l1_flags.INVALID"};
 
     private Band[] bands;
