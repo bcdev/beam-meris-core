@@ -15,6 +15,7 @@ import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -34,9 +35,12 @@ import org.esa.beam.util.BitSetter;
 import com.bc.ceres.core.ProgressMonitor;
 
 
-/**
- * A processing node to compute the BRR of a meris Lib product.
- */
+@OperatorMetadata(alias = "Meris.Brr",
+        version = "1.0",
+        //internal = true,
+        authors = "Marco Zühlke",
+        copyright = "(c) 2007 by Brockmann Consult",
+        description = "Compute the BRR of a MERIS L1b product.")
 public class BrrOp extends MerisBasisOp {
 
     protected L1bDataExtraction extdatl1;
@@ -64,9 +68,9 @@ public class BrrOp extends MerisBasisOp {
     private Product sourceProduct;
     @TargetProduct
     private Product targetProduct;
-    @Parameter
+    @Parameter(description="If 'true' the TOA radiances will be included into the target product.", defaultValue="false")
     public boolean outputToar = false;
-    @Parameter
+    @Parameter(description="If 'true' the algorithm will also be aplied over water.", defaultValue="false")
     public boolean correctWater = false;
 
 
@@ -373,7 +377,7 @@ public class BrrOp extends MerisBasisOp {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(BrrOp.class, "Meris.Brr");
+            super(BrrOp.class);
         }
     }
 }
