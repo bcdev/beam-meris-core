@@ -43,10 +43,8 @@ public class DpmConfig {
      *          if the configuration could not be loaded from the file
      */
     public DpmConfig() throws DpmConfigException {
-        String auxdataSrcPath = "auxdata" + File.separator + AUXDATA_DIRNAME;
-        final String auxdataDestPath = ".beam" + File.separator +
-                SYMBOLIC_NAME + File.separator +
-                auxdataSrcPath;
+        String auxdataSrcPath = "auxdata/" + AUXDATA_DIRNAME;
+        final String auxdataDestPath = ".beam/" + SYMBOLIC_NAME + "/" + auxdataSrcPath;
         auxdataTargetDir = new File(SystemUtils.getUserHomeDir(), auxdataDestPath);
         URL sourceUrl = ResourceInstaller.getSourceUrl(this.getClass());
 
