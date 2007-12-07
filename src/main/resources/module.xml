@@ -17,7 +17,7 @@
         <module>lib-hdf</module>
     </dependency>
 
-    <categories>System,Application,Processing</categories>
+    <categories>Application,Processing</categories>
 
 
     <extension point="beam-core:rgbProfiles">
