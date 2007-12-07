@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-l2auxdata</symbolicName>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <name>BEAM MERIS L2Auxdata</name>
 
     <dependency>
@@ -11,6 +11,6 @@
         <module>beam-envisat-reader</module>
     </dependency>
 
-    <categories>System,Processing</categories>
+    <categories>Processing</categories>
 
 </module>
