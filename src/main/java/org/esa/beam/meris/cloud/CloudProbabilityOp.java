@@ -182,10 +182,9 @@ public class CloudProbabilityOp extends MerisBasisOp {
 	}
 
     private void loadAuxdata() throws IOException {
-        String auxdataSrcPath = "auxdata" + File.separator + "cloudprob";
-        final String auxdataDestPath = ".beam" + File.separator +
-                AlbedomapConstants.SYMBOLIC_NAME + File.separator +
-                auxdataSrcPath;
+        String auxdataSrcPath = "auxdata/cloudprob";
+        final String auxdataDestPath = ".beam/" + AlbedomapConstants.SYMBOLIC_NAME +
+                "/" + auxdataSrcPath;
         File auxdataTargetDir = new File(SystemUtils.getUserHomeDir(), auxdataDestPath);
         URL sourceUrl = ResourceInstaller.getSourceUrl(this.getClass());
 

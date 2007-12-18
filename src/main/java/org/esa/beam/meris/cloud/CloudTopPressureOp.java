@@ -85,10 +85,9 @@ public class CloudTopPressureOp extends MerisBasisOp {
     }
 
     private void loadNeuralNet() throws IOException, JnnException {
-        String auxdataSrcPath = "auxdata" + File.separator + "ctp";
-        final String auxdataDestPath = ".beam" + File.separator +
-                AlbedomapConstants.SYMBOLIC_NAME + File.separator +
-                auxdataSrcPath;
+        String auxdataSrcPath = "auxdata/ctp";
+        final String auxdataDestPath = ".beam/" +
+                AlbedomapConstants.SYMBOLIC_NAME + "/" + auxdataSrcPath;
         File auxdataTargetDir = new File(SystemUtils.getUserHomeDir(), auxdataDestPath);
         URL sourceUrl = ResourceInstaller.getSourceUrl(this.getClass());
 
