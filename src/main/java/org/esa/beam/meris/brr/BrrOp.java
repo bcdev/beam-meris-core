@@ -37,7 +37,6 @@ import com.bc.ceres.core.ProgressMonitor;
 
 @OperatorMetadata(alias = "Meris.Brr",
         version = "1.0",
-        //internal = true,
         authors = "Marco Zühlke",
         copyright = "(c) 2007 by Brockmann Consult",
         description = "Compute the BRR of a MERIS L1b product.")
@@ -68,10 +67,10 @@ public class BrrOp extends MerisBasisOp {
     private Product sourceProduct;
     @TargetProduct
     private Product targetProduct;
-    @Parameter(description="If 'true' the TOA radiances will be included into the target product.", defaultValue="false")
+    @Parameter(description="If 'true' the TOA reflectances will be included into the target product.", defaultValue="false")
     public boolean outputToar = false;
-    @Parameter(description="If 'true' the algorithm will also be aplied over water.", defaultValue="false")
-    public boolean correctWater = false;
+    @Parameter(description="If 'false' the algorithm will only be aplied over land.", defaultValue="true")
+    public boolean correctWater = true;
 
 
     @Override
@@ -268,6 +267,7 @@ public class BrrOp extends MerisBasisOp {
                 aNewBand.setNoDataValue(-1);
                 aNewBand.setSpectralBandIndex(soucreProduct.getBandAt(bandId).getSpectralBandIndex());
                 aNewBand.setSpectralWavelength(soucreProduct.getBandAt(bandId).getSpectralWavelength());
+                aNewBand.setSpectralBandwidth(soucreProduct.getBandAt(bandId).getSpectralBandwidth());
                 targetProduct.addBand(aNewBand);
                 bands[bandId] = aNewBand;
             }
