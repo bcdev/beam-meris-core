@@ -1,11 +1,12 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-brr</symbolicName>
-    <version>2.0</version>
+    <version>2.0.1</version>
     <name>BEAM MERIS BRR</name>
 
     <dependency>
         <module>beam-gpf</module>
+        <version>4.1.2</version>
     </dependency>
     <dependency>
         <module>beam-meris-l2auxdata</module>
