@@ -90,6 +90,8 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
         
         BandArithmeticOp bandArithmeticOp = BandArithmeticOp.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
+        
+        targetProduct.setPreferredTileSize(100, 100);
     }
     
     @Override

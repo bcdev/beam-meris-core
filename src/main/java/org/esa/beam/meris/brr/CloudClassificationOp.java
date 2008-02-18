@@ -96,6 +96,8 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         FlagCoding flagCoding = createFlagCoding();
         band.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
+        
+        targetProduct.setPreferredTileSize(100, 100);
     }
 
     protected static FlagCoding createFlagCoding() {

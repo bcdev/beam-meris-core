@@ -114,6 +114,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
                 tgBands[i].setNoDataValue(BAD_VALUE);
             }
         }
+        targetProduct.setPreferredTileSize(100, 100);
     }
 
     private static FlagCoding createFlagCoding() {
