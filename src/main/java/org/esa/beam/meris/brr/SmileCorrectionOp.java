@@ -87,6 +87,9 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
         BandArithmeticOp bandArithmeticOp = 
             BandArithmeticOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
         isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
+        if (l1bProduct.getPreferredTileSize() != null) {
+            targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());
+        }
     }
     
     @Override

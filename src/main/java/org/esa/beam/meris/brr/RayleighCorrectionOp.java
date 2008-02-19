@@ -110,7 +110,9 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         BandArithmeticOp bandArithmeticOp = 
             BandArithmeticOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
         isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
-        targetProduct.setPreferredTileSize(100, 100);
+        if (l1bProduct.getPreferredTileSize() != null) {
+            targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());
+        }
     }
     
     private Band[] addBandGroup(String prefix) {

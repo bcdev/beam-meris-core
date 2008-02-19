@@ -82,7 +82,9 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
         FlagCoding flagCoding = createFlagCoding();
         band.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
-        targetProduct.setPreferredTileSize(100, 100);
+        if (l1bProduct.getPreferredTileSize() != null) {
+            targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());
+        }
     }
 
     protected static FlagCoding createFlagCoding() {
