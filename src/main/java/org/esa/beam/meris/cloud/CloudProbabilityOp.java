@@ -210,7 +210,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
         centralWavelengthProvider.readAuxData(auxdataTargetDir);
     }
 
-    private static FlagCoding createCloudFlagCoding(Product outputProduct) {
+    public static FlagCoding createCloudFlagCoding(Product outputProduct) {
         MetadataAttribute cloudAttr;
         final FlagCoding flagCoding = new FlagCoding(CLOUD_FLAG_BAND);
         flagCoding.setDescription("Cloud Flag Coding");
