@@ -35,6 +35,7 @@ import org.esa.beam.meris.l2auxdata.DpmConfigException;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.BitSetter;
+import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
@@ -51,6 +52,9 @@ import com.bc.ceres.core.ProgressMonitor;
 public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
     public static final String CLOUD_FLAGS = "cloud_classif_flags";
+    public static final String PRESSURE_CTP = "p_ctp";
+    public static final String PRESSURE_SURFACE = "p_surf";
+    public static final String PRESSURE_ECMWF = "p_ecmwf";
 
     private static final int BAND_BRIGHT_N = 0;
     private static final int BAND_SLOPE_N_1 = 1;
@@ -74,6 +78,8 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     private Product l1bProduct;
     @SourceProduct(alias="rhotoa")
     private Product rhoToaProduct;
+    @SourceProduct(alias="ctp")
+    private Product ctpProduct;
     @TargetProduct
     private Product targetProduct;
 
@@ -91,18 +97,22 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
     private void createTargetProduct() {
         targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
-
-        Band band = targetProduct.addBand(CLOUD_FLAGS, ProductData.TYPE_INT16);
+        
+        Band cloudFlagBand = targetProduct.addBand(CLOUD_FLAGS, ProductData.TYPE_INT16);
         FlagCoding flagCoding = createFlagCoding();
-        band.setFlagCoding(flagCoding);
+        cloudFlagBand.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
+        
+        Band ctpBand = targetProduct.addBand(PRESSURE_CTP, ProductData.TYPE_FLOAT32);
+        Band pSurfBand = targetProduct.addBand(PRESSURE_SURFACE, ProductData.TYPE_FLOAT32);
+        Band pEcmwfBand = targetProduct.addBand(PRESSURE_ECMWF, ProductData.TYPE_FLOAT32);
         
         if (l1bProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());
         }
     }
 
-    protected static FlagCoding createFlagCoding() {
+    public static FlagCoding createFlagCoding() {
         FlagCoding flagCoding = new FlagCoding(CLOUD_FLAGS);
         flagCoding.addFlag("F_CLOUD", BitSetter.setFlag(0, F_CLOUD), null);
         flagCoding.addFlag("F_BRIGHT", BitSetter.setFlag(0, F_BRIGHT), null);
@@ -155,6 +165,8 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
             SourceData sd = loadSourceTiles(rectangle, pm);
+            
+            Tile ctpTile = getSourceTile(ctpProduct.getBand("cloud_top_press"), rectangle, pm);
 
             PixelInfo pixelInfo = new PixelInfo();
 			int i = 0;
@@ -176,7 +188,15 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 						} else {
 							pixelInfo.ecmwfPressure = sd.ecmwfPressure[i];
 						}
-						classifyCloud(sd, pixelInfo, targetTile);
+						float ctp = ctpTile.getSampleFloat(x, y);
+						if (band.getName().equals(CLOUD_FLAGS))
+							classifyCloud(sd, ctp, pixelInfo, targetTile);
+						if (band.getName().equals(PRESSURE_SURFACE))
+							setCloudPressureSurface(sd, pixelInfo, targetTile);
+						if (band.getName().equals(PRESSURE_CTP))
+							setCloudPressureTop(ctp, pixelInfo, targetTile);
+						if (band.getName().equals(PRESSURE_ECMWF))
+							setCloudPressureEcmwf(sd, pixelInfo, targetTile);
 					}
 					i++;
 				}
@@ -188,8 +208,26 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
             pm.done();
         }
     }
+    
+    public void setCloudPressureSurface(SourceData sd, PixelInfo pixelInfo, Tile targetTile) {
+        final ReturnValue press = new ReturnValue();
 
-    public void classifyCloud(SourceData sd, PixelInfo pixelInfo, Tile targetTile) {
+        Comp_Pressure(sd, pixelInfo, press);
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, Math.max(0.0, press.value));
+    }
+    
+    public void setCloudPressureTop(float ctp, PixelInfo pixelInfo, Tile targetTile) {
+    	targetTile.setSample(pixelInfo.x, pixelInfo.y, ctp);
+    }
+
+    public void setCloudPressureEcmwf(SourceData sd, PixelInfo pixelInfo, Tile targetTile) {
+        final ReturnValue press = new ReturnValue();
+
+        Comp_Pressure(sd, pixelInfo, press);
+        targetTile.setSample(pixelInfo.x, pixelInfo.y, Math.max(0.0, pixelInfo.ecmwfPressure));
+    }
+
+    public void classifyCloud(SourceData sd, float ctp, PixelInfo pixelInfo, Tile targetTile) {
         final ReturnValue press = new ReturnValue();
         final boolean[] resultFlags = new boolean[3];
 
@@ -198,7 +236,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         boolean pcd_poly = press.error;
 
         /* apply thresholds on pressure- step 2.1.2 */
-        press_thresh(sd, pixelInfo, press.value, resultFlags);
+        press_thresh(sd, pixelInfo, press.value, ctp, resultFlags);
         boolean low_P_nn = resultFlags[0];
         boolean low_P_poly = resultFlags[1];
         boolean delta_p = resultFlags[2];
@@ -227,7 +265,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
                                      low_P_nn, low_P_poly, delta_p,
                                      slope_1_f, slope_2_f,
                                      true, pcd_poly);
-
+        
         targetTile.setSample(pixelInfo.x, pixelInfo.y, F_CLOUD, is_cloud);
     }
 
@@ -355,11 +393,12 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
      *
      * @param pixel        the pixel structure
      * @param pressure     the pressure of the pixel
+     * @param ctp      cloud top pressure from CloudTopPressureOp
      * @param result_flags the return values, <code>resultFlags[0]</code> contains low NN pressure flag (low_P_nn),
      *                     <code>resultFlags[1]</code> contains low polynomial pressure flag (low_P_poly),
      *                     <code>resultFlags[2]</code> contains pressure range flag (delta_p).
      */
-    private void press_thresh(SourceData sd, PixelInfo pixelInfo, double pressure, boolean[] result_flags) {
+    private void press_thresh(SourceData sd, PixelInfo pixelInfo, double pressure, float ctp, boolean[] result_flags) {
         double delta_press_thresh; /* absolute threshold on pressure difference */
         FractIndex[] DP_Index = FractIndex.createArray(2);
 
@@ -375,7 +414,9 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         }
 
         /* test NN pressure- DPM #2.1.2-4 */ // low_P_nn
-        result_flags[0] = (pixelInfo.ecmwfPressure < pixelInfo.ecmwfPressure - delta_press_thresh); //changed in V7
+//        result_flags[0] = (pixelInfo.ecmwfPressure < pixelInfo.ecmwfPressure - delta_press_thresh); //changed in V7
+        
+        result_flags[0] = (ctp < pixelInfo.ecmwfPressure - delta_press_thresh); //changed in V7
         /* test polynomial pressure- DPM #2.1.2-3 */ // low_P_poly
         result_flags[1] = (pressure < pixelInfo.ecmwfPressure - delta_press_thresh);  //changed in V7
         /* test pressure range - DPM #2.1.2-5 */   // delta_p
