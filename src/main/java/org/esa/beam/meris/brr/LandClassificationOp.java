@@ -87,7 +87,7 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
         }
     }
 
-    protected static FlagCoding createFlagCoding() {
+    public static FlagCoding createFlagCoding() {
         FlagCoding flagCoding = new FlagCoding(LAND_FLAGS);
         flagCoding.addFlag("F_MEGLINT", BitSetter.setFlag(0, F_MEGLINT), null);
         flagCoding.addFlag("F_LOINLD", BitSetter.setFlag(0, F_LOINLD), null);

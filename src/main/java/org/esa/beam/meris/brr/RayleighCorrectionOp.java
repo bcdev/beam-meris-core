@@ -97,7 +97,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     	brrBands = addBandGroup(BRR_BAND_PREFIX);
 
         flagBand = targetProduct.addBand(RAY_CORR_FLAGS, ProductData.TYPE_INT16);
-        FlagCoding flagCoding = createFlagCoding();
+        FlagCoding flagCoding = createFlagCoding(brrBands.length);
         flagBand.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
         
@@ -131,10 +131,10 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         return bands;
     }
 
-    private FlagCoding createFlagCoding() {
+    public static FlagCoding createFlagCoding(int bandLength) {
         FlagCoding flagCoding = new FlagCoding(RAY_CORR_FLAGS);
         int bitIndex = 0;
-        for (int i = 0; i < brrBands.length; i++) {
+        for (int i = 0; i < bandLength; i++) {
             if (i == bb11 || i == bb15) {
                 continue;
             }

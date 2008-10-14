@@ -119,7 +119,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
         }
     }
 
-    private static FlagCoding createFlagCoding() {
+    public static FlagCoding createFlagCoding() {
         FlagCoding flagCoding = new FlagCoding(GAS_FLAGS);
         flagCoding.addFlag("F_DO_CORRECT", BitSetter.setFlag(0, F_DO_CORRECT), null);
         flagCoding.addFlag("F_SUN70", BitSetter.setFlag(0, F_SUN70), null);
