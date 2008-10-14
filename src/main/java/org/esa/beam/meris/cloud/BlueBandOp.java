@@ -127,7 +127,7 @@ public class BlueBandOp extends MerisBasisOp {
         bandDescriptor.expression = expression;
         bandDescriptor.type = ProductData.TYPESTRING_INT8;
         bandDescriptors[0] = bandDescriptor;
-        parameters.put("bandDescriptors", bandDescriptors);
+        parameters.put("targetBands", bandDescriptors);
 
         Map<String, Product> products = new HashMap<String, Product>();
         products.put(getSourceProductId(l1bProduct), l1bProduct);
