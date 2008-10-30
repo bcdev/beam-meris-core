@@ -105,7 +105,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         
         Band ctpBand = targetProduct.addBand(PRESSURE_CTP, ProductData.TYPE_FLOAT32);
         Band pSurfBand = targetProduct.addBand(PRESSURE_SURFACE, ProductData.TYPE_FLOAT32);
-        Band pEcmwfBand = targetProduct.addBand(PRESSURE_ECMWF, ProductData.TYPE_FLOAT32);
+//        Band pEcmwfBand = targetProduct.addBand(PRESSURE_ECMWF, ProductData.TYPE_FLOAT32);
         
         if (l1bProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());
@@ -195,8 +195,8 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 							setCloudPressureSurface(sd, pixelInfo, targetTile);
 						if (band.getName().equals(PRESSURE_CTP))
 							setCloudPressureTop(ctp, pixelInfo, targetTile);
-						if (band.getName().equals(PRESSURE_ECMWF))
-							setCloudPressureEcmwf(sd, pixelInfo, targetTile);
+//						if (band.getName().equals(PRESSURE_ECMWF))
+//							setCloudPressureEcmwf(sd, pixelInfo, targetTile);
 					}
 					i++;
 				}
@@ -220,12 +220,12 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     	targetTile.setSample(pixelInfo.x, pixelInfo.y, ctp);
     }
 
-    public void setCloudPressureEcmwf(SourceData sd, PixelInfo pixelInfo, Tile targetTile) {
-        final ReturnValue press = new ReturnValue();
-
-        Comp_Pressure(sd, pixelInfo, press);
-        targetTile.setSample(pixelInfo.x, pixelInfo.y, Math.max(0.0, pixelInfo.ecmwfPressure));
-    }
+//    public void setCloudPressureEcmwf(SourceData sd, PixelInfo pixelInfo, Tile targetTile) {
+//        final ReturnValue press = new ReturnValue();
+//
+//        Comp_Pressure(sd, pixelInfo, press);
+//        targetTile.setSample(pixelInfo.x, pixelInfo.y, Math.max(0.0, pixelInfo.ecmwfPressure));
+//    }
 
     public void classifyCloud(SourceData sd, float ctp, PixelInfo pixelInfo, Tile targetTile) {
         final ReturnValue press = new ReturnValue();
