@@ -163,7 +163,15 @@ public class BlueBandOp extends MerisBasisOp {
 			    latitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect, pm);
 			    altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect, pm);
 			}
-			boolean[] safeLand = (boolean[]) getSourceTile(landBand, rect, pm).getRawSamples().getElems();
+			Tile sourceTile = getSourceTile(landBand, rect, pm);
+			ProductData rawSamples = sourceTile.getRawSamples();
+//			boolean[] safeLand = (boolean[]) rawSamples.getElems(); // This cast does not work!?
+			
+			boolean[] safeLand = new boolean[rawSamples.getNumElems()];
+			for (int i=0; i<rawSamples.getNumElems(); i++) {
+				safeLand[i] = rawSamples.getElemBooleanAt(i);
+			}
+			
             ProductData rawSampleData = targetTile.getRawSamples();
             byte[] cloudFlagScanLine = (byte[]) rawSampleData.getElems();
 
@@ -276,7 +284,7 @@ public class BlueBandOp extends MerisBasisOp {
         return false;
     }
 
-    private FlagCoding createFlagCoding() {
+    public static FlagCoding createFlagCoding() {
         MetadataAttribute cloudAttr;
         final FlagCoding flagCoding = new FlagCoding(BLUE_FLAG_BAND);
         flagCoding.setDescription("Blue Band - Cloud Flag Coding");
