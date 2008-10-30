@@ -38,6 +38,7 @@ import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.AlbedomapConstants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
+import org.esa.beam.util.Debug;
 import org.esa.beam.util.ResourceInstaller;
 import org.esa.beam.util.SystemUtils;
 import org.esa.beam.util.math.FractIndex;
@@ -58,7 +59,8 @@ import com.bc.jnn.JnnNet;
  */
 public class CloudTopPressureOp extends MerisBasisOp {
 
-    private static final String INVALID_EXPRESSION = "l1_flags.INVALID or not l1_flags.LAND_OCEAN";
+//    private static final String INVALID_EXPRESSION = "l1_flags.INVALID or not l1_flags.LAND_OCEAN";
+    private static final String INVALID_EXPRESSION = "l1_flags.INVALID";
 
     private static final int BB760 = 10;
 

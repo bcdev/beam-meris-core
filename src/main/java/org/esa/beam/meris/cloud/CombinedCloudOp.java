@@ -117,7 +117,7 @@ public class CombinedCloudOp extends MerisBasisOp {
         }
     }
     
-    private FlagCoding createFlagCoding() {
+    public static FlagCoding createFlagCoding() {
         MetadataAttribute cloudAttr;
         final FlagCoding flagCoding = new FlagCoding(FLAG_BAND_NAME);
         flagCoding.setDescription("Combined CLoud Band Flag Coding");
