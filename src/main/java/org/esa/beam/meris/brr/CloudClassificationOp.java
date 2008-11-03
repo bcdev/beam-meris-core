@@ -78,7 +78,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     private Product l1bProduct;
     @SourceProduct(alias="rhotoa")
     private Product rhoToaProduct;
-    @SourceProduct(alias="ctp")
+    @SourceProduct(alias="ctp", optional=true)
     private Product ctpProduct;
     @TargetProduct
     private Product targetProduct;
@@ -103,9 +103,11 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         cloudFlagBand.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
         
-        Band ctpBand = targetProduct.addBand(PRESSURE_CTP, ProductData.TYPE_FLOAT32);
-        Band pSurfBand = targetProduct.addBand(PRESSURE_SURFACE, ProductData.TYPE_FLOAT32);
-//        Band pEcmwfBand = targetProduct.addBand(PRESSURE_ECMWF, ProductData.TYPE_FLOAT32);
+        if (ctpProduct != null) {
+            Band ctpBand = targetProduct.addBand(PRESSURE_CTP, ProductData.TYPE_FLOAT32);
+            Band pSurfBand = targetProduct.addBand(PRESSURE_SURFACE, ProductData.TYPE_FLOAT32);
+            //Band pEcmwfBand = targetProduct.addBand(PRESSURE_ECMWF, ProductData.TYPE_FLOAT32);
+        }
         
         if (l1bProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());
@@ -166,7 +168,10 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         try {
             SourceData sd = loadSourceTiles(rectangle, pm);
             
-            Tile ctpTile = getSourceTile(ctpProduct.getBand("cloud_top_press"), rectangle, pm);
+            Tile ctpTile = null;
+            if (ctpProduct != null) {
+                ctpTile = getSourceTile(ctpProduct.getBand("cloud_top_press"), rectangle, pm);
+            }
 
             PixelInfo pixelInfo = new PixelInfo();
 			int i = 0;
@@ -188,15 +193,23 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 						} else {
 							pixelInfo.ecmwfPressure = sd.ecmwfPressure[i];
 						}
-						float ctp = ctpTile.getSampleFloat(x, y);
-						if (band.getName().equals(CLOUD_FLAGS))
-							classifyCloud(sd, ctp, pixelInfo, targetTile);
-						if (band.getName().equals(PRESSURE_SURFACE))
-							setCloudPressureSurface(sd, pixelInfo, targetTile);
-						if (band.getName().equals(PRESSURE_CTP))
-							setCloudPressureTop(ctp, pixelInfo, targetTile);
-//						if (band.getName().equals(PRESSURE_ECMWF))
-//							setCloudPressureEcmwf(sd, pixelInfo, targetTile);
+						if (ctpTile != null) {
+						    float ctp = ctpTile.getSampleFloat(x, y);
+						    if (band.getName().equals(CLOUD_FLAGS)) {
+						        classifyCloud(sd, ctp, pixelInfo, targetTile);
+						    }
+						    if (band.getName().equals(PRESSURE_SURFACE)) {
+						        setCloudPressureSurface(sd, pixelInfo, targetTile);
+						    }
+						    if (band.getName().equals(PRESSURE_CTP)) {
+						        setCloudPressureTop(ctp, pixelInfo, targetTile);
+						        //if (band.getName().equals(PRESSURE_ECMWF)) {
+						        //    setCloudPressureEcmwf(sd, pixelInfo, targetTile);
+						        //}
+						    }
+						} else {
+						    classifyCloud(sd, -1, pixelInfo, targetTile);
+						}
 					}
 					i++;
 				}
@@ -393,7 +406,7 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
      *
      * @param pixel        the pixel structure
      * @param pressure     the pressure of the pixel
-     * @param ctp      cloud top pressure from CloudTopPressureOp
+     * @param ctp      cloud top pressure from CloudTopPressureOp, or -1 if not given
      * @param result_flags the return values, <code>resultFlags[0]</code> contains low NN pressure flag (low_P_nn),
      *                     <code>resultFlags[1]</code> contains low polynomial pressure flag (low_P_poly),
      *                     <code>resultFlags[2]</code> contains pressure range flag (delta_p).
@@ -414,9 +427,11 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         }
 
         /* test NN pressure- DPM #2.1.2-4 */ // low_P_nn
-//        result_flags[0] = (pixelInfo.ecmwfPressure < pixelInfo.ecmwfPressure - delta_press_thresh); //changed in V7
-        
-        result_flags[0] = (ctp < pixelInfo.ecmwfPressure - delta_press_thresh); //changed in V7
+        if (ctp != -1) {
+            result_flags[0] = (ctp < pixelInfo.ecmwfPressure - delta_press_thresh); //changed in V7
+        } else {
+            result_flags[0] = (pixelInfo.ecmwfPressure < pixelInfo.ecmwfPressure - delta_press_thresh); //changed in V7
+        }
         /* test polynomial pressure- DPM #2.1.2-3 */ // low_P_poly
         result_flags[1] = (pressure < pixelInfo.ecmwfPressure - delta_press_thresh);  //changed in V7
         /* test pressure range - DPM #2.1.2-5 */   // delta_p
