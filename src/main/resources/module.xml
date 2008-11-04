@@ -2,7 +2,15 @@
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-sdr</symbolicName>
     <version>2.0.1</version>
-    <name>BEAM MERIS Albedomap</name>
+    <name>MERIS Surface Directional Reflectance (SDR) Processor</name>
+
+    <description>This processor computes the Surface Directional Reflectance (SDR) for MERIS L1B products.</description>
+
+    <vendor>Brockmann Consult GmbH</vendor>
+    <contactAddress>Max Planck Str.2, 21502 Geesthacht (Germany)</contactAddress>
+    <copyright>(C) 2008 by Brockmann Consult GmbH</copyright>
+    <url>http://envisat.esa.int/beam</url>
+    <licenseUrl>http://www.gnu.org/licenses/gpl.html</licenseUrl>
 
     <dependency>
         <module>beam-gpf</module>
