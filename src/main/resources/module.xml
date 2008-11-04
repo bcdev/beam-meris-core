@@ -2,9 +2,9 @@
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-brr</symbolicName>
     <version>2.0.2</version>
-    <name>BEAM MERIS Bottom of Rayleigh Reflectance (BRR)</name>
+    <name>MERIS Bottom of Rayleigh Reflectance (BRR) Processor</name>
 
-    <description>The Bottom of Rayleigh Reflectance (BRR) processor.</description>
+    <description>This processor computes the Bottom of Rayleigh Reflectance (BRR) for MERIS L1B products.</description>
 
     <vendor>Brockmann Consult GmbH</vendor>
     <contactAddress>Max Planck Str.2, 21502 Geesthacht (Germany)</contactAddress>
