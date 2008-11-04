@@ -4,7 +4,7 @@
     <version>2.0.2</version>
     <name>MERIS Bottom of Rayleigh Reflectance (BRR) Processor</name>
 
-    <description>This processor computes the Bottom of Rayleigh Reflectance (BRR) for MERIS L1B products.</description>
+    <description>This processor computes the "Bottom of Rayleigh" Reflectance (BRR) from MERIS L1B products.</description>
 
     <vendor>Brockmann Consult GmbH</vendor>
     <contactAddress>Max Planck Str.2, 21502 Geesthacht (Germany)</contactAddress>
