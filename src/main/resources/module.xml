@@ -4,7 +4,7 @@
     <version>2.0.1</version>
     <name>MERIS Surface Directional Reflectance (SDR) Processor</name>
 
-    <description>This processor computes the Surface Directional Reflectance (SDR) for MERIS L1B products.</description>
+    <description>This processor computes the Surface Directional Reflectance (SDR) from MERIS L1B products.</description>
 
     <vendor>Brockmann Consult GmbH</vendor>
     <contactAddress>Max Planck Str.2, 21502 Geesthacht (Germany)</contactAddress>
