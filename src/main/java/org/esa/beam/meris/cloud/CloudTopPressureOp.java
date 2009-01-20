@@ -24,6 +24,8 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Calendar;
 
+import javax.sound.sampled.SourceDataLine;
+
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
@@ -36,6 +38,7 @@ import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.AlbedomapConstants;
+import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.Debug;
@@ -61,11 +64,13 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
 //    private static final String INVALID_EXPRESSION = "l1_flags.INVALID or not l1_flags.LAND_OCEAN";
     private static final String INVALID_EXPRESSION = "l1_flags.INVALID";
+    private static final String LAND_EXPRESSION = "l1_flags.LAND_OCEAN";
 
     private static final int BB760 = 10;
 
     private L2AuxData auxData;
-    private JnnNet neuralNet;
+    private JnnNet neuralNetLand;
+    private JnnNet neuralNetWater;
     private L2CloudAuxData cloudAuxData;
     private Band invalidBand;
     
@@ -96,13 +101,22 @@ public class CloudTopPressureOp extends MerisBasisOp {
         ResourceInstaller resourceInstaller = new ResourceInstaller(sourceUrl, auxdataSrcPath, auxdataTargetDir);
         resourceInstaller.install(".*", new NullProgressMonitor());
         
-        File nnFile = new File(auxdataTargetDir, "ctp.nna");
-        final InputStreamReader reader = new FileReader(nnFile);
+//        File nnFile = new File(auxdataTargetDir, "ctp.nna");
+        File nnLandFile = new File(auxdataTargetDir, "ctp_NN_1.nna");
+        File nnWaterFile = new File(auxdataTargetDir, "ctp_NN_2.nna");
+        final InputStreamReader reader1 = new FileReader(nnLandFile);
+        final InputStreamReader reader2 = new FileReader(nnWaterFile);
         try {
             Jnn.setOptimizing(true);
-            neuralNet = Jnn.readNna(reader);
+            neuralNetLand = Jnn.readNna(reader1);
         } finally {
-            reader.close();
+            reader1.close();
+        }
+        try {
+            Jnn.setOptimizing(true);
+            neuralNetWater = Jnn.readNna(reader2);
+        } finally {
+            reader2.close();
         }
     }
 
@@ -132,6 +146,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
     	
     	Rectangle rectangle = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height);
+        
         try {
         	Tile detector = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle, pm);
         	Tile sza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
@@ -146,8 +161,11 @@ public class CloudTopPressureOp extends MerisBasisOp {
 			Tile toar11 = getSourceTile(sourceProduct.getBand("radiance_11"), rectangle, pm);
 			
 			Tile isInvalid = getSourceTile(invalidBand, rectangle, pm);
+			
+			Tile l1bFlags = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle, pm);
 
-            final double[] nnIn = new double[7];
+			final double[] nnInWater = new double[6];
+			final double[] nnInLand = new double[7];
             final double[] nnOut = new double[1];
 
             int i = 0;
@@ -161,17 +179,31 @@ public class CloudTopPressureOp extends MerisBasisOp {
 					} else {
 						double szaRad = sza.getSampleFloat(x, y) * MathUtils.DTOR;
 						double vzaRad = vza.getSampleFloat(x, y) * MathUtils.DTOR;
-						nnIn[0] = computeSurfAlbedo(lat.getSampleFloat(x, y), lon.getSampleFloat(x, y)); // albedo
-						nnIn[1] = toar10.getSampleDouble(x, y);
-						nnIn[2] = toar11.getSampleDouble(x, y)
-								/ toar10.getSampleDouble(x, y);
-						nnIn[3] = Math.cos(szaRad);
-						nnIn[4] = Math.cos(vzaRad);
-						nnIn[5] = Math.sin(vzaRad)
-								* Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
-						nnIn[6] = auxData.central_wavelength[BB760][detector.getSampleInt(x, y)];
+						
+						if (l1bFlags.getSampleBit(x, y, Constants.L1_F_LAND)) {
+							nnInLand[0] = computeSurfAlbedo(lat.getSampleFloat(x, y), lon.getSampleFloat(x, y)); // albedo
+							nnInLand[1] = toar10.getSampleDouble(x, y);
+							nnInLand[2] = toar11.getSampleDouble(x, y)
+									/ toar10.getSampleDouble(x, y);
+							nnInLand[3] = Math.cos(szaRad);
+							nnInLand[4] = Math.cos(vzaRad);
+							nnInLand[5] = Math.sin(vzaRad)
+									* Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
+							nnInLand[6] = auxData.central_wavelength[BB760][detector.getSampleInt(x, y)];
 
-						neuralNet.process(nnIn, nnOut);
+							neuralNetLand.process(nnInLand, nnOut);
+						} else {
+							nnInWater[0] = toar10.getSampleDouble(x, y);
+							nnInWater[1] = toar11.getSampleDouble(x, y)
+									/ toar10.getSampleDouble(x, y);
+							nnInWater[2] = Math.cos(szaRad);
+							nnInWater[3] = Math.cos(vzaRad);
+							nnInWater[4] = Math.sin(vzaRad)
+									* Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
+							nnInWater[5] = auxData.central_wavelength[BB760][detector.getSampleInt(x, y)];
+
+							neuralNetWater.process(nnInWater, nnOut);
+						}
 						targetTile.setSample(x, y, nnOut[0]);
 					}
 					i++;
