@@ -27,6 +27,7 @@ import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
+import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
@@ -52,8 +53,8 @@ import com.bc.ceres.core.ProgressMonitor;
 public class CloudClassificationOp extends MerisBasisOp implements Constants {
 
     public static final String CLOUD_FLAGS = "cloud_classif_flags";
-    public static final String PRESSURE_CTP = "p_ctp";
-    public static final String PRESSURE_SURFACE = "p_surf";
+    public static final String PRESSURE_CTP = "ctp_ipf";
+    public static final String PRESSURE_SURFACE = "surface_press_ipf";
     public static final String PRESSURE_ECMWF = "p_ecmwf";
 
     private static final int BAND_BRIGHT_N = 0;
@@ -82,6 +83,10 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     private Product ctpProduct;
     @TargetProduct
     private Product targetProduct;
+    @Parameter(description="If 'true' the algorithm will compute L2 Pressures.", defaultValue="true")
+    public boolean l2Pressures = true;
+    @Parameter(description="If 'true' the algorithm will compute L2 Cloud detection flags.", defaultValue="true")
+    public boolean l2CloudDetection = true;
 
 
     @Override
@@ -195,13 +200,13 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
 						}
 						if (ctpTile != null) {
 						    float ctp = ctpTile.getSampleFloat(x, y);
-						    if (band.getName().equals(CLOUD_FLAGS)) {
+						    if (band.getName().equals(CLOUD_FLAGS) && l2CloudDetection) {
 						        classifyCloud(sd, ctp, pixelInfo, targetTile);
 						    }
-						    if (band.getName().equals(PRESSURE_SURFACE)) {
+						    if (band.getName().equals(PRESSURE_SURFACE) && l2Pressures) {
 						        setCloudPressureSurface(sd, pixelInfo, targetTile);
 						    }
-						    if (band.getName().equals(PRESSURE_CTP)) {
+						    if (band.getName().equals(PRESSURE_CTP) && l2Pressures) {
 						        setCloudPressureTop(ctp, pixelInfo, targetTile);
 						        //if (band.getName().equals(PRESSURE_ECMWF)) {
 						        //    setCloudPressureEcmwf(sd, pixelInfo, targetTile);
