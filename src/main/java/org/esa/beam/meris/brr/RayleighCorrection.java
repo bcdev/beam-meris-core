@@ -307,7 +307,7 @@ public class RayleighCorrection implements Constants {
         }
     }
 
-    private static class LocalHelperVariables {
+    public static class LocalHelperVariables {
         /**
          * Rayleigh reflectance Fourier components. Local helper variable used in {@link RayleighCorrection#ref_rayleigh}.
          */
@@ -322,6 +322,31 @@ public class RayleighCorrection implements Constants {
          */
         private final FractIndex[] ref_rayleigh_i = FractIndex.createArray(2);
         private final FractIndex[] ray_index = FractIndex.createArray(1);
+        
+		public FractIndex[] getRef_rayleigh_i() {
+			return ref_rayleigh_i;
+		}
 
+		public FractIndex[] getRay_index() {
+			return ray_index;
+		}
+
+		public double[] getRhoRayl() {
+			return rhoRayl;
+		}
+
+		public double[][] getAbcd() {
+			return abcd;
+		}
+		
     }
+
+	public LocalHelperVariables getLh() {
+		return lh;
+	}
+
+	public L2AuxData getAuxdata() {
+		return auxdata;
+	}
+    
 }
