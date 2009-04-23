@@ -17,10 +17,7 @@
 package org.esa.beam.meris.cloud;
 
 import java.awt.Rectangle;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.util.Calendar;
 
@@ -35,6 +32,8 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
+import org.esa.beam.framework.gpf.annotations.Parameter;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.AlbedomapConstants;
@@ -60,13 +59,27 @@ import com.bc.jnn.JnnNet;
  * @author marcoz
  * @version $Revision: 1.2 $ $Date: 2007/03/30 15:11:20 $
  */
+@OperatorMetadata(alias = "Meris.CloudTopPressureOp",
+        version = "1.0",
+        internal = true,
+        authors = "Marco Zühlke",
+        copyright = "(c) 2007-2009 by Brockmann Consult",
+        description = "Computes cloud top pressure with FUB NN.")
 public class CloudTopPressureOp extends MerisBasisOp {
 
 //    private static final String INVALID_EXPRESSION = "l1_flags.INVALID or not l1_flags.LAND_OCEAN";
     private static final String INVALID_EXPRESSION = "l1_flags.INVALID";
     private static final String LAND_EXPRESSION = "l1_flags.LAND_OCEAN";
 
+    private static final String STRAYLIGHT_COEFF_FILE_NAME = "stray_ratio.d";
+    private static final String STRAYLIGHT_CORR_WAVELENGTH_FILE_NAME = "lambda.d";
+
     private static final int BB760 = 10;
+    private static final int DETECTOR_LENGTH_RR = 925;
+
+    private float[] straylightCoefficients = new float[DETECTOR_LENGTH_RR]; // reduced resolution only!
+    private float[] straylightCorrWavelengths = new float[DETECTOR_LENGTH_RR];
+
 
     private L2AuxData auxData;
     private JnnNet neuralNetLand;
@@ -78,7 +91,8 @@ public class CloudTopPressureOp extends MerisBasisOp {
     private Product sourceProduct;
     @TargetProduct
     private Product targetProduct;
-	
+	@Parameter(description="If 'true' the algorithm will apply straylight correction.", defaultValue="false")
+    public boolean straylightCorr = false;
 
     @Override
     public void initialize() throws OperatorException {
@@ -88,6 +102,14 @@ public class CloudTopPressureOp extends MerisBasisOp {
             throw new OperatorException("Failed to load neural net ctp.nna:\n" + e.getMessage());
         }
         initAuxData();
+        try {
+            if (straylightCorr) {
+			    readStraylightCoeff();
+			    readStraylightCorrWavelengths();
+            }
+		} catch (Exception e) {
+			throw new OperatorException("Failed to load straylight correction auxdata:\n" + e.getMessage());
+		}
         createTargetProduct();
     }
 
@@ -120,9 +142,50 @@ public class CloudTopPressureOp extends MerisBasisOp {
         }
     }
 
+/**
+     * This method reads the straylight correction coefficients (RR only!)
+     *
+     * @throws IOException
+     */
+    private void readStraylightCoeff() throws IOException {
+
+        final InputStream inputStream = CloudTopPressureOp.class.getResourceAsStream(STRAYLIGHT_COEFF_FILE_NAME);
+
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+        for (int i = 0; i < straylightCoefficients.length; i++) {
+            String line = bufferedReader.readLine();
+            line = line.trim();
+            straylightCoefficients[i] = Float.parseFloat(line);
+        }
+        inputStream.close();
+    }
+
+    /**
+     * This method reads the straylight correction wavelengths (RR only!)
+     *
+     * @throws IOException
+     */
+    private void readStraylightCorrWavelengths() throws IOException {
+
+        final InputStream inputStream = CloudTopPressureOp.class.getResourceAsStream(STRAYLIGHT_CORR_WAVELENGTH_FILE_NAME);
+
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+        for (int i = 0; i < straylightCorrWavelengths.length; i++) {
+            String line = bufferedReader.readLine();
+            line = line.trim();
+            straylightCorrWavelengths[i] = Float.parseFloat(line);
+        }
+        inputStream.close();
+    }
+    
+
     private void createTargetProduct() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "MER_CTP", "MER_L2");
-        targetProduct.addBand("cloud_top_press", ProductData.TYPE_FLOAT32);
+        if (straylightCorr) {
+            targetProduct.addBand("cloud_top_press_straylight_corr", ProductData.TYPE_FLOAT32);
+        } else {
+            targetProduct.addBand("cloud_top_press", ProductData.TYPE_FLOAT32);
+        }
 
         BandArithmeticOp bandArithmeticOp = 
             BandArithmeticOp.createBooleanExpressionBand(INVALID_EXPRESSION, sourceProduct);
@@ -179,28 +242,38 @@ public class CloudTopPressureOp extends MerisBasisOp {
 					} else {
 						double szaRad = sza.getSampleFloat(x, y) * MathUtils.DTOR;
 						double vzaRad = vza.getSampleFloat(x, y) * MathUtils.DTOR;
+
+                        double stray = 0.0;
+                        double lambda = auxData.central_wavelength[BB760][detector.getSampleInt(x, y)];
+						if (straylightCorr) {
+							// apply FUB straylight correction...
+							stray = straylightCoefficients[detector.getSampleInt(x, y)] * toar10.getSampleDouble(x, y);
+							lambda = straylightCorrWavelengths[detector.getSampleInt(x, y)];
+						}
+
+						final double toar11XY_corrected = toar11.getSampleDouble(x, y) + stray;
 						
 						if (l1bFlags.getSampleBit(x, y, Constants.L1_F_LAND)) {
 							nnInLand[0] = computeSurfAlbedo(lat.getSampleFloat(x, y), lon.getSampleFloat(x, y)); // albedo
 							nnInLand[1] = toar10.getSampleDouble(x, y);
-							nnInLand[2] = toar11.getSampleDouble(x, y)
+							nnInLand[2] = toar11XY_corrected
 									/ toar10.getSampleDouble(x, y);
 							nnInLand[3] = Math.cos(szaRad);
 							nnInLand[4] = Math.cos(vzaRad);
 							nnInLand[5] = Math.sin(vzaRad)
 									* Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
-							nnInLand[6] = auxData.central_wavelength[BB760][detector.getSampleInt(x, y)];
+							nnInLand[6] = lambda;
 
 							neuralNetLand.process(nnInLand, nnOut);
 						} else {
 							nnInWater[0] = toar10.getSampleDouble(x, y);
-							nnInWater[1] = toar11.getSampleDouble(x, y)
+							nnInWater[1] = toar11XY_corrected
 									/ toar10.getSampleDouble(x, y);
 							nnInWater[2] = Math.cos(szaRad);
 							nnInWater[3] = Math.cos(vzaRad);
 							nnInWater[4] = Math.sin(vzaRad)
 									* Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
-							nnInWater[5] = auxData.central_wavelength[BB760][detector.getSampleInt(x, y)];
+							nnInWater[5] = lambda;
 
 							neuralNetWater.process(nnInWater, nnOut);
 						}
@@ -236,7 +309,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(CloudTopPressureOp.class, "Meris.CloudTopPressureOp");
+            super(CloudTopPressureOp.class);
         }
     }
 }
