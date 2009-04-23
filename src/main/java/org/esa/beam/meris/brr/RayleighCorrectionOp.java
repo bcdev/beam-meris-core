@@ -52,6 +52,7 @@ import com.bc.ceres.core.ProgressMonitor;
 public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     public static final String BRR_BAND_PREFIX = "brr";
+    public static final String RAYLEIGH_REFL_BAND_PREFIX = "rayleigh_refl";
     public static final String RAY_CORR_FLAGS = "ray_corr_flags";
 
     protected L2AuxData auxData;
@@ -59,6 +60,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     
     private Band isLandBand;
     private Band[] brrBands;
+    private Band[] rayleighReflBands;
     private Band flagBand;
     
     private Band[] transRvBands;
@@ -72,12 +74,16 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     private Product gascorProduct;
     @SourceProduct(alias="land")
     private Product landProduct;
+    @SourceProduct(alias="cloud", optional=true)
+    private Product cloudProduct;
     @TargetProduct
     private Product targetProduct;
     @Parameter
     boolean correctWater = false;
     @Parameter
     boolean exportRayCoeffs = false;
+    @Parameter
+    boolean exportRhoR = false;
 	
     
     @Override
@@ -95,6 +101,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     	targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
     	brrBands = addBandGroup(BRR_BAND_PREFIX);
+        rayleighReflBands = addBandGroup(RAYLEIGH_REFL_BAND_PREFIX);
 
         flagBand = targetProduct.addBand(RAY_CORR_FLAGS, ProductData.TYPE_INT16);
         FlagCoding flagCoding = createFlagCoding(brrBands.length);
@@ -154,7 +161,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
             Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm);
             Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle, pm);
             Tile ecmwfPressure = getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle, pm);
-			
+
             Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i = 0; i < rhoNg.length; i++) {
 			    if (i == bb11 || i == bb15) {
@@ -175,6 +182,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 				sphAlbRData = getTargetTileGroup(sphAlbRBands, targetTiles);
             }
             Tile[] brr = getTargetTileGroup(brrBands, targetTiles);
+            Tile[] rayleigh_refl = getTargetTileGroup(rayleighReflBands, targetTiles);
             Tile brrFlags = targetTiles.get(flagBand);
             
             boolean[][] do_corr = new boolean[SUBWIN_HEIGHT][SUBWIN_WIDTH];
@@ -227,17 +235,29 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					    /*
 					    * 2. Rayleigh corrections (DPM section 7.3.3.3.2, step 2.6.15)
 					    */
-					    final double press = HelperFunctions.correctEcmwfPressure(ecmwfPressure.getSampleFloat(x, y),
+					    double press = HelperFunctions.correctEcmwfPressure(ecmwfPressure.getSampleFloat(x, y),
 					                                                              altitude.getSampleFloat(x, y), 
 					                                                              auxData.press_scale_height); /* DPM #2.6.15.1-3 */
 					    final double airMass = HelperFunctions.calculateAirMassMusMuv(muv, mus);
-					
+
+                        /* correct pressure in presence of clouds */
+                        if (cloudProduct != null) {
+                            Tile surfacePressure = getSourceTile(cloudProduct.getBand(CloudClassificationOp.PRESSURE_SURFACE), rectangle, pm);
+                            Tile cloudTopPressure = getSourceTile(cloudProduct.getBand(CloudClassificationOp.PRESSURE_CTP), rectangle, pm);
+                            Tile cloudFlags = getSourceTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle, pm);
+                            final boolean isCloud = cloudFlags.getSampleBit(x, y, CloudClassificationOp.F_CLOUD);
+                            if (isCloud) {
+                                final double pressureCorrectionCloud = cloudTopPressure.getSampleDouble(x, y) / surfacePressure.getSampleDouble(x, y);
+                                press = press * pressureCorrectionCloud;
+                            }
+                        }
+
 					    /* Rayleigh phase function Fourier decomposition */
 					    rayleighCorrection.phase_rayleigh(mus, muv, sins, sinv, phaseR);
 					
 					    /* Rayleigh optical thickness */
 					    rayleighCorrection.tau_rayleigh(press, tauR);
-					
+
 					    /* Rayleigh reflectance*/
 					    rayleighCorrection.ref_rayleigh(deltaAzimuth, sza.getSampleFloat(x, y), vza.getSampleFloat(x, y), mus, muv,
 					                                    airMass, phaseR, tauR, rhoR);
@@ -256,7 +276,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					                /* Rayleigh correction for each pixel */
 					                rayleighCorrection.corr_rayleigh(rhoR, sphAlbR, transRs, transRv,
 					                                                 rhoNg, brr, ix, iy); /*  (2.6.15.4) */
-					
+
 					                /* flag negative Rayleigh-corrected reflectance */
 					                for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
 					                    switch (bandId) {
@@ -273,7 +293,8 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					                        case bb775:
 					                        case bb865:
 					                        case bb890:
-					                            if (brr[bandId].getSampleFloat(ix, iy) <= 0.) {
+					                            rayleigh_refl[bandId].setSample(ix, iy, rhoR[bandId]);
+                                                if (brr[bandId].getSampleFloat(ix, iy) <= 0.) {
 					                                /* set annotation flag for reflectance product - v4.2 */
 					                                brrFlags.setSample(ix, iy, (bandId <= bb760 ? bandId : bandId - 1), true);
 					                            }

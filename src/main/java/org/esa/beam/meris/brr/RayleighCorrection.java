@@ -149,7 +149,7 @@ public class RayleighCorrection implements Constants {
      */
     public void tau_rayleigh(double press, double[] tauRayl) {
         double ratio = press / auxdata.Pstd;
-
+           
         for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
             switch (bandId) {
                 /* bands to be corrected */

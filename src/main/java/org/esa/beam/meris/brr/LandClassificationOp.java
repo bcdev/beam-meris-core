@@ -109,7 +109,10 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 			Tile windu = getSourceTile(l1bProduct.getTiePointGrid("zonal_wind"), rectangle, pm);
 			Tile windv = getSourceTile(l1bProduct.getTiePointGrid("merid_wind"), rectangle, pm);
 			Tile l1Flags = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle, pm);
-			
+			Tile rho1 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_1_BAND_NAME), rectangle, pm);
+            Tile rho13 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_13_BAND_NAME), rectangle, pm);
+			Tile rho14 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_14_BAND_NAME), rectangle, pm);
+
 			Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i = 0; i < rhoNg.length; i++) {
 			    rhoNg[i] = getSourceTile(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle, pm);
@@ -176,7 +179,19 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 								a_thresh = auxData.alpha_thresh[1];
 								rThresh = r13thresh_val;
 							}
-							is_land = island(rThresh, rhoNg, ix, iy, b_thresh, a_thresh);
+
+                            is_land = island(rThresh, rhoNg, ix, iy, b_thresh, a_thresh);
+
+                            // consider sea ice criterion, define mdsi threshold, define band1 threshold
+                            // todo: looks somewhat strange - a lot of water seems to be classfied as water with this - check!!
+                            final double mdsi = (rho13.getSampleDouble(x,y) - rho14.getSampleDouble(x,y))/
+                                                           (rho13.getSampleDouble(x,y) + rho14.getSampleDouble(x,y));
+                            final double mdsiThreshold = 0.01;
+                            final double band1Threshold = 0.2;
+//                            is_land = island(rThresh, rhoNg, ix, iy, b_thresh, a_thresh) ||
+//                                    mdsi > mdsiThreshold;
+//                                    || mdsi > band1Threshold;
+
 							/* the is_land flag is available in the output product as F_ISLAND */
 							targetTile.setSample(ix, iy, F_ISLAND, is_land);
 							
