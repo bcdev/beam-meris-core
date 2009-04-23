@@ -32,6 +32,7 @@ public class DpmConfig {
     private static final String SYMBOLIC_NAME = "beam-meris-l2auxdata";
     private static final String AUXDATA_DIRNAME = "meris_l2";
     private static final String MERIS_L2_CONF = "meris_l2_config.xml";
+//    private static final String MERIS_L2_CONF = "meris_l2_config_new.xml";
     
     private Element _rootElement;
     private File auxdataTargetDir;
