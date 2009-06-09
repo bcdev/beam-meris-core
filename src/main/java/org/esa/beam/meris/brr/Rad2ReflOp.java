@@ -44,7 +44,7 @@ import com.bc.ceres.core.ProgressMonitor;
 @OperatorMetadata(alias = "Meris.Rad2Refl",
         version = "1.0",
         internal = true,
-        authors = "Marco Zühlke",
+        authors = "Marco ZÃ¼hlke",
         copyright = "(c) 2007 by Brockmann Consult",
         description = "Converts radiances into reflectances.")
 public class Rad2ReflOp extends MerisBasisOp implements Constants {

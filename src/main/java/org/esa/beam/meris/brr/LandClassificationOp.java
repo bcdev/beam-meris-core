@@ -44,7 +44,7 @@ import com.bc.ceres.core.ProgressMonitor;
 @OperatorMetadata(alias = "Meris.LandClassification",
         version = "1.0",
         internal = true,
-        authors = "Marco Zühlke",
+        authors = "Marco ZÃ¼hlke",
         copyright = "(c) 2007 by Brockmann Consult",
         description = "MERIS L2 land/water reclassification.")
 public class LandClassificationOp extends MerisBasisOp implements Constants {

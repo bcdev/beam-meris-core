@@ -16,8 +16,7 @@
  */
 package org.esa.beam.meris.brr;
 
-import java.awt.Rectangle;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -36,18 +35,17 @@ import org.esa.beam.meris.l2auxdata.DpmConfigException;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.BitSetter;
-import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
 
 
 @OperatorMetadata(alias = "Meris.CloudClassification",
         version = "1.0",
         internal = true,
-        authors = "Marco Zühlke",
+        authors = "Marco ZÃ¼hlke",
         copyright = "(c) 2007 by Brockmann Consult",
         description = "MERIS L2 cloud classification.")
 public class CloudClassificationOp extends MerisBasisOp implements Constants {
