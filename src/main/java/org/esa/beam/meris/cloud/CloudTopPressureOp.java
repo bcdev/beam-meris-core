@@ -62,7 +62,7 @@ import com.bc.jnn.JnnNet;
 @OperatorMetadata(alias = "Meris.CloudTopPressureOp",
         version = "1.0",
         internal = true,
-        authors = "Marco Zühlke",
+        authors = "Marco ZÃ¼hlke",
         copyright = "(c) 2007-2009 by Brockmann Consult",
         description = "Computes cloud top pressure with FUB NN.")
 public class CloudTopPressureOp extends MerisBasisOp {

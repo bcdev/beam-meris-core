@@ -38,7 +38,7 @@ public final class SdrAlgorithm {
      * @param ada        azimuth difference [degree]
      * @param aot470     (MODIS) aerosol optical thickness at 470 nm [dimless]
      * @param aot660     (MODIS) aerosol optical thickness at 660 nm [dimless]
-     * @param ang        (MODIS) angström coefficient [dimless]
+     * @param ang        (MODIS) angstroem coefficient [dimless]
      * @return the surface directional reflectance [dimless]
      */
     public double computeSdr(double rhoNorm,
@@ -81,7 +81,7 @@ public final class SdrAlgorithm {
      * inputVector[5] = z: cos(vza) [dimless] <br/>
      * inputVector[6] = aot470: MODIS aerosol optical thickness at 470 nm [dimless]<br/>
      * inputVector[7] = aot660: MODIS aerosol optical thickness at 660 nm [dimless] <br/>
-     * inputVector[8] = ang470d660: MODIS angström coefficient aot470 / aot660 [dimless] <br/>
+     * inputVector[8] = ang470d660: MODIS angstroem coefficient aot470 / aot660 [dimless] <br/>
      * </p>
      *
      * @param inputVector  the input vector as a <code>double[9]</code> containing the 9 elements described above

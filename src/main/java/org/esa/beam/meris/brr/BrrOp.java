@@ -37,7 +37,7 @@ import com.bc.ceres.core.ProgressMonitor;
 
 @OperatorMetadata(alias = "Meris.Brr",
         version = "1.0",
-        authors = "Marco Zühlke",
+        authors = "Marco ZÃ¼hlke",
         copyright = "(c) 2007 by Brockmann Consult",
         description = "Compute the BRR of a MERIS L1b product.")
 public class BrrOp extends MerisBasisOp {
