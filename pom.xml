@@ -8,7 +8,7 @@
     <name>BEAM MERIS BRR Implementation</name>
     <groupId>org.esa.beam</groupId>
     <artifactId>beam-meris-brr</artifactId>
-    <version>2.0.2</version>
+    <version>2.0.3-SNAPSHOT</version>
 
     <packaging>jar</packaging>
 
