@@ -34,15 +34,43 @@
             <version>2.3</version>
         </dependency>
     </dependencies>
-
-    <distributionManagement>
-        <repository>
-            <id>bc-public</id>
-            <name>Public Maven Repository at Brockmann-Consult</name>
-            <url></url>
-        </repository>
-    </distributionManagement>
     
+	<repositories>
+        <repository>
+            <id>bc-mvn-repo-http</id>
+            <name>Public Maven Repository at Brockmann Consult</name>
+            <url>http://www.brockmann-consult.de/mvn/os</url>
+            <releases>
+                <enabled>true</enabled>
+                <checksumPolicy>warn</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <checksumPolicy>warn</checksumPolicy>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>gt-primary</id>
+            <name>Primary GeoTools Maven Repository</name>
+            <url>http://maven.geotools.fr/repository</url>
+        </repository>
+    </repositories>
+	
+	<distributionManagement>
+        <repository>
+            <id>bc-mvn-repo</id>
+            <name>Public Maven Repository at Brockmann Consult</name>
+            <url>scp://apache.bc.local/bc-mvn-repo/os</url>
+			<uniqueVersion>false</uniqueVersion>
+        </repository>
+        <snapshotRepository>
+            <id>bc-mvn-repo</id>
+            <name>Public Maven Repository at Brockmann Consult</name>
+            <url>scp://apache.bc.local/bc-mvn-repo/os</url>
+			<uniqueVersion>false</uniqueVersion>
+        </snapshotRepository>
+    </distributionManagement>
+	
     <!--
     In version 3 of Maven the sourceEncoding property will be embedded in the
     build tag. For now the convention is to that it as property.
