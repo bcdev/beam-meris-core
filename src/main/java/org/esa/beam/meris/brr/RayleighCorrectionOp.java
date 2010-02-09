@@ -31,7 +31,7 @@ import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
+import org.esa.beam.framework.gpf.operators.common.BandMathOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
@@ -114,8 +114,8 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         	tauRBands = addBandGroup("tauR");
 	        sphAlbRBands = addBandGroup("sphAlbR");
 		}
-        BandArithmeticOp bandArithmeticOp = 
-            BandArithmeticOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
+        BandMathOp bandArithmeticOp =
+            BandMathOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
         isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
         if (l1bProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());
@@ -131,7 +131,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
             final Band inBand = l1bProduct.getBandAt(i);
 
             bands[i] = targetProduct.addBand(prefix + "_" + (i + 1), ProductData.TYPE_FLOAT32);
-            ProductUtils.copySpectralAttributes(inBand, bands[i]);
+            ProductUtils.copySpectralBandProperties(inBand, bands[i]);
             bands[i].setNoDataValueUsed(true);
             bands[i].setNoDataValue(BAD_VALUE);
         }

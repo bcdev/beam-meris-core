@@ -16,28 +16,25 @@
  */
 package org.esa.beam.meris.brr;
 
-import java.awt.Rectangle;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
+import org.esa.beam.framework.gpf.operators.common.BandMathOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.ProductUtils;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
+import java.util.Map;
 
 
 /**
@@ -80,12 +77,12 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
             Band inBand = gascorProduct.getBandAt(i);
 
             rhoCorectedBands[i] = targetProduct.addBand(inBand.getName(), ProductData.TYPE_FLOAT32);
-            ProductUtils.copySpectralAttributes(inBand, rhoCorectedBands[i]);
+            ProductUtils.copySpectralBandProperties(inBand, rhoCorectedBands[i]);
             rhoCorectedBands[i].setNoDataValueUsed(true);
             rhoCorectedBands[i].setNoDataValue(BAD_VALUE);
         }
-        BandArithmeticOp bandArithmeticOp = 
-            BandArithmeticOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
+        BandMathOp bandArithmeticOp = 
+            BandMathOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
         isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
         if (l1bProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());

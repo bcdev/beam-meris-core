@@ -16,9 +16,7 @@
  */
 package org.esa.beam.meris.brr;
 
-import java.awt.Rectangle;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -38,7 +36,8 @@ import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.ProductUtils;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
+import java.util.Map;
 
 
 @OperatorMetadata(alias = "Meris.GaseousCorrection",
@@ -96,15 +95,15 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     	rhoNgBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
         for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
             rhoNgBands[i] = targetProduct.addBand(RHO_NG_BAND_PREFIX + "_" + (i + 1), ProductData.TYPE_FLOAT32);
-            ProductUtils.copySpectralAttributes(rhoToaProduct.getBandAt(i), rhoNgBands[i]);
+            ProductUtils.copySpectralBandProperties(rhoToaProduct.getBandAt(i), rhoNgBands[i]);
             rhoNgBands[i].setNoDataValueUsed(true);
             rhoNgBands[i].setNoDataValue(BAD_VALUE);
         }
 
         flagBand = targetProduct.addBand(GAS_FLAGS, ProductData.TYPE_INT8);
         FlagCoding flagCoding = createFlagCoding();
-        flagBand.setFlagCoding(flagCoding);
-        targetProduct.addFlagCoding(flagCoding);
+        flagBand.setSampleCoding(flagCoding);
+        targetProduct.getFlagCodingGroup().add(flagCoding);
         
         if (exportTg) {
             tgBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
@@ -191,22 +190,22 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 					
 					if (correctPixel) {
 					    /* v4.2 average TOA radiance */
-					    double etaAverageForWater = 0.;
-					    double x2AverageForWater = 0.;
+					    double etaAverageForWater = 0.0;
+					    double x2AverageForWater = 0.0;
 					    boolean iOrinp0 = false;
 					    if (correctWaterPixel) {
-					        if ((dSumrho[bb753] > 0.) && (dSumrho[bb760] > 0.)) {
+					        if ((dSumrho[bb753] > 0.0) && (dSumrho[bb760] > 0.0)) {
 					            etaAverageForWater = dSumrho[bb760] / dSumrho[bb753];
 					        } else {
 					            iOrinp0 = true;
-					            etaAverageForWater = 1.;
+					            etaAverageForWater = 1.0;
 					        }
 					
-					        if ((dSumrho[bb890] > 0.) && (dSumrho[bb900] > 0.)) {
+					        if ((dSumrho[bb890] > 0.0) && (dSumrho[bb900] > 0.0)) {
 					            x2AverageForWater = dSumrho[bb900] / dSumrho[bb890];
 					        } else {
 					            iOrinp0 = true;
-					            x2AverageForWater = 1.;
+					            x2AverageForWater = 1.0;
 					        }
 					    }
 					
@@ -231,17 +230,17 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 					                /* gaseous transmittance gasCor : writes rho-ag field - v4.2 */
 					                /* do band ratio for land pixels with full exception handling */
 					                if (l1Flags.getSampleBit(ix, iy, L1_F_LAND)) {
-					                    if ((rhoToa[bb753].getSampleFloat(ix, iy) > 0.) && (rhoToa[bb760].getSampleFloat(ix, iy) > 0.)) {
+					                    if ((rhoToa[bb753].getSampleFloat(ix, iy) > 0.0) && (rhoToa[bb760].getSampleFloat(ix, iy) > 0.0)) {
 					                        eta = rhoToa[bb760].getSampleFloat(ix, iy) / rhoToa[bb753].getSampleFloat(ix, iy);    //o2
 					                    } else {
-					                        eta = 1.;
+					                        eta = 1.0;
 					                        gasFlags.setSample(ix, iy, F_ORINP0, true);
 					                    }
 					                    /* DPM #2.6.12.3-1 */
-					                    if ((rhoToa[bb890].getSampleFloat(ix, iy) > 0.) && (rhoToa[bb900].getSampleFloat(ix, iy) > 0.)) {
+					                    if ((rhoToa[bb890].getSampleFloat(ix, iy) > 0.0) && (rhoToa[bb900].getSampleFloat(ix, iy) > 0.0)) {
 					                        x2 = rhoToa[bb900].getSampleFloat(ix, iy) / rhoToa[bb890].getSampleFloat(ix, iy);   //h2o
 					                    } else {
-					                        x2 = 1.;
+					                        x2 = 1.0;
 					                        gasFlags.setSample(ix, iy, F_ORINP0, true);
 					                    }
 					                } else { /* water pixels */
