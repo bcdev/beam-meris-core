@@ -16,8 +16,6 @@
  */
 package org.esa.beam.meris.brr;
 
-import org.esa.beam.meris.brr.BrrOp;
-
 import junit.framework.TestCase;
 
 /**

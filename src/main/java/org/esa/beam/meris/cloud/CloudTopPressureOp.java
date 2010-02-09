@@ -16,13 +16,11 @@
  */
 package org.esa.beam.meris.cloud;
 
-import java.awt.Rectangle;
-import java.io.*;
-import java.net.URL;
-import java.util.Calendar;
-
-import javax.sound.sampled.SourceDataLine;
-
+import com.bc.ceres.core.NullProgressMonitor;
+import com.bc.ceres.core.ProgressMonitor;
+import com.bc.jnn.Jnn;
+import com.bc.jnn.JnnException;
+import com.bc.jnn.JnnNet;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
@@ -30,28 +28,31 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
+import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.annotations.Parameter;
-import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
-import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
+import org.esa.beam.framework.gpf.operators.common.BandMathOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.AlbedomapConstants;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
-import org.esa.beam.util.Debug;
 import org.esa.beam.util.ResourceInstaller;
 import org.esa.beam.util.SystemUtils;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
 
-import com.bc.ceres.core.NullProgressMonitor;
-import com.bc.ceres.core.ProgressMonitor;
-import com.bc.jnn.Jnn;
-import com.bc.jnn.JnnException;
-import com.bc.jnn.JnnNet;
+import java.awt.Rectangle;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Calendar;
 
 /**
  * Created by marcoz.
@@ -187,8 +188,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
             targetProduct.addBand("cloud_top_press", ProductData.TYPE_FLOAT32);
         }
 
-        BandArithmeticOp bandArithmeticOp = 
-            BandArithmeticOp.createBooleanExpressionBand(INVALID_EXPRESSION, sourceProduct);
+        BandMathOp bandArithmeticOp = BandMathOp.createBooleanExpressionBand(INVALID_EXPRESSION, sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
     }
     

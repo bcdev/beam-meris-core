@@ -11,9 +11,6 @@ import junit.framework.TestCase;
 import java.io.File;
 import java.text.DateFormat;
 
-import org.esa.beam.meris.aerosol.ClimFileFactory;
-import org.esa.beam.meris.aerosol.TemporalFile;
-
 public class ClimFileFactoryTest extends TestCase {
 
     public void testCreateTemporalFile() {

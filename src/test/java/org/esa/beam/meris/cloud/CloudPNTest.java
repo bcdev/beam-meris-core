@@ -1,8 +1,6 @@
 package org.esa.beam.meris.cloud;
 
 import junit.framework.TestCase;
-
-import org.esa.beam.meris.cloud.CloudProbabilityOp;
 import org.esa.beam.util.math.MathUtils;
 
 public class CloudPNTest extends TestCase {

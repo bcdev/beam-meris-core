@@ -16,11 +16,7 @@
  */
 package org.esa.beam.meris.cloud;
 
-import java.awt.Rectangle;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -33,10 +29,13 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
+import org.esa.beam.framework.gpf.operators.common.BandMathOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class BlueBandOp extends MerisBasisOp {
@@ -121,8 +120,8 @@ public class BlueBandOp extends MerisBasisOp {
     
     private Band createBooleanBandForExpression(String expression) throws OperatorException {
         Map<String, Object> parameters = new HashMap<String, Object>();
-        BandArithmeticOp.BandDescriptor[] bandDescriptors = new BandArithmeticOp.BandDescriptor[1];
-        BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+        BandMathOp.BandDescriptor[] bandDescriptors = new BandMathOp.BandDescriptor[1];
+        BandMathOp.BandDescriptor bandDescriptor = new BandMathOp.BandDescriptor();
         bandDescriptor.name = "bBand";
         bandDescriptor.expression = expression;
         bandDescriptor.type = ProductData.TYPESTRING_INT8;

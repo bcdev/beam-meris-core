@@ -11,9 +11,6 @@ import junit.framework.TestCase;
 import java.io.File;
 import java.text.DateFormat;
 
-import org.esa.beam.meris.aerosol.MOD08FileFactory;
-import org.esa.beam.meris.aerosol.TemporalFile;
-
 public class MOD08FileFactoryTest extends TestCase {
 
     public void testCreateTemporalFile() {

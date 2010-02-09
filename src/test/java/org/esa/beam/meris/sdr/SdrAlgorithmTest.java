@@ -10,8 +10,6 @@ import com.bc.jnn.Jnn;
 import com.bc.jnn.JnnException;
 import com.bc.jnn.JnnNet;
 import junit.framework.TestCase;
-
-import org.esa.beam.meris.sdr.SdrAlgorithm;
 import org.esa.beam.util.io.CsvReader;
 
 import java.io.IOException;

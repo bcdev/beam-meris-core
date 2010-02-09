@@ -29,7 +29,7 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
+import org.esa.beam.framework.gpf.operators.common.BandMathOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 
 import com.bc.ceres.core.ProgressMonitor;
@@ -82,9 +82,9 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
         processFurtherBand.setDescription("process further state");
 
         Map<String, Object> parameters = new HashMap<String, Object>();
-        BandArithmeticOp.BandDescriptor[] bandDescriptions = new BandArithmeticOp.BandDescriptor[EXPRESSIONS.length];
+        BandMathOp.BandDescriptor[] bandDescriptions = new BandMathOp.BandDescriptor[EXPRESSIONS.length];
         for (int i = 0; i < EXPRESSIONS.length; i++) {
-        	BandArithmeticOp.BandDescriptor bandDescriptor = new BandArithmeticOp.BandDescriptor();
+        	BandMathOp.BandDescriptor bandDescriptor = new BandMathOp.BandDescriptor();
 			bandDescriptor.name = "b"+i;
 			bandDescriptor.expression = EXPRESSIONS[i];
 			bandDescriptor.type = ProductData.TYPESTRING_INT8;

@@ -7,8 +7,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.esa.beam.meris.cloud.CentralWavelengthProvider;
-
 /**
  * Created by IntelliJ IDEA.
  * User: marcoz

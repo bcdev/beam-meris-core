@@ -21,8 +21,6 @@ import junit.framework.TestCase;
 import java.io.File;
 import java.net.URL;
 
-import org.esa.beam.meris.cloud.CloudAlgorithm;
-
 /**
  * Created by marcoz.
  *

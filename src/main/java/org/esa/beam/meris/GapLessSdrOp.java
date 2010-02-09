@@ -27,7 +27,7 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandArithmeticOp;
+import org.esa.beam.framework.gpf.operators.common.BandMathOp;
 import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.ProductUtils;
 
@@ -71,8 +71,7 @@ public class GapLessSdrOp extends MerisBasisOp {
                 toarBands.put(targetBand, toarBand);
             }
         }
-        BandArithmeticOp bandArithmeticOp = 
-            BandArithmeticOp.createBooleanExpressionBand("l2_flags_p1.F_INVALID", toarProduct);
+        BandMathOp bandArithmeticOp = BandMathOp.createBooleanExpressionBand("l2_flags_p1.F_INVALID", toarProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
     }
     

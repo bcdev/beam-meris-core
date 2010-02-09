@@ -1,14 +1,10 @@
 package org.esa.beam.meris.sdr;
 
-import java.awt.Color;
-import java.awt.Rectangle;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.Map;
-
+import com.bc.ceres.core.NullProgressMonitor;
+import com.bc.ceres.core.ProgressMonitor;
+import com.bc.jnn.Jnn;
+import com.bc.jnn.JnnException;
+import com.bc.jnn.JnnNet;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.BitmaskDef;
@@ -31,11 +27,14 @@ import org.esa.beam.util.StringUtils;
 import org.esa.beam.util.SystemUtils;
 import org.esa.beam.util.math.MathUtils;
 
-import com.bc.ceres.core.NullProgressMonitor;
-import com.bc.ceres.core.ProgressMonitor;
-import com.bc.jnn.Jnn;
-import com.bc.jnn.JnnException;
-import com.bc.jnn.JnnNet;
+import java.awt.Color;
+import java.awt.Rectangle;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.util.Map;
 
 /**
  * Created by IntelliJ IDEA.
@@ -117,7 +116,7 @@ public class SdrOp extends MerisBasisOp {
                     "Surface directional reflectance at " + band.getSpectralWavelength() + " nm");
             sdrOutputBand.setUnit("1");
             sdrOutputBand.setScalingFactor(SCALING_FACTOR);
-            ProductUtils.copySpectralAttributes(band, sdrOutputBand);
+            ProductUtils.copySpectralBandProperties(band, sdrOutputBand);
             sdrOutputBand.setNoDataValueUsed(true);
             sdrOutputBand.setGeophysicalNoDataValue(-1);
             sdrBands[i] = sdrOutputBand;

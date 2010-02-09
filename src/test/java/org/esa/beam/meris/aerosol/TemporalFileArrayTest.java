@@ -10,10 +10,6 @@ import junit.framework.TestCase;
 
 import java.util.Calendar;
 
-import org.esa.beam.meris.aerosol.MOD08FileFactory;
-import org.esa.beam.meris.aerosol.TemporalFile;
-import org.esa.beam.meris.aerosol.TemporalFileArray;
-
 public class TemporalFileArrayTest extends TestCase {
 
     public void testTemporalFilesSorted() {
@@ -24,28 +20,28 @@ public class TemporalFileArrayTest extends TestCase {
         calendar.clear();
         calendar.set(2003, 0, 1);
         sortedFiles = fileArray.getTemporalFilesSorted(calendar.getTime(), 2);
-        assertEquals(sortedFiles.length, 2);
+        assertEquals(2, sortedFiles.length);
         assertEquals("MOD08_E3.A2002361.004.2003005220416.hdf_FUB.hdf", sortedFiles[0].toString());
         assertEquals("MOD08_E3.A2003001.004.2003012031014.hdf_FUB.hdf", sortedFiles[1].toString());
 
         calendar.clear();
         calendar.set(2003, 6, 23, 0, 0, 00);
         sortedFiles = fileArray.getTemporalFilesSorted(calendar.getTime(), 4);
-        assertEquals(sortedFiles.length, 4);
+        assertEquals(4, sortedFiles.length);
         assertEquals("MOD08_E3.A2003201.004.2003219111946.hdf_FUB.hdf", sortedFiles[0].toString());
         assertEquals("MOD08_E3.A2003193.004.2003220110313.hdf_FUB.hdf", sortedFiles[1].toString());
 
         calendar.clear();
         calendar.set(2003, 6, 24, 0, 0, 00);
         sortedFiles = fileArray.getTemporalFilesSorted(calendar.getTime(), -1);
-        assertEquals(sortedFiles.length, 47);
+        assertEquals(47, sortedFiles.length);
         assertEquals("MOD08_E3.A2003201.004.2003219111946.hdf_FUB.hdf", sortedFiles[0].toString());
         assertEquals("MOD08_E3.A2003209.004.2003234194604.hdf_FUB.hdf", sortedFiles[1].toString());
 
         calendar.clear();
         calendar.set(2003, 6, 24, 0, 0, 01);
         sortedFiles = fileArray.getTemporalFilesSorted(calendar.getTime(), 3);
-        assertEquals(sortedFiles.length, 3);
+        assertEquals(3, sortedFiles.length);
         assertEquals("MOD08_E3.A2003201.004.2003219111946.hdf_FUB.hdf", sortedFiles[0].toString());
         assertEquals("MOD08_E3.A2003209.004.2003234194604.hdf_FUB.hdf", sortedFiles[1].toString());
     }
