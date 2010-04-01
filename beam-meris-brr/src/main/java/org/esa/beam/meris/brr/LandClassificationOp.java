@@ -29,7 +29,7 @@ import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;

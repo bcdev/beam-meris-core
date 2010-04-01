@@ -26,8 +26,8 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandMathOp;
-import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
+import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
@@ -81,8 +81,8 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
             rhoCorectedBands[i].setNoDataValueUsed(true);
             rhoCorectedBands[i].setNoDataValue(BAD_VALUE);
         }
-        BandMathOp bandArithmeticOp = 
-            BandMathOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
+        BandMathsOp bandArithmeticOp =
+            BandMathsOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
         isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
         if (l1bProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());

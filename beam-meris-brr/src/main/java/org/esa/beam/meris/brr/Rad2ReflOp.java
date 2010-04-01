@@ -30,8 +30,8 @@ import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandMathOp;
-import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
+import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
@@ -88,7 +88,7 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
         detectorIndexBand = sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME);
         sunZenihTPG = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
         
-        BandMathOp bandArithmeticOp = BandMathOp.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
+        BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand("l1_flags.INVALID", sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
         
         if (sourceProduct.getPreferredTileSize() != null) {
