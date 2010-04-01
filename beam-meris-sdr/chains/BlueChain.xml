@@ -1,0 +1,40 @@
+<graph>
+    <id>Cloud2</id>
+
+    <node>
+        <id>load</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>brr</id>
+        <operator>org.esa.beam.meris.brr.BrrOp$Spi</operator>
+        <sources>
+            <input>load</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>blue</id>
+        <operator>org.esa.beam.meris.cloud.BlueBandOp$Spi</operator>
+        <sources>
+            <toar>brr</toar>
+            <l1b>load</l1b>
+        </sources>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>blue</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

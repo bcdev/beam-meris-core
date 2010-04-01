@@ -1,0 +1,42 @@
+
+<graph>
+  <id>Blue</id>
+
+    <node>
+      <id>l1b</id>
+      <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+      <configuration>
+          <filePath>${inputFile1}</filePath>
+      </configuration>
+    </node>
+    
+    <node>
+      <id>climatology</id>
+      <operator>org.esa.beam.meris.FillBandOp$Spi</operator>
+      <sources>
+        <input>l1b</input>
+      </sources>
+      <configuration>
+        <band>
+          <name>aero_alpha</name>
+          <defaultValue>1.0</defaultValue>
+        </band>
+        <band>
+          <name>aero_opt_thick_443</name>
+          <defaultValue>0.1</defaultValue>
+        </band>
+      </configuration>
+    </node>
+        
+    <node>
+      <id>write</id>
+      <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+      <sources>
+        <input>climatology</input>
+      </sources>
+      <configuration>
+          <filePath>${outputFile1}</filePath>
+      </configuration>
+    </node>
+    
+</graph>

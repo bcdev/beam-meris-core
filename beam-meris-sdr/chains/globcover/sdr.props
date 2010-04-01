@@ -1,0 +1,4 @@
+inputFile1=/fs15/albedomap/gc_test/MER_FRS_1PNUPA20060405_033844_000005092046_00319_21415_3686.N1
+inputFile2=/fs15/albedomap/gc_test/MER_RR__2PQACR20060405_033456_000026252046_00319_21415_0000.dim
+inputFile3=/fs15/albedomap/gc_test/bc_monthly_200507_filled.dim
+outputFile1=/fs15/albedomap/gc_test/sdr_1.dim

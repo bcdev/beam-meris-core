@@ -1,0 +1,258 @@
+<graph>
+    <id>Blue</id>
+
+    <node>
+        <id>l1b</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>l2</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile2}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>composite</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile3}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>compositeToL1</id>
+        <operator>org.esa.beam.framework.gpf.operators.meris.L3ToL1Op$Spi</operator>
+        <sources>
+            <l1>l1b</l1>
+            <l3>composite</l3>
+        </sources>
+    </node>
+
+    <node>
+        <id>aerosolFilled</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ConditionalFillerOp$Spi</operator>
+        <sources>
+            <lars>l2</lars>
+            <composite>compositeToL1</composite>
+        </sources>
+        <parameters>
+            <flagName>aerosol_fill_flags</flagName>
+            <band>
+                <name>alpha</name>
+                <bandSource>
+                    <key>lars</key>
+                    <band>aero_alpha</band>
+                    <validExp>!l2_flags.PCD_19 AND (l2_flags.LAND OR l2_flags.WATER)</validExp>
+                </bandSource>
+                <bandSource>
+                    <key>composite</key>
+                    <band>aero_alpha</band>
+                    <validExp>aero_alpha != -1</validExp>
+                </bandSource>
+                <defaultValue>1.0</defaultValue>
+            </band>
+            <band>
+                <name>aot_443</name>
+                <bandSource>
+                    <key>lars</key>
+                    <band>aero_opt_thick_443</band>
+                    <validExp>!l2_flags.PCD_19 AND l2_flags.LAND</validExp>
+                </bandSource>
+                <bandSource>
+                    <key>composite</key>
+                    <band>aero_opt_thick_443</band>
+                    <validExp>aero_opt_thick_443 != -1</validExp>
+                </bandSource>
+                <defaultValue>0.1</defaultValue>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>brr</id>
+        <operator>org.esa.beam.meris.brr.BrrOp$Spi</operator>
+        <sources>
+            <input>l1b</input>
+        </sources>
+        <parameters>
+            <outputToar>true</outputToar>
+            <correctWater>true</correctWater>
+        </parameters>
+    </node>
+
+    <node>
+        <id>blue</id>
+        <operator>org.esa.beam.meris.cloud.BlueBandOp$Spi</operator>
+        <sources>
+            <toar>brr</toar>
+            <l1b>l1b</l1b>
+        </sources>
+    </node>
+
+    <node>
+        <id>cloudProb</id>
+        <operator>org.esa.beam.meris.cloud.CloudProbabilityOp$Spi</operator>
+        <sources>
+            <input>l1b</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>combinedCloud</id>
+        <operator>org.esa.beam.meris.cloud.CombinedCloudOp$Spi</operator>
+        <sources>
+            <cloudProb>cloudProb</cloudProb>
+            <blueBand>blue</blueBand>
+        </sources>
+    </node>
+
+    <node>
+        <id>cloudEdge</id>
+        <operator>org.esa.beam.meris.cloud.CloudEdgeOp$Spi</operator>
+        <sources>
+            <input>combinedCloud</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>ctp</id>
+        <operator>org.esa.beam.meris.cloud.CloudTopPressureOp$Spi</operator>
+        <sources>
+            <input>l1b</input>
+        </sources>
+    </node>
+
+
+    <node>
+        <id>cloudShadow</id>
+        <operator>org.esa.beam.meris.cloud.CloudShadowOp$Spi</operator>
+        <sources>
+            <cloud>cloudEdge</cloud>
+            <l1b>l1b</l1b>
+            <ctp>ctp</ctp>
+        </sources>
+    </node>
+
+    <node>
+        <id>mergedFlagsForProcessFurther</id>
+        <operator>Merge</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <brr>brr</brr>
+            <cloud>cloudShadow</cloud>
+        </sources>
+        <parameters>
+            <band>
+                <product>l1b</product>
+                <nameExp>l1_flags</nameExp>
+            </band>
+            <band>
+                <product>brr</product>
+                <nameExp>l2_flags_p1</nameExp>
+            </band>
+            <band>
+                <product>cloud</product>
+                <nameExp>combined_cloud</nameExp>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>processFurther</id>
+        <operator>org.esa.beam.meris.ProcessFurtherStateOp$Spi</operator>
+        <sources>
+            <input>mergedFlagsForProcessFurther</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>sdr</id>
+        <operator>org.esa.beam.meris.sdr.SdrOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <brr>brr</brr>
+            <aerosol>aerosolFilled</aerosol>
+            <cloud>combinedCloud</cloud>
+        </sources>
+        <parameters>
+            <neuralNetFile>fub_aerosol_16.10.2006.nna</neuralNetFile>
+            <cloudFreeExpression>combined_cloud.clear</cloudFreeExpression>
+            <validLandExpression>true</validLandExpression>
+            <aot470Name>aot_443</aot470Name>
+            <angName>alpha</angName>
+        </parameters>
+    </node>
+
+    <node>
+        <id>gaplesssdr</id>
+        <operator>org.esa.beam.meris.GapLessSdrOp$Spi</operator>
+        <sources>
+            <sdr>sdr</sdr>
+            <toar>brr</toar>
+        </sources>
+    </node>
+
+    <node>
+        <id>mergedSDR</id>
+        <operator>Merge</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <brr>brr</brr>
+            <gaplesssdr>gaplesssdr</gaplesssdr>
+            <sdr>sdr</sdr>
+            <cloud>cloudShadow</cloud>
+            <aerosolFilled>aerosolFilled</aerosolFilled>
+            <processFurther>processFurther</processFurther>
+        </sources>
+        <parameters>
+            <productType>MER_L2_SDR</productType>
+            <copyGeoCodingFrom>l1b</copyGeoCodingFrom>
+            <band>
+                <product>gaplesssdr</product>
+                <nameExp>.*</nameExp>
+            </band>
+            <band>
+                <product>sdr</product>
+                <name>sdr_flags</name>
+            </band>
+            <band>
+                <product>l1b</product>
+                <name>l1_flags</name>
+            </band>
+            <band>
+                <product>brr</product>
+                <nameExp>l2_flags.*</nameExp>
+            </band>
+            <band>
+                <product>cloud</product>
+                <name>combined_cloud</name>
+            </band>
+            <band>
+                <product>aerosolFilled</product>
+                <name>aerosol_fill_flags</name>
+            </band>
+            <band>
+                <product>processFurther</product>
+                <name>process_further_state</name>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>mergedSDR</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

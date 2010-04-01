@@ -1,0 +1,52 @@
+<graph>
+    <id>L1L2Merge</id>
+
+    <node>
+        <id>l1b</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>l2</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile2}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>merged</id>
+        <operator>Merge</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <l2>l2</l2>
+        </sources>
+        <parameters>
+            <productType>MER_L2</productType>
+            <copyGeoCodingFrom>l1b</copyGeoCodingFrom>
+            <band>
+                <product>l1b</product>
+                <nameExp>.*</nameExp>
+            </band>
+            <band>
+                <product>l2</product>
+                <nameExp>.*</nameExp>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>merged</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

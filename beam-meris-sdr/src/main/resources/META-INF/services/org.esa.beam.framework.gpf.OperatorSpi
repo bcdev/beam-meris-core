@@ -1,0 +1,14 @@
+org.esa.beam.meris.cloud.BlueBandOp$Spi
+org.esa.beam.meris.cloud.CloudEdgeOp$Spi
+org.esa.beam.meris.cloud.CloudProbabilityOp$Spi
+org.esa.beam.meris.cloud.CombinedCloudOp$Spi
+org.esa.beam.meris.cloud.CloudTopPressureOp$Spi
+org.esa.beam.meris.cloud.CloudShadowOp$Spi
+org.esa.beam.meris.brr.BrrOp$Spi
+org.esa.beam.meris.sdr.SdrOp$Spi
+org.esa.beam.meris.FillAerosolOp$Spi
+org.esa.beam.meris.FillBandOp$Spi
+org.esa.beam.meris.aerosol.AerosolMergerOp$Spi
+org.esa.beam.meris.aerosol.ModisAerosolOp$Spi
+org.esa.beam.meris.GapLessSdrOp$Spi
+org.esa.beam.meris.ProcessFurtherStateOp$Spi

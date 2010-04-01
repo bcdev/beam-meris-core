@@ -1,0 +1,48 @@
+<graph>
+    <id>Brr</id>
+
+    <node>
+        <id>load</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>brr</id>
+        <operator>org.esa.beam.meris.brr.BrrOp$Spi</operator>
+        <sources>
+            <input>load</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>merged</id>
+        <operator>Merge</operator>
+        <sources>
+            <l1b>load</l1b>
+            <brr>brr</brr>
+        </sources>
+        <parameters>
+            <productType>MER_L2_BRR</productType>
+            <copyGeoCodingFrom>l1b</copyGeoCodingFrom>
+            <band>
+                <product>brr</product>
+                <nameExp>.*</nameExp>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>merged</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

@@ -1,0 +1,51 @@
+<graph>
+    <id>aerosolMerger</id>
+
+    <node>
+        <id>l1</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>l2</id>
+        <operator>org.esa.beam.framework.gpf.operators.LoadProductSpi</operator>
+        <parameters>
+            <filePath>${inputFile2}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>aerosol</id>
+        <operator>org.esa.beam.meris.aerosol.ModisAerosolOp$Spi</operator>
+        <sources>
+            <input>l1</input>
+        </sources>
+        <parameters>
+            <auxdataDir>C:\EOData\MOD08</auxdataDir>
+        </parameters>
+    </node>
+
+    <node>
+        <id>aerosolMerger</id>
+        <operator>org.esa.beam.meris.aerosol.AerosolMergerOp$Spi</operator>
+        <sources>
+            <mod08>aerosol</mod08>
+            <l2>l2</l2>
+        </sources>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>aerosolMerger</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

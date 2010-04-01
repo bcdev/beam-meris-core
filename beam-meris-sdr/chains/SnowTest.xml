@@ -1,0 +1,108 @@
+<graph>
+    <id>Blue</id>
+
+    <node>
+        <id>load</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>brr</id>
+        <operator>org.esa.beam.meris.brr.BrrOp$Spi</operator>
+        <parameters>
+            <outputToar>true</outputToar>
+        </parameters>
+        <sources>
+            <input>load</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>blue</id>
+        <operator>org.esa.beam.meris.cloud.BlueBandOp$Spi</operator>
+        <sources>
+            <toar>brr</toar>
+            <l1b>load</l1b>
+        </sources>
+    </node>
+
+    <node>
+        <id>cloudProb</id>
+        <operator>org.esa.beam.meris.cloud.CloudProbabilityOp$Spi</operator>
+        <sources>
+            <input>load</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>combinedCloud</id>
+        <operator>org.esa.beam.meris.cloud.CombinedCloudOp$Spi</operator>
+        <sources>
+            <cloudProb>cloudProb</cloudProb>
+            <blueBand>blue</blueBand>
+        </sources>
+    </node>
+    
+    <node>
+        <id>extra</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.BandArithmeticOp$Spi</operator>
+        <sources>            
+            <brr>brr</brr>            
+            <l1b>load</l1b>           
+        </sources>
+        <configuration>                
+                <bandDescriptor>
+            		<name>snowIndex</name>
+            		<expression>($brr.toar_14 - $brr.toar_13) / ($brr.toar_14 + $brr.toar_13)</expression>
+            		<type>float32</type>
+                </bandDescriptor>
+        </configuration>
+    </node>    
+
+    <node>
+        <id>merged</id>
+        <operator>Merge</operator>
+        <sources>
+            <l1b>load</l1b>
+            <brr>brr</brr>
+            <blue>blue</blue>
+            <combinedCloud>combinedCloud</combinedCloud>
+            <extra>extra</extra>
+        </sources>
+        <parameters>
+            <productType>MER_L2_SDR</productType>
+            <copyGeoCodingFrom>l1b</copyGeoCodingFrom>
+            <band>
+                <product>brr</product>
+                <nameExp>.*</nameExp>
+            </band>
+            <band>
+                <product>blue</product>
+                <nameExp>.*</nameExp>
+            </band>
+            <band>
+                <product>combinedCloud</product>
+                <nameExp>.*</nameExp>
+            </band>
+            <band>
+                <product>extra</product>
+                <nameExp>.*</nameExp>
+            </band>
+        </parameters>
+     </node>
+     
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>merged</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

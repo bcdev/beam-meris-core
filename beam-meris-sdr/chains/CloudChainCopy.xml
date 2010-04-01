@@ -1,0 +1,56 @@
+<graph>
+    <id>Cloud</id>
+
+    <node>
+        <id>l1b</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>cloudProb</id>
+        <operator>org.esa.beam.meris.cloud.CloudProbabilityOp$Spi</operator>
+        <sources>
+            <input>l1b</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>merged</id>
+        <operator>Merge</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <cloudProb>cloudProb</cloudProb>
+        </sources>
+        <parameters>
+            <productType>MER_L2_Cloud</productType>
+            <copyGeoCodingFrom>l1b</copyGeoCodingFrom>
+            <band>
+                <product>l1b</product>
+                <nameExp>radiance_.*</nameExp>
+            </band>
+            <band>
+                <product>l1b</product>
+                <name>l1_flags</name>
+            </band>
+            <band>
+                <product>cloudProb</product>
+                <nameExp>.*</nameExp>
+            </band>
+        </parameters>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>merged</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>
