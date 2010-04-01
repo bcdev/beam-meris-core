@@ -8,7 +8,7 @@
     <name>BEAM MERIS L2 Auxdata</name>
     <groupId>org.esa.beam</groupId>
     <artifactId>beam-meris-l2auxdata</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.1</version>
 
     <packaging>jar</packaging>
 
@@ -55,7 +55,7 @@
                         </goals>
                         <configuration>
                             <resourceBundles>
-                                <resourceBundle>${project.groupId}:beam-meris-l2auxdata-bundle:1.0-SNAPSHOT</resourceBundle>
+                                <resourceBundle>${project.groupId}:beam-meris-l2auxdata-bundle:1.0</resourceBundle>
                             </resourceBundles>
                             <outputDirectory>${project.build.outputDirectory}</outputDirectory>
                         </configuration>
