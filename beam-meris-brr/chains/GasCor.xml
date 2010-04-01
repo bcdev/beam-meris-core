@@ -1,0 +1,51 @@
+<graph>
+    <id>rad2refl</id>
+
+    <node>
+        <id>l1b</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.ReadProductOp$Spi</operator>
+        <parameters>
+            <filePath>${inputFile1}</filePath>
+        </parameters>
+    </node>
+
+    <node>
+        <id>refl</id>
+        <operator>org.esa.beam.meris.brr.Rad2ReflOp$Spi</operator>
+        <sources>
+            <input>l1b</input>
+        </sources>
+    </node>
+
+    <node>
+        <id>cloudclassif</id>
+        <operator>org.esa.beam.meris.brr.CloudClassificationOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <rhotoa>refl</rhotoa>
+        </sources>
+    </node>
+
+
+    <node>
+        <id>gascor</id>
+        <operator>org.esa.beam.meris.brr.GaseousCorrectionOp$Spi</operator>
+        <sources>
+            <l1b>l1b</l1b>
+            <rhotoa>refl</rhotoa>
+            <cloud>cloudclassif</cloud>
+        </sources>
+    </node>
+
+    <node>
+        <id>write</id>
+        <operator>org.esa.beam.framework.gpf.operators.common.WriteProductOp$Spi</operator>
+        <sources>
+            <input>gascor</input>
+        </sources>
+        <parameters>
+            <filePath>${outputFile1}</filePath>
+        </parameters>
+    </node>
+
+</graph>

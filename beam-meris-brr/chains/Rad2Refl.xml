@@ -1,0 +1,12 @@
+<graph>
+    <id>Rad2Refl</id>
+
+    <node>
+        <id>refl</id>
+        <operator>org.esa.beam.meris.brr.Rad2ReflOp$Spi</operator>
+        <sources>
+            <input>${l1b}</input>
+        </sources>
+    </node>
+
+</graph>
