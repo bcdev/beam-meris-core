@@ -32,8 +32,8 @@ import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandMathOp;
-import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
+import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.AlbedomapConstants;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
@@ -188,7 +188,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
             targetProduct.addBand("cloud_top_press", ProductData.TYPE_FLOAT32);
         }
 
-        BandMathOp bandArithmeticOp = BandMathOp.createBooleanExpressionBand(INVALID_EXPRESSION, sourceProduct);
+        BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand(INVALID_EXPRESSION, sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
     }
     

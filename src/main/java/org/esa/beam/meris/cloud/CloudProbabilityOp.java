@@ -32,8 +32,8 @@ import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandMathOp;
-import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
+import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.AlbedoUtils;
 import org.esa.beam.meris.AlbedomapConstants;
 import org.esa.beam.util.ResourceInstaller;
@@ -154,19 +154,19 @@ public class CloudProbabilityOp extends MerisBasisOp {
     private void createBooleanBands() throws OperatorException {
     	
 		Map<String, Object> parameters = new HashMap<String, Object>();
-		BandMathOp.BandDescriptor[] bandDescriptors = new BandMathOp.BandDescriptor[3];
+		BandMathsOp.BandDescriptor[] bandDescriptors = new BandMathsOp.BandDescriptor[3];
 		
-		bandDescriptors[0] = new BandMathOp.BandDescriptor();
+		bandDescriptors[0] = new BandMathsOp.BandDescriptor();
 		bandDescriptors[0].name = "validLand";
 		bandDescriptors[0].expression = validLandExpression;
 		bandDescriptors[0].type = ProductData.TYPESTRING_INT8;
 		
-		bandDescriptors[1] = new BandMathOp.BandDescriptor();
+		bandDescriptors[1] = new BandMathsOp.BandDescriptor();
 		bandDescriptors[1].name = "validOcean";
 		bandDescriptors[1].expression = validOceanExpression;
 		bandDescriptors[1].type = ProductData.TYPESTRING_INT8;
 		
-		bandDescriptors[2] = new BandMathOp.BandDescriptor();
+		bandDescriptors[2] = new BandMathsOp.BandDescriptor();
 		bandDescriptors[2].name = "land";
 		bandDescriptors[2].expression = "l1_flags.LAND_OCEAN";
 		bandDescriptors[2].type = ProductData.TYPESTRING_INT8;

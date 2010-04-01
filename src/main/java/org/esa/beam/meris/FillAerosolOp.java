@@ -27,8 +27,8 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.common.BandMathOp;
-import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
+import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.RectangleExtender;
 import org.esa.beam.util.StringUtils;
 import org.esa.beam.util.math.MathUtils;
@@ -97,7 +97,7 @@ public class FillAerosolOp extends MerisBasisOp {
         defaultBands = new HashMap<Band, Band>(config.bands.size());
         
         Map<String, Object> parameters = new HashMap<String, Object>();
-        BandMathOp.BandDescriptor[] bandDescriptors = new BandMathOp.BandDescriptor[config.bands.size()];
+        BandMathsOp.BandDescriptor[] bandDescriptors = new BandMathsOp.BandDescriptor[config.bands.size()];
         int i = 0;
         for (BandDesc bandDesc : config.bands) {
             Band srcBand = sourceProduct.getBand(bandDesc.inputBand);
@@ -109,7 +109,7 @@ public class FillAerosolOp extends MerisBasisOp {
             Band defaultBand = defaultProduct.getBand(bandDesc.defaultBand);
             defaultBands.put(targetBand, defaultBand);
             
-            BandMathOp.BandDescriptor bandDescriptor = new BandMathOp.BandDescriptor();
+            BandMathsOp.BandDescriptor bandDescriptor = new BandMathsOp.BandDescriptor();
     		bandDescriptor.name = bandDesc.name;
     		bandDescriptor.expression = bandDesc.validExp;
     		bandDescriptor.type = ProductData.TYPESTRING_INT8;
