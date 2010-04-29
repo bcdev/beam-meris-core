@@ -21,7 +21,7 @@
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-meris-l2auxdata</artifactId>
-            <version>1.1-SNAPSHOT</version>
+            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam</groupId>
@@ -56,20 +56,21 @@
         </repository>
     </repositories>
 	
-	<distributionManagement>
+    <distributionManagement>
         <repository>
-            <id>bc-mvn-repo</id>
+            <id>bc-mvn-repo-public</id>
             <name>Public Maven Repository at Brockmann Consult</name>
-            <url>scp://apache.bc.local/bc-mvn-repo/os</url>
-			<uniqueVersion>false</uniqueVersion>
+            <url>scp://www.brockmann-consult.de/var/www/www.brockmann-consult.de/mvn/os</url>
+            <uniqueVersion>false</uniqueVersion>
         </repository>
         <snapshotRepository>
-            <id>bc-mvn-repo</id>
+            <id>bc-mvn-repo-public</id>
             <name>Public Maven Repository at Brockmann Consult</name>
-            <url>scp://apache.bc.local/bc-mvn-repo/os</url>
-			<uniqueVersion>false</uniqueVersion>
+            <url>scp://www.brockmann-consult.de/var/www/www.brockmann-consult.de/mvn/os</url>
+            <uniqueVersion>false</uniqueVersion>
         </snapshotRepository>
     </distributionManagement>
+
 	
     <!--
     In version 3 of Maven the sourceEncoding property will be embedded in the
