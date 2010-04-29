@@ -16,8 +16,7 @@
  */
 package org.esa.beam.meris.brr;
 
-import java.awt.Rectangle;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -29,7 +28,7 @@ import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.framework.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
@@ -38,7 +37,7 @@ import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
 
 
 @OperatorMetadata(alias = "Meris.LandClassification",
@@ -55,11 +54,14 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
     public static final int F_LOINLD = 1;
     public static final int F_ISLAND = 2;
     public static final int F_LANDCONS = 3;
+    public static final int F_ICE = 4;
 
     private L2AuxData auxData;
 
     @SourceProduct(alias="l1b")
     private Product l1bProduct;
+    @SourceProduct(alias="rhotoa", optional=true)
+    private Product rhoToaProduct;
     @SourceProduct(alias="gascor")
     private Product gasCorProduct;
     @TargetProduct
@@ -93,6 +95,7 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
         flagCoding.addFlag("F_LOINLD", BitSetter.setFlag(0, F_LOINLD), null);
         flagCoding.addFlag("F_ISLAND", BitSetter.setFlag(0, F_ISLAND), null);
         flagCoding.addFlag("F_LANDCONS", BitSetter.setFlag(0, F_LANDCONS), null);
+        flagCoding.addFlag("F_ICE", BitSetter.setFlag(0, F_ICE), null);
         return flagCoding;
     }
 
@@ -113,7 +116,15 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
             Tile rho13 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_13_BAND_NAME), rectangle, pm);
 			Tile rho14 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_14_BAND_NAME), rectangle, pm);
 
-			Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
+            Tile[] rhoToa = null;
+            if (rhoToaProduct != null) {
+                rhoToa = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
+                for (int i1 = 0; i1 < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i1++) {
+                    rhoToa[i1] = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i1 + 1)), rectangle, pm);
+                }
+            }
+
+            Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i = 0; i < rhoNg.length; i++) {
 			    rhoNg[i] = getSourceTile(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle, pm);
 			}
@@ -180,17 +191,16 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 								rThresh = r13thresh_val;
 							}
 
-                            is_land = island(rThresh, rhoNg, ix, iy, b_thresh, a_thresh);
+                            boolean is_ice = false;
+                            if (rhoToaProduct != null) {
+                                /* test if pixel is ice (mdsi criterion, RS 2010/04/01) */
+                                final double mdsi = (rhoToa[12].getSampleDouble(x,y) - rhoToa[13].getSampleDouble(x,y))/
+                                                               (rhoToa[12].getSampleDouble(x,y) + rhoToa[13].getSampleDouble(x,y));
+                                is_ice = (mdsi > 0.01 && l1Flags.getSampleBit(ix, iy, L1_F_BRIGHT));
+                            }
+                            targetTile.setSample(ix, iy, F_ICE, is_ice);
 
-                            // consider sea ice criterion, define mdsi threshold, define band1 threshold
-                            // todo: looks somewhat strange - a lot of water seems to be classfied as water with this - check!!
-                            final double mdsi = (rho13.getSampleDouble(x,y) - rho14.getSampleDouble(x,y))/
-                                                           (rho13.getSampleDouble(x,y) + rho14.getSampleDouble(x,y));
-                            final double mdsiThreshold = 0.01;
-                            final double band1Threshold = 0.2;
-//                            is_land = island(rThresh, rhoNg, ix, iy, b_thresh, a_thresh) ||
-//                                    mdsi > mdsiThreshold;
-//                                    || mdsi > band1Threshold;
+                            is_land = island(rThresh, rhoNg, ix, iy, b_thresh, a_thresh) || is_ice;
 
 							/* the is_land flag is available in the output product as F_ISLAND */
 							targetTile.setSample(ix, iy, F_ISLAND, is_land);
@@ -205,6 +215,8 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 								is_land_consolidated = is_land;
 							}
 							targetTile.setSample(ix, iy, F_LANDCONS, is_land_consolidated);
+
+
 						}
 					}
                 }
@@ -268,7 +280,7 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
     }
 
     /**
-     * Detects inland water. Called by {@link #pixel_classification}.
+     * Detects inland water.
      * Reference: DPM L2 step 2.6.11. Uses<br>
      * {@link L2AuxData#lap_beta_l}
      *
