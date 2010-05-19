@@ -173,8 +173,8 @@ public class CloudProbabilityOp extends MerisBasisOp {
 		
 		parameters.put("targetBands", bandDescriptors);
 
-		Product expProduct = GPF.createProduct("BandArithmetic", parameters, l1bProduct);
-		
+		Product expProduct = GPF.createProduct("BandMaths", parameters, l1bProduct);
+
 		validLandBand = expProduct.getBand("validLand");
 		validOceanBand = expProduct.getBand("validOcean");
 		landBand = expProduct.getBand("land");
