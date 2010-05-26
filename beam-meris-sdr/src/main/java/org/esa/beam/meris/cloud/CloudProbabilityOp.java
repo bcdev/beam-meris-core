@@ -108,7 +108,10 @@ public class CloudProbabilityOp extends MerisBasisOp {
     private String validLandExpression = DEFAULT_VALID_LAND_EXP;
     @Parameter
     private String validOceanExpression = DEFAULT_VALID_OCEAN_EXP;
-	
+
+    private File auxdataTargetDir;
+    private Properties configProperties;
+
 
     @Override
     public void initialize() throws OperatorException {
@@ -184,7 +187,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
         String auxdataSrcPath = "auxdata/cloudprob";
         final String auxdataDestPath = ".beam/" + AlbedomapConstants.SYMBOLIC_NAME +
                 "/" + auxdataSrcPath;
-        File auxdataTargetDir = new File(SystemUtils.getUserHomeDir(), auxdataDestPath);
+        auxdataTargetDir = new File(SystemUtils.getUserHomeDir(), auxdataDestPath);
         URL sourceUrl = ResourceInstaller.getSourceUrl(this.getClass());
 
         ResourceInstaller resourceInstaller = new ResourceInstaller(sourceUrl, auxdataSrcPath, auxdataTargetDir);
@@ -194,13 +197,8 @@ public class CloudProbabilityOp extends MerisBasisOp {
 
         final File configPropFile = new File(auxdataTargetDir, configFile);
         final InputStream propertiesStream = new FileInputStream(configPropFile);
-        Properties configProperties = new Properties();
+        configProperties = new Properties();
         configProperties.load(propertiesStream);
-
-        landAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties
-                .getProperty("land"));
-        oceanAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties
-                .getProperty("ocean"));
 
         pressScaleHeight = Integer.parseInt(configProperties
                 .getProperty(PRESS_SCALE_HEIGHT_KEY));
@@ -272,6 +270,18 @@ public class CloudProbabilityOp extends MerisBasisOp {
 
         final double[] cloudIn = new double[15];
         pm.beginTask("Processing frame...", rectangle.height);
+
+        CloudAlgorithm landAlgo;
+        CloudAlgorithm oceanAlgo;
+        try {
+            landAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties
+                .getProperty("land"));
+            oceanAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties
+                .getProperty("ocean"));
+        } catch (IOException e) {
+            throw new OperatorException("Could not load auxdata", e);
+        }
+
         try {
         	//sources
         	Tile[] radiance = new Tile[radianceBands.length];
