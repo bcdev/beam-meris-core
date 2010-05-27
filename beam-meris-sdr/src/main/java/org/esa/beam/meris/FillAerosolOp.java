@@ -119,7 +119,7 @@ public class FillAerosolOp extends MerisBasisOp {
         }
 		
         parameters.put("targetBands", bandDescriptors);
-        validProduct = GPF.createProduct("BandArithmetic", parameters, sourceProduct);
+        validProduct = GPF.createProduct("BandMaths", parameters, sourceProduct);
 		
 		sourceProductRect = new Rectangle(sourceProduct.getSceneRasterWidth(), sourceProduct.getSceneRasterHeight());
         if (config.frs) {

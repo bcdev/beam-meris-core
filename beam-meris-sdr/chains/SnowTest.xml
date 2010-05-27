@@ -48,7 +48,7 @@
     
     <node>
         <id>extra</id>
-        <operator>org.esa.beam.framework.gpf.operators.common.BandArithmeticOp$Spi</operator>
+        <operator>org.esa.beam.framework.gpf.operators.common.BandMathsOp$Spi</operator>
         <sources>            
             <brr>brr</brr>            
             <l1b>load</l1b>           

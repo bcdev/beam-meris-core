@@ -132,7 +132,7 @@ public class BlueBandOp extends MerisBasisOp {
         products.put(getSourceProductId(l1bProduct), l1bProduct);
         products.put(getSourceProductId(brrProduct), brrProduct);
         
-        Product validLandProduct = GPF.createProduct("BandArithmetic",
+        Product validLandProduct = GPF.createProduct("BandMaths",
                 parameters, products);
         return validLandProduct.getBand("bBand");
     }

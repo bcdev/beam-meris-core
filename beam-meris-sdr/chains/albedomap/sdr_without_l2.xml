@@ -95,7 +95,7 @@
     
     <node>
         <id>sdrMask</id>
-        <operator>org.esa.beam.framework.gpf.operators.common.BandArithmeticOp$Spi</operator>
+        <operator>org.esa.beam.framework.gpf.operators.common.BandMathsOp$Spi</operator>
         <sources>            
             <brr>brr</brr>            
             <cloud>cloudShadow</cloud>
