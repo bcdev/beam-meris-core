@@ -47,8 +47,10 @@ public class RayleighCorrection implements Constants {
                              double mus, double muv, double airMass,
                              double[] phaseRayl, double[] tauRayl, double[] refRayl) {
 
-        FractIndex tsi = lh.ref_rayleigh_i[0];         /* interp coordinates for thetas in LUT scale */
-        FractIndex tvi = lh.ref_rayleigh_i[1];          /* interp coordinates for thetav in LUT scale */
+        LocalHelperVariables lhLocal = new LocalHelperVariables();
+
+        FractIndex tsi = lhLocal.ref_rayleigh_i[0];         /* interp coordinates for thetas in LUT scale */
+        FractIndex tvi = lhLocal.ref_rayleigh_i[1];          /* interp coordinates for thetav in LUT scale */
 
         double mud = Math.cos(RAD * delta_azimuth); /* used for all bands, compute once */
         double mu2d = 2. * mud * mud - 1.;
@@ -62,7 +64,7 @@ public class RayleighCorrection implements Constants {
         for (int is = 0; is < RAYSCATT_NUM_SER; is++) {
             /* DPM #2.1.17-4 to 2.1.17-7 */
             for (int ik = 0; ik < RAYSCATT_NUM_ORD; ik++) {
-                lh.abcd[is][ik] = Interp.interpolate(Rayscatt_coeff_s[ik][is], lh.ref_rayleigh_i);
+                lhLocal.abcd[is][ik] = Interp.interpolate(Rayscatt_coeff_s[ik][is], lhLocal.ref_rayleigh_i);
             }
         }
 
@@ -85,22 +87,22 @@ public class RayleighCorrection implements Constants {
                     double constTerm = (1. - Math.exp(-tauRayl[bandId] * airMass)) / (4. * (mus + muv));
                     for (int is = 0; is < RAYSCATT_NUM_SER; is++) {
                         /* primary scattering reflectance */
-                        lh.rhoRayl[is] = phaseRayl[is] * constTerm; /* DPM #2.1.17-8 CORRECTED */
+                        lhLocal.rhoRayl[is] = phaseRayl[is] * constTerm; /* DPM #2.1.17-8 CORRECTED */
 
                         /* coefficient for multiple scattering correction */
                         double multiScatteringCoeff = 0.;
                         for (int ik = RAYSCATT_NUM_ORD - 1; ik >= 0; ik--) {
-                            multiScatteringCoeff = tauRayl[bandId] * multiScatteringCoeff + lh.abcd[is][ik]; /* DPM #2.1.17.9 */
+                            multiScatteringCoeff = tauRayl[bandId] * multiScatteringCoeff + lhLocal.abcd[is][ik]; /* DPM #2.1.17.9 */
                         }
 
                         /* Fourier component of Rayleigh reflectance */
-                        lh.rhoRayl[is] *= multiScatteringCoeff; /* DPM #2.1.17-10 */
+                        lhLocal.rhoRayl[is] *= multiScatteringCoeff; /* DPM #2.1.17-10 */
                     }
 
                     /* Rayleigh reflectance */
-                    refRayl[bandId] = lh.rhoRayl[0] +
-                            2. * mud * lh.rhoRayl[1] +
-                            2. * mu2d * lh.rhoRayl[2]; /* DPM #2.1.17-11 */
+                    refRayl[bandId] = lhLocal.rhoRayl[0] +
+                            2. * mud * lhLocal.rhoRayl[1] +
+                            2. * mu2d * lhLocal.rhoRayl[2]; /* DPM #2.1.17-11 */
 
                     break;
 
