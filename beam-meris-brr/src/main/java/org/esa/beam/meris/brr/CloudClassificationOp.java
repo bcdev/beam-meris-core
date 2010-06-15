@@ -163,8 +163,10 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         return sd;
     }
 
+    // TODO methis is synchronized becasue the JNBN version shipping with BEAM 4.7 is not thread safe
+    // TODO remove 'synchnorized' statement if this changes
     @Override
-    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
+    public synchronized void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
     	Rectangle rectangle = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height + 1);

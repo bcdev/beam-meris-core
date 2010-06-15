@@ -134,8 +134,10 @@ public class SdrOp extends MerisBasisOp {
         validBand = maskProduct.getBand(validBandName);
     }
 
+    // TODO methis is synchronized becasue the JNBN version shipping with BEAM 4.7 is not thread safe
+    // TODO remove 'synchnorized' statement if this changes
     @Override
-    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public synchronized void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final double[] sdrAlgoInput = new double[9];
         final double[] sdrAlgoOutput = new double[1];
