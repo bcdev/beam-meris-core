@@ -274,10 +274,8 @@ public class CloudProbabilityOp extends MerisBasisOp {
         CloudAlgorithm landAlgo;
         CloudAlgorithm oceanAlgo;
         try {
-            landAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties
-                .getProperty("land"));
-            oceanAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties
-                .getProperty("ocean"));
+            landAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties.getProperty("land"));
+            oceanAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties.getProperty("ocean"));
         } catch (IOException e) {
             throw new OperatorException("Could not load auxdata", e);
         }
@@ -304,6 +302,8 @@ public class CloudProbabilityOp extends MerisBasisOp {
 			//targets
             Tile cloudTile = targetTiles.get(cloudBand);
             Tile flagTile = targetTiles.get(cloudFlagBand);
+            CloudAlgorithm cloneLandAlgo = landAlgo.clone();
+            CloudAlgorithm cloneOceanAlgo = oceanAlgo.clone();
 
             int i = 0;
 			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
@@ -353,11 +353,9 @@ public class CloudProbabilityOp extends MerisBasisOp {
 
 						double cloudProbability = 0;
 						if (isValidLand.getSampleBoolean(x, y)) {
-							cloudProbability = landAlgo
-									.computeCloudProbability(cloudIn);
+							cloudProbability = cloneLandAlgo.computeCloudProbability(cloudIn);
 						} else if (isValidOcean.getSampleBoolean(x, y)) {
-							cloudProbability = oceanAlgo
-									.computeCloudProbability(cloudIn);
+							cloudProbability = cloneOceanAlgo.computeCloudProbability(cloudIn);
 						}
 
 						if (cloudProbability > 0.8) {

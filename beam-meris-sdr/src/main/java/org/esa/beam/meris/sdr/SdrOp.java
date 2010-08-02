@@ -134,10 +134,8 @@ public class SdrOp extends MerisBasisOp {
         validBand = maskProduct.getBand(validBandName);
     }
 
-    // TODO methis is synchronized becasue the JNBN version shipping with BEAM 4.7 is not thread safe
-    // TODO remove 'synchnorized' statement if this changes
     @Override
-    public synchronized void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+    public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
         final double[] sdrAlgoInput = new double[9];
         final double[] sdrAlgoOutput = new double[1];
@@ -167,6 +165,8 @@ public class SdrOp extends MerisBasisOp {
             	sdr[i] = targetTiles.get(sdrBands[i]);
             }
             Tile sdrFlag = targetTiles.get(sdrFlagBand);
+
+            SdrAlgorithm clonedAlgorithm = algorithm.clone();
             
 			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x+rectangle.width; x++) {
@@ -200,7 +200,7 @@ public class SdrOp extends MerisBasisOp {
 	                        } else {
 	                        	sdrAlgoInput[8] = angValue;
 	                        }
-	                        algorithm.computeSdr(sdrAlgoInput, sdrAlgoOutput);
+                            clonedAlgorithm.computeSdr(sdrAlgoInput, sdrAlgoOutput);
 	                        t_sdr = sdrAlgoOutput[0];
 	                        if (Double.isInfinite(t_sdr) || Double.isNaN(t_sdr)) {
 	                            t_sdr = 0.0;

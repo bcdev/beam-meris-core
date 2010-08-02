@@ -34,7 +34,7 @@ import java.util.logging.Logger;
  * @author marcoz
  * @version $Revision: 1.2 $ $Date: 2007/04/25 14:15:31 $
  */
-public class CloudAlgorithm {
+public class CloudAlgorithm implements Cloneable {
     private static final String PARAM_1_KEY = "param_1";
     private static final String PARAM_2_KEY = "param_2";
     private static final String VALID_KEY = "validExpression";
@@ -122,7 +122,24 @@ public class CloudAlgorithm {
         } else if (a > 80) {
             a = 80;
         }
-        double probability = 1. / (1. + Math.exp(a));
-        return probability;
+        return 1.0 / (1.0 + Math.exp(a));
+    }
+
+    @Override
+    protected CloudAlgorithm clone() {
+        try {
+            CloudAlgorithm clone = (CloudAlgorithm) super.clone();
+            clone.neuralNet = neuralNet.clone();
+            clone.validExpression = validExpression;
+            clone.param1 = param1;
+            clone.param2 = param2;
+            clone.minInputValuesNN = minInputValuesNN.clone();
+            System.arraycopy(minInputValuesNN, 0, clone.minInputValuesNN, 0, minInputValuesNN.length);
+            clone.maxInputValuesNN = maxInputValuesNN.clone();
+            System.arraycopy(maxInputValuesNN, 0, clone.maxInputValuesNN, 0, maxInputValuesNN.length);
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

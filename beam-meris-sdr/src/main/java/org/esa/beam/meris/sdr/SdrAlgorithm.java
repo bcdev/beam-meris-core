@@ -13,7 +13,7 @@ import org.esa.beam.util.math.MathUtils;
  * Implements an algorithm for the surface directional reflectance based
  * on a neural network (multi layer perceptron).
  */
-public final class SdrAlgorithm {
+public final class SdrAlgorithm implements Cloneable {
     public final JnnNet _neuralNet;
 
     /**
@@ -89,5 +89,10 @@ public final class SdrAlgorithm {
      */
     public void computeSdr(final double[] inputVector, final double[] outputVector) {
         _neuralNet.process(inputVector, outputVector);
+    }
+
+    @Override
+    protected SdrAlgorithm clone() {
+        return new SdrAlgorithm(_neuralNet.clone());
     }
 }

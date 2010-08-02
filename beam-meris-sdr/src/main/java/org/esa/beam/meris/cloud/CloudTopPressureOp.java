@@ -201,13 +201,10 @@ public class CloudTopPressureOp extends MerisBasisOp {
         } catch (Exception e) {
             throw new OperatorException("Failed to load L2AuxData:\n" + e.getMessage(), e);
         }
-
     }
 
-    // TODO methis is synchronized becasue the JNBN version shipping with BEAM 4.7 is not thread safe
-    // TODO remove 'synchnorized' statement if this changes 
     @Override
-    public synchronized void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
+    public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
     	
     	Rectangle rectangle = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height);
@@ -232,6 +229,9 @@ public class CloudTopPressureOp extends MerisBasisOp {
 			final double[] nnInWater = new double[6];
 			final double[] nnInLand = new double[7];
             final double[] nnOut = new double[1];
+
+            JnnNet nnLand = neuralNetLand.clone();
+            JnnNet nnWater = neuralNetWater.clone();
 
             int i = 0;
 			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
@@ -266,7 +266,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
 									* Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
 							nnInLand[6] = lambda;
 
-							neuralNetLand.process(nnInLand, nnOut);
+                            nnLand.process(nnInLand, nnOut);
 						} else {
 							nnInWater[0] = toar10.getSampleDouble(x, y);
 							nnInWater[1] = toar11XY_corrected
@@ -277,7 +277,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
 									* Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
 							nnInWater[5] = lambda;
 
-							neuralNetWater.process(nnInWater, nnOut);
+                            nnWater.process(nnInWater, nnOut);
 						}
 						targetTile.setSample(x, y, nnOut[0]);
 					}
