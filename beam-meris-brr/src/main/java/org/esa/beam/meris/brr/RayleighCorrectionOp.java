@@ -16,9 +16,7 @@
  */
 package org.esa.beam.meris.brr;
 
-import java.awt.Rectangle;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -31,8 +29,8 @@ import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
@@ -40,15 +38,16 @@ import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
+import java.util.Map;
 
 
 @OperatorMetadata(alias = "Meris.RayleighCorrection",
-        version = "1.0",
-        internal = true,
-        authors = "Marco Zühlke",
-        copyright = "(c) 2007 by Brockmann Consult",
-        description = "MERIS L2 rayleigh correction.")
+                  version = "1.0",
+                  internal = true,
+                  authors = "Marco Zühlke",
+                  copyright = "(c) 2007 by Brockmann Consult",
+                  description = "MERIS L2 rayleigh correction.")
 public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     public static final String BRR_BAND_PREFIX = "brr";
@@ -57,24 +56,24 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     protected L2AuxData auxData;
     protected RayleighCorrection rayleighCorrection;
-    
+
     private Band isLandBand;
     private Band[] brrBands;
     private Band[] rayleighReflBands;
     private Band flagBand;
-    
+
     private Band[] transRvBands;
     private Band[] transRsBands;
     private Band[] tauRBands;
     private Band[] sphAlbRBands;
 
-    @SourceProduct(alias="l1b")
+    @SourceProduct(alias = "l1b")
     private Product l1bProduct;
-    @SourceProduct(alias="input")
+    @SourceProduct(alias = "input")
     private Product gascorProduct;
-    @SourceProduct(alias="land")
+    @SourceProduct(alias = "land")
     private Product landProduct;
-    @SourceProduct(alias="cloud", optional=true)
+    @SourceProduct(alias = "cloud", optional = true)
     private Product cloudProduct;
     @TargetProduct
     private Product targetProduct;
@@ -84,8 +83,8 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     boolean exportRayCoeffs = false;
     @Parameter
     boolean exportRhoR = false;
-	
-    
+
+
     @Override
     public void initialize() throws OperatorException {
         try {
@@ -98,30 +97,30 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     }
 
     private void createTargetProduct() throws OperatorException {
-    	targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
+        targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
-    	brrBands = addBandGroup(BRR_BAND_PREFIX);
+        brrBands = addBandGroup(BRR_BAND_PREFIX);
         rayleighReflBands = addBandGroup(RAYLEIGH_REFL_BAND_PREFIX);
 
         flagBand = targetProduct.addBand(RAY_CORR_FLAGS, ProductData.TYPE_INT16);
         FlagCoding flagCoding = createFlagCoding(brrBands.length);
         flagBand.setFlagCoding(flagCoding);
         targetProduct.addFlagCoding(flagCoding);
-        
+
         if (exportRayCoeffs) {
-	        transRvBands = addBandGroup("transRv");
-    	    transRsBands = addBandGroup("transRs");
-        	tauRBands = addBandGroup("tauR");
-	        sphAlbRBands = addBandGroup("sphAlbR");
-		}
+            transRvBands = addBandGroup("transRv");
+            transRsBands = addBandGroup("transRs");
+            tauRBands = addBandGroup("tauR");
+            sphAlbRBands = addBandGroup("sphAlbR");
+        }
         BandMathsOp bandArithmeticOp =
-            BandMathsOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
+                BandMathsOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
         isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
         if (l1bProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());
         }
     }
-    
+
     private Band[] addBandGroup(String prefix) {
         Band[] bands = new Band[L1_BAND_NUM];
         for (int i = 0; i < bands.length; i++) {
@@ -184,7 +183,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
             Tile[] brr = getTargetTileGroup(brrBands, targetTiles);
             Tile[] rayleigh_refl = getTargetTileGroup(rayleighReflBands, targetTiles);
             Tile brrFlags = targetTiles.get(flagBand);
-            
+
             boolean[][] do_corr = new boolean[SUBWIN_HEIGHT][SUBWIN_WIDTH];
             // rayleigh phase function coefficients, PR in DPM
 		    double[] phaseR = new double[3];
@@ -198,13 +197,22 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 		    double[] transRv = new double[L1_BAND_NUM];
 		    // rayleigh spherical albedo, SR_4x4
 		    double[] sphAlbR = new double[L1_BAND_NUM];
-		    
+
+            Tile surfacePressure = null;
+            Tile cloudTopPressure = null;
+            Tile cloudFlags = null;
+            if (cloudProduct != null) {
+                surfacePressure = getSourceTile(cloudProduct.getBand(CloudClassificationOp.PRESSURE_SURFACE), rectangle, pm);
+                cloudTopPressure = getSourceTile(cloudProduct.getBand(CloudClassificationOp.PRESSURE_CTP), rectangle, pm);
+                cloudFlags = getSourceTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle, pm);
+            }
+
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y += Constants.SUBWIN_HEIGHT) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x += Constants.SUBWIN_WIDTH) {
                     final int xWinEnd = Math.min(rectangle.x + rectangle.width, x + Constants.SUBWIN_WIDTH) - 1;
                     final int yWinEnd = Math.min(rectangle.y + rectangle.height, y + Constants.SUBWIN_HEIGHT) - 1;
                     boolean correctPixel = false;
-					
+
 					for (int iy = y; iy <= yWinEnd; iy++) {
 					    for (int ix = x; ix <= xWinEnd; ix++) {
 					        if (rhoNg[0].getSampleFloat(ix, iy) != BAD_VALUE && (correctWater || isLandCons.getSampleBoolean(ix, iy))) {
@@ -221,7 +229,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					        }
 					    }
 					}
-					
+
 					if (correctPixel) {
 					    /* average geometry, ozone for window DPM : just use corner pixel ! */
 					    final double szaRad = sza.getSampleFloat(x, y) * MathUtils.DTOR;
@@ -231,20 +239,17 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					    final double mus = Math.cos(szaRad);
 					    final double muv = Math.cos(vzaRad);
 					    final double deltaAzimuth = HelperFunctions.computeAzimuthDifference(vaa.getSampleFloat(x, y), saa.getSampleFloat(x, y));
-					
+
 					    /*
 					    * 2. Rayleigh corrections (DPM section 7.3.3.3.2, step 2.6.15)
 					    */
 					    double press = HelperFunctions.correctEcmwfPressure(ecmwfPressure.getSampleFloat(x, y),
-					                                                              altitude.getSampleFloat(x, y), 
+					                                                              altitude.getSampleFloat(x, y),
 					                                                              auxData.press_scale_height); /* DPM #2.6.15.1-3 */
 					    final double airMass = HelperFunctions.calculateAirMassMusMuv(muv, mus);
 
                         /* correct pressure in presence of clouds */
                         if (cloudProduct != null) {
-                            Tile surfacePressure = getSourceTile(cloudProduct.getBand(CloudClassificationOp.PRESSURE_SURFACE), rectangle, pm);
-                            Tile cloudTopPressure = getSourceTile(cloudProduct.getBand(CloudClassificationOp.PRESSURE_CTP), rectangle, pm);
-                            Tile cloudFlags = getSourceTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle, pm);
                             final boolean isCloud = cloudFlags.getSampleBit(x, y, CloudClassificationOp.F_CLOUD);
                             if (isCloud) {
                                 final double pressureCorrectionCloud = cloudTopPressure.getSampleDouble(x, y) / surfacePressure.getSampleDouble(x, y);
@@ -254,21 +259,21 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
 					    /* Rayleigh phase function Fourier decomposition */
 					    rayleighCorrection.phase_rayleigh(mus, muv, sins, sinv, phaseR);
-					
+
 					    /* Rayleigh optical thickness */
 					    rayleighCorrection.tau_rayleigh(press, tauR);
 
 					    /* Rayleigh reflectance*/
 					    rayleighCorrection.ref_rayleigh(deltaAzimuth, sza.getSampleFloat(x, y), vza.getSampleFloat(x, y), mus, muv,
 					                                    airMass, phaseR, tauR, rhoR);
-					
+
 					    /* Rayleigh transmittance */
 					    rayleighCorrection.trans_rayleigh(mus, tauR, transRs);
 					    rayleighCorrection.trans_rayleigh(muv, tauR, transRv);
-					
+
 					    /* Rayleigh spherical albedo */
 					    rayleighCorrection.sphAlb_rayleigh(tauR, sphAlbR);
-					
+
 					    /* process each pixel */
 					    for (int iy = y; iy <= yWinEnd; iy++) {
 					        for (int ix = x; ix <= xWinEnd; ix++) {
@@ -327,7 +332,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
             pm.done();
         }
     }
-    
+
     private Tile[] getTargetTileGroup(Band[] bands, Map<Band, Tile> targetTiles)  {
         final Tile[] bandRaster = new Tile[L1_BAND_NUM];
         for (int i = 0; i < bands.length; i++) {
