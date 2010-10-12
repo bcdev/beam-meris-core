@@ -190,6 +190,9 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
         BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand(INVALID_EXPRESSION, sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
+        if (sourceProduct.getPreferredTileSize() != null) {
+            targetProduct.setPreferredTileSize(sourceProduct.getPreferredTileSize());
+        }
     }
     
     private void initAuxData() throws OperatorException {
