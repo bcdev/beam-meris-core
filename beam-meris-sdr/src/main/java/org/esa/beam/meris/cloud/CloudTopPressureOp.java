@@ -214,13 +214,14 @@ public class CloudTopPressureOp extends MerisBasisOp {
         
         try {
         	Tile detector = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle, pm);
-        	Tile sza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
-			Tile saa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle, pm);
-			Tile vza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm);
-			Tile vaa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm);
+
+        	Tile sza = null;
+			Tile saa = null;
+			Tile vza = null;
+			Tile vaa = null;
 			
-			Tile lat = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle, pm);
-			Tile lon = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle, pm);
+			Tile lat = null;
+			Tile lon = null;
 			
 			Tile toar10 = getSourceTile(sourceProduct.getBand("radiance_10"), rectangle, pm);
 			Tile toar11 = getSourceTile(sourceProduct.getBand("radiance_11"), rectangle, pm);
@@ -233,11 +234,10 @@ public class CloudTopPressureOp extends MerisBasisOp {
 			final double[] nnInLand = new double[7];
             final double[] nnOut = new double[1];
 
-            JnnNet nnLand = neuralNetLand.clone();
-            JnnNet nnWater = neuralNetWater.clone();
+            JnnNet nnLand = null;
+            JnnNet nnWater = null;
 
-            int i = 0;
-			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+            for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 					if (pm.isCanceled()) {
 						break;
@@ -245,6 +245,13 @@ public class CloudTopPressureOp extends MerisBasisOp {
 					if (isInvalid.getSampleBoolean(x, y)) {
 						targetTile.setSample(x, y, 0);
 					} else {
+                        if(sza == null || saa == null || vza == null || vaa == null) {
+                            sza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
+                            saa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle, pm);
+                            vza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm);
+                            vaa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm);
+                        }
+
 						double szaRad = sza.getSampleFloat(x, y) * MathUtils.DTOR;
 						double vzaRad = vza.getSampleFloat(x, y) * MathUtils.DTOR;
 
@@ -259,10 +266,17 @@ public class CloudTopPressureOp extends MerisBasisOp {
 						final double toar11XY_corrected = toar11.getSampleDouble(x, y) + stray;
 						
 						if (l1bFlags.getSampleBit(x, y, Constants.L1_F_LAND)) {
+                            if( nnLand == null ) {
+                                nnLand = neuralNetLand.clone();
+                            }
+                            if( lat == null || lon == null ) {
+                                lat = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle, pm);
+                                lon = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle, pm);
+                            }
+
 							nnInLand[0] = computeSurfAlbedo(lat.getSampleFloat(x, y), lon.getSampleFloat(x, y)); // albedo
 							nnInLand[1] = toar10.getSampleDouble(x, y);
-							nnInLand[2] = toar11XY_corrected
-									/ toar10.getSampleDouble(x, y);
+							nnInLand[2] = toar11XY_corrected / toar10.getSampleDouble(x, y);
 							nnInLand[3] = Math.cos(szaRad);
 							nnInLand[4] = Math.cos(vzaRad);
 							nnInLand[5] = Math.sin(vzaRad)
@@ -271,9 +285,11 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
                             nnLand.process(nnInLand, nnOut);
 						} else {
+                            if(nnWater == null) {
+                                nnWater = neuralNetWater.clone();
+                            }
 							nnInWater[0] = toar10.getSampleDouble(x, y);
-							nnInWater[1] = toar11XY_corrected
-									/ toar10.getSampleDouble(x, y);
+							nnInWater[1] = toar11XY_corrected / toar10.getSampleDouble(x, y);
 							nnInWater[2] = Math.cos(szaRad);
 							nnInWater[3] = Math.cos(vzaRad);
 							nnInWater[4] = Math.sin(vzaRad)
@@ -284,8 +300,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
 						}
 						targetTile.setSample(x, y, nnOut[0]);
 					}
-					i++;
-				}
+                }
 				pm.worked(1);
 			}
         } finally {
@@ -307,8 +322,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
         /* DPM #2.1.5-1 */
         /* 	*pfSA = Surfalb.LUT[index[0]][index[1]]; v4.3- align with DPM */
-        double surfaceAlbedo = Interp.interpolate(cloudAuxData.surfAlb.getJavaArray(), SaIndex);
-        return surfaceAlbedo;
+        return Interp.interpolate(cloudAuxData.surfAlb.getJavaArray(), SaIndex);
     }
 
 

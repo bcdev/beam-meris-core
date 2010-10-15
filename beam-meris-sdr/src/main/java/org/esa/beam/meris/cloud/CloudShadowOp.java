@@ -16,8 +16,7 @@
  */
 package org.esa.beam.meris.cloud;
 
-import java.awt.Rectangle;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -37,7 +36,7 @@ import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.RectangleExtender;
 import org.esa.beam.util.math.MathUtils;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
 
 
 /**
@@ -114,7 +113,6 @@ public class CloudShadowOp extends MerisBasisOp {
                 }
             }
 
-            int sourceIndex = 0;
             for (int y = sourceRectangle.y; y < sourceRectangle.y + sourceRectangle.height; y++) {
                 for (int x = sourceRectangle.x; x < sourceRectangle.x + sourceRectangle.width; x++) {
                     if ((cloudTile.getSampleInt(x, y) & CombinedCloudOp.FLAG_CLOUD) != 0 ) {
@@ -144,7 +142,6 @@ public class CloudShadowOp extends MerisBasisOp {
                             }
                         }
                     }
-                    sourceIndex++;
                 }
                 pm.worked(1);
             }

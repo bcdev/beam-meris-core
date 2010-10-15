@@ -16,8 +16,7 @@
  */
 package org.esa.beam.meris.cloud;
 
-import java.awt.Rectangle;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
@@ -31,7 +30,7 @@ import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.RectangleExtender;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
 
 
 /**
@@ -79,15 +78,12 @@ public class CloudEdgeOp extends MerisBasisOp {
         try {
             Tile cloudSource = getSourceTile(sourceBand, sourceRectangle, pm);
 
-            int i = 0;
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
                 for (int x = targetRectangle.x; x < targetRectangle.x + targetRectangle.width; x++) {
                     targetTile.setSample(x, y, cloudSource.getSampleInt(x, y));
-                    i++;
                 }
             }
 
-            int sourceIndex = 0;
             for (int y = sourceRectangle.y; y < sourceRectangle.y + sourceRectangle.height; y++) {
                 for (int x = sourceRectangle.x; x < sourceRectangle.x + sourceRectangle.width; x++) {
                     final int cloudFlag = cloudSource.getSampleInt(x, y);
@@ -95,7 +91,6 @@ public class CloudEdgeOp extends MerisBasisOp {
                             (cloudFlag & CombinedCloudOp.FLAG_CLOUD_SHADOW) != 0) {
                         markEdgeAround(x, y, cloudSource, targetTile);
                     }
-                    sourceIndex++;
                 }
             }
         } finally {

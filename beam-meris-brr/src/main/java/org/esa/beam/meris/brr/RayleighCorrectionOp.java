@@ -221,19 +221,21 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					        } else {
 					            do_corr[iy - y][ix - x] = false;
 					            for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
-								    if (bandId == bb11 || bandId == bb15) {
-								        continue;
-								    }
-								    brr[bandId].setSample(ix, iy, BAD_VALUE);
-								}
+                                    if (bandId != bb11 && bandId != bb15) {
+                                        brr[bandId].setSample(ix, iy, BAD_VALUE);
+                                    }
+                                }
 					        }
 					    }
 					}
 
 					if (correctPixel) {
 					    /* average geometry, ozone for window DPM : just use corner pixel ! */
-					    final double szaRad = sza.getSampleFloat(x, y) * MathUtils.DTOR;
-					    final double vzaRad = vza.getSampleFloat(x, y) * MathUtils.DTOR;
+                        final float szaSampleFloat = sza.getSampleFloat(x, y);
+                        final float vzaSampleFloat = vza.getSampleFloat(x, y);
+
+                        final double szaRad = szaSampleFloat * MathUtils.DTOR;
+                        final double vzaRad = vzaSampleFloat * MathUtils.DTOR;
 						final double sins = Math.sin(szaRad);
 						final double sinv = Math.sin(vzaRad);
 					    final double mus = Math.cos(szaRad);
@@ -264,7 +266,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					    rayleighCorrection.tau_rayleigh(press, tauR);
 
 					    /* Rayleigh reflectance*/
-					    rayleighCorrection.ref_rayleigh(deltaAzimuth, sza.getSampleFloat(x, y), vza.getSampleFloat(x, y), mus, muv,
+					    rayleighCorrection.ref_rayleigh(deltaAzimuth, szaSampleFloat, vzaSampleFloat, mus, muv,
 					                                    airMass, phaseR, tauR, rhoR);
 
 					    /* Rayleigh transmittance */

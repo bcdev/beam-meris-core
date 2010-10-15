@@ -112,16 +112,25 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 			Tile windu = getSourceTile(l1bProduct.getTiePointGrid("zonal_wind"), rectangle, pm);
 			Tile windv = getSourceTile(l1bProduct.getTiePointGrid("merid_wind"), rectangle, pm);
 			Tile l1Flags = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle, pm);
-			Tile rho1 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_1_BAND_NAME), rectangle, pm);
-            Tile rho13 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_13_BAND_NAME), rectangle, pm);
-			Tile rho14 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_14_BAND_NAME), rectangle, pm);
+//			Tile rho1 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_1_BAND_NAME), rectangle, pm);
+//          Tile rho13 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_13_BAND_NAME), rectangle, pm);
+//			Tile rho14 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_14_BAND_NAME), rectangle, pm);
 
-            Tile[] rhoToa = null;
-            if (rhoToaProduct != null) {
-                rhoToa = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
-                for (int i1 = 0; i1 < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i1++) {
-                    rhoToa[i1] = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i1 + 1)), rectangle, pm);
-                }
+
+//            Tile[] rhoToa = null;
+//            if (rhoToaProduct != null) {
+//                rhoToa = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
+//                for (int i1 = 0; i1 < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i1++) {
+//                    rhoToa[i1] = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i1 + 1)), rectangle, pm);
+//                }
+//            }
+
+            Tile rhoToa12 = null;
+            Tile rhoToa13 = null;
+            if( rhoToaProduct != null ) {
+                // see above code, only tiles of index 12 and 13 are used, so only they are loaded
+                rhoToa12 = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (12 + 1)), rectangle, pm);
+                rhoToa13 = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (13 + 1)), rectangle, pm);
             }
 
             Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
@@ -194,8 +203,10 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
                             boolean is_ice = false;
                             if (rhoToaProduct != null) {
                                 /* test if pixel is ice (mdsi criterion, RS 2010/04/01) */
-                                final double mdsi = (rhoToa[12].getSampleDouble(x,y) - rhoToa[13].getSampleDouble(x,y))/
-                                                               (rhoToa[12].getSampleDouble(x,y) + rhoToa[13].getSampleDouble(x,y));
+//                                final double mdsi = (rhoToa[12].getSampleDouble(x,y) - rhoToa[13].getSampleDouble(x,y))/
+//                                                               (rhoToa[12].getSampleDouble(x,y) + rhoToa[13].getSampleDouble(x,y));
+                                final double mdsi = (rhoToa12.getSampleDouble(x,y) - rhoToa13.getSampleDouble(x,y))/
+                                                               (rhoToa12.getSampleDouble(x,y) + rhoToa13.getSampleDouble(x,y));
                                 is_ice = (mdsi > 0.01 && l1Flags.getSampleBit(ix, iy, L1_F_BRIGHT));
                             }
                             targetTile.setSample(ix, iy, F_ICE, is_ice);
@@ -293,15 +304,13 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
      */
     private boolean inland_waters(double r7thresh_val, Tile[] rhoNg, int x, int y, int b_thresh, double a_thresh) {
         /* DPM #2.6.26-4 */
-        boolean status = (rhoNg[b_thresh].getSampleFloat(x, y) <= a_thresh * r7thresh_val) &&
+        return (rhoNg[b_thresh].getSampleFloat(x, y) <= a_thresh * r7thresh_val) &&
                 (auxData.lap_beta_l * rhoNg[bb865].getSampleFloat(x, y) < rhoNg[bb665].getSampleFloat(x, y));
-        return status;
     }
 
     private boolean island(double r7thresh_val, Tile[] rhoNg, int x, int y, int b_thresh, double a_thresh) {
-        boolean status = (rhoNg[b_thresh].getSampleFloat(x, y)  > a_thresh * r7thresh_val) &&
+        return (rhoNg[b_thresh].getSampleFloat(x, y)  > a_thresh * r7thresh_val) &&
                 (auxData.lap_beta_w * rhoNg[bb865].getSampleFloat(x, y) > rhoNg[bb665].getSampleFloat(x, y));
-        return status;
     }
 
 
