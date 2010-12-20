@@ -82,9 +82,8 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 
         Band band = targetProduct.addBand(LAND_FLAGS, ProductData.TYPE_INT8);
         FlagCoding flagCoding = createFlagCoding();
-        band.setFlagCoding(flagCoding);
-        targetProduct.addFlagCoding(flagCoding);
-        if (l1bProduct.getPreferredTileSize() != null) {
+        band.setSampleCoding(flagCoding);
+        targetProduct.getFlagCodingGroup().add(flagCoding);        if (l1bProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());
         }
     }
@@ -103,19 +102,18 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
     public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
     	
     	Rectangle rectangle = targetTile.getRectangle();
-        pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
-			Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm);
-			Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle, pm);
-			Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm);
-			Tile windu = getSourceTile(l1bProduct.getTiePointGrid("zonal_wind"), rectangle, pm);
-			Tile windv = getSourceTile(l1bProduct.getTiePointGrid("merid_wind"), rectangle, pm);
-			Tile l1Flags = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle, pm);
-//			Tile rho1 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_1_BAND_NAME), rectangle, pm);
-//          Tile rho13 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_13_BAND_NAME), rectangle, pm);
-//			Tile rho14 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_14_BAND_NAME), rectangle, pm);
-
+            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+			Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+			Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
+			Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
+			Tile windu = getSourceTile(l1bProduct.getTiePointGrid("zonal_wind"), rectangle);
+			Tile windv = getSourceTile(l1bProduct.getTiePointGrid("merid_wind"), rectangle);
+			Tile l1Flags = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle);
+            // TODO (mp 20.12.2010) - rho1, rho13, and rho14 are never used
+//			Tile rho1 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_1_BAND_NAME), rectangle);
+//          Tile rho13 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_13_BAND_NAME), rectangle);
+//			Tile rho14 = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_RADIANCE_14_BAND_NAME), rectangle);
 
 //            Tile[] rhoToa = null;
 //            if (rhoToaProduct != null) {
@@ -129,24 +127,33 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
             Tile rhoToa13 = null;
             if( rhoToaProduct != null ) {
                 // see above code, only tiles of index 12 and 13 are used, so only they are loaded
-                rhoToa12 = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (12 + 1)), rectangle, pm);
-                rhoToa13 = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (13 + 1)), rectangle, pm);
+                rhoToa12 = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (12 + 1)), rectangle);
+                rhoToa13 = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (13 + 1)), rectangle);
             }
-
+            
             Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i = 0; i < rhoNg.length; i++) {
-			    rhoNg[i] = getSourceTile(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle, pm);
+			    rhoNg[i] = getSourceTile(gasCorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
 			}
+            final Tile rhoNg_bb865_Tile = rhoNg[bb865];
+
+            // pre-initialize constant values from auxdata
+            final int b_thresh_0 = auxData.lap_b_thresh[0];
+            final int b_thresh_1 = auxData.lap_b_thresh[1];
+            final double a_thresh_0 = auxData.alpha_thresh[0];
+            final double a_thresh_1 = auxData.alpha_thresh[1];
+            final double[] r7thresh_tab_0 = auxData.r7thresh.getTab(0);
+            final double[] r7thresh_tab_1 = auxData.r7thresh.getTab(1);
+            final double[] r7thresh_tab_2 = auxData.r7thresh.getTab(2);
+            final Object r7threshArray = auxData.r7thresh.getJavaArray();
+            final Object r13threshArray = auxData.r13thresh.getJavaArray();
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y += Constants.SUBWIN_HEIGHT) {
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x += Constants.SUBWIN_WIDTH) {
-                    final int xWinEnd = Math.min(rectangle.x + rectangle.width, x + Constants.SUBWIN_WIDTH) - 1;
-                    final int yWinEnd = Math.min(rectangle.y + rectangle.height, y + Constants.SUBWIN_HEIGHT) - 1;
-					
+
 					/* v7: compute Glint reflectance here (only if there are water/land pixels) */
 					/* first wind modulus at window corner */
-					double windm = 0.0;
-					windm += windu.getSampleFloat(x, y) * windu.getSampleFloat(x, y);
+                    double windm = windu.getSampleFloat(x, y) * windu.getSampleFloat(x, y);
 					windm += windv.getSampleFloat(x, y) * windv.getSampleFloat(x, y);
 					windm = Math.sqrt(windm);
 					/* then wind azimuth */
@@ -159,44 +166,46 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 					
 					FractIndex[] r7thresh_Index = FractIndex.createArray(3);  /* v4.4 */
 					/* set up threshold for land-water discrimination */
-					Interp.interpCoord(sza.getSampleFloat(x, y), auxData.r7thresh.getTab(0), r7thresh_Index[0]);
-					Interp.interpCoord(vza.getSampleFloat(x, y), auxData.r7thresh.getTab(1), r7thresh_Index[1]);
+                    Interp.interpCoord(sza.getSampleFloat(x, y), r7thresh_tab_0, r7thresh_Index[0]);
+					Interp.interpCoord(vza.getSampleFloat(x, y), r7thresh_tab_1, r7thresh_Index[1]);
 					/* take azimuth difference into account - v4.4 */
-					Interp.interpCoord(deltaAzimuth, auxData.r7thresh.getTab(2), r7thresh_Index[2]);
+					Interp.interpCoord(deltaAzimuth, r7thresh_tab_2, r7thresh_Index[2]);
 					/* DPM #2.6.26-1a */
-					final double r7thresh_val = Interp.interpolate(auxData.r7thresh.getJavaArray(), r7thresh_Index);
-					final double r13thresh_val = Interp.interpolate(auxData.r13thresh.getJavaArray(), r7thresh_Index);
+                    final double r7thresh_val = Interp.interpolate(r7threshArray, r7thresh_Index);
+					final double r13thresh_val = Interp.interpolate(r13threshArray, r7thresh_Index);
 					
 					/* process each pixel */
+                    final int xWinEnd = Math.min(rectangle.x + rectangle.width, x + Constants.SUBWIN_WIDTH) - 1;
+                    final int yWinEnd = Math.min(rectangle.y + rectangle.height, y + Constants.SUBWIN_HEIGHT) - 1;
 					for (int iy = y; iy <= yWinEnd; iy++) {
 						for (int ix = x; ix <= xWinEnd; ix++) {
 							/* Land /Water re-classification - v4.2, updated for v7 */
 							/* DPM step 2.6.26 */
 							
-							boolean is_water = false;
-							boolean is_land = false;
+							boolean is_water;
+							boolean is_land;
 							int b_thresh;           /*added V7 to manage 2 bands reclassif threshold LUT */
 							double a_thresh;  /*added V7 to manage 2 bands reclassif threshold LUT */
 							double rThresh;
 							
 							/* test if pixel is water */
-							b_thresh = auxData.lap_b_thresh[0];
-							a_thresh = auxData.alpha_thresh[0];
+                            b_thresh = b_thresh_0;
+                            a_thresh = a_thresh_0;
 							is_water = inland_waters(r7thresh_val, rhoNg, ix, iy, b_thresh, a_thresh);
 							/* the is_water flag is available in the output product as F_LOINLD */
 							targetTile.setSample(ix, iy, F_LOINLD, is_water);
 							
 							/* test if pixel is land */
 							final float thresh_medg = 0.2f;
-							boolean isGlint = (rhoGlint >= thresh_medg * rhoNg[bb865].getSampleFloat(ix, iy));
+                            boolean isGlint = (rhoGlint >= thresh_medg * rhoNg_bb865_Tile.getSampleFloat(ix, iy));
 							if (isGlint) {
 							    targetTile.setSample(ix, iy, F_MEGLINT, true);
-								b_thresh = auxData.lap_b_thresh[0];
-								a_thresh = auxData.alpha_thresh[0];
+								b_thresh = b_thresh_0;
+								a_thresh = a_thresh_0;
 								rThresh = r7thresh_val;
 							} else {
-								b_thresh = auxData.lap_b_thresh[1];
-								a_thresh = auxData.alpha_thresh[1];
+								b_thresh = b_thresh_1;
+								a_thresh = a_thresh_1;
 								rThresh = r13thresh_val;
 							}
 
@@ -226,17 +235,12 @@ public class LandClassificationOp extends MerisBasisOp implements Constants {
 								is_land_consolidated = is_land;
 							}
 							targetTile.setSample(ix, iy, F_LANDCONS, is_land_consolidated);
-
-
 						}
 					}
                 }
-                pm.worked(1);
             }
         } catch (Exception e) {
             throw new OperatorException(e);
-        } finally {
-            pm.done();
         }
     }
 

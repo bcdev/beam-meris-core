@@ -53,7 +53,7 @@ public class RayleighCorrection implements Constants {
         FractIndex tvi = lhLocal.ref_rayleigh_i[1];          /* interp coordinates for thetav in LUT scale */
 
         double mud = Math.cos(RAD * delta_azimuth); /* used for all bands, compute once */
-        double mu2d = 2. * mud * mud - 1.;
+        double mu2d = 2.0 * mud * mud - 1.0;
 
         /* angle interpolation coordinates */
         Interp.interpCoord(sun_zenith, auxdata.Rayscatt_coeff_s.getTab(2), tsi); /* fm 15/5/97 */
@@ -63,8 +63,9 @@ public class RayleighCorrection implements Constants {
         /* pre-computation of multiple scatt coefficients, wavelength independent */
         for (int is = 0; is < RAYSCATT_NUM_SER; is++) {
             /* DPM #2.1.17-4 to 2.1.17-7 */
+            final double[] lhLocal_abcd_is = lhLocal.abcd[is];
             for (int ik = 0; ik < RAYSCATT_NUM_ORD; ik++) {
-                lhLocal.abcd[is][ik] = Interp.interpolate(Rayscatt_coeff_s[ik][is], lhLocal.ref_rayleigh_i);
+                lhLocal_abcd_is[ik] = Interp.interpolate(Rayscatt_coeff_s[ik][is], lhLocal.ref_rayleigh_i);
             }
         }
 
@@ -84,15 +85,17 @@ public class RayleighCorrection implements Constants {
                 case bb12:
                 case bb13:
                 case bb14:
-                    double constTerm = (1. - Math.exp(-tauRayl[bandId] * airMass)) / (4. * (mus + muv));
+                    final double tauRayl_bandId = tauRayl[bandId];
+                    double constTerm = (1.0 - Math.exp(-tauRayl_bandId * airMass)) / (4.0 * (mus + muv));
                     for (int is = 0; is < RAYSCATT_NUM_SER; is++) {
                         /* primary scattering reflectance */
                         lhLocal.rhoRayl[is] = phaseRayl[is] * constTerm; /* DPM #2.1.17-8 CORRECTED */
 
+                        final double[] lhLocal_abcd_is = lhLocal.abcd[is];
                         /* coefficient for multiple scattering correction */
-                        double multiScatteringCoeff = 0.;
+                        double multiScatteringCoeff = 0.0;
                         for (int ik = RAYSCATT_NUM_ORD - 1; ik >= 0; ik--) {
-                            multiScatteringCoeff = tauRayl[bandId] * multiScatteringCoeff + lhLocal.abcd[is][ik]; /* DPM #2.1.17.9 */
+                            multiScatteringCoeff = tauRayl_bandId * multiScatteringCoeff + lhLocal_abcd_is[ik]; /* DPM #2.1.17.9 */
                         }
 
                         /* Fourier component of Rayleigh reflectance */
@@ -101,14 +104,13 @@ public class RayleighCorrection implements Constants {
 
                     /* Rayleigh reflectance */
                     refRayl[bandId] = lhLocal.rhoRayl[0] +
-                            2. * mud * lhLocal.rhoRayl[1] +
-                            2. * mu2d * lhLocal.rhoRayl[2]; /* DPM #2.1.17-11 */
-
+                                      2.0 * mud * lhLocal.rhoRayl[1] +
+                                      2.0 * mu2d * lhLocal.rhoRayl[2]; /* DPM #2.1.17-11 */
                     break;
 
                 default:
                     /* bands not corrected */
-                    refRayl[bandId] = 0.;
+                    refRayl[bandId] = 0.0;
                     break;
             }
 
@@ -132,10 +134,12 @@ public class RayleighCorrection implements Constants {
     public void phase_rayleigh(double mus, double muv,
                                double sins, double sinv,
                                double[] phaseRayl) {
-        phaseRayl[0] = .75 * auxdata.AB[0] * (1. + mus * mus * muv * muv +
-                .5 * sins * sins * sinv * sinv) + auxdata.AB[1]; /* DPM #2.1.17-1 corrected */
+        final double sinsSquared = sins * sins;
+        final double sinvSquared = sinv * sinv;
+        phaseRayl[0] = 0.75 * auxdata.AB[0] * (1.0 + mus * mus * muv * muv +
+                                               0.5 * sinsSquared * sinvSquared) + auxdata.AB[1]; /* DPM #2.1.17-1 corrected */
         phaseRayl[1] = -0.75 * auxdata.AB[0] * mus * muv * sins * sinv; /* DPM #2.1.17-2 corrected */
-        phaseRayl[2] = 0.1875 * auxdata.AB[0] * sins * sins * sinv * sinv; /* DPM #2.1.17.3 corrected */
+        phaseRayl[2] = 0.1875 * auxdata.AB[0] * sinsSquared * sinvSquared; /* DPM #2.1.17.3 corrected */
     }
 
     /**
@@ -151,7 +155,7 @@ public class RayleighCorrection implements Constants {
      */
     public void tau_rayleigh(double press, double[] tauRayl) {
         double ratio = press / auxdata.Pstd;
-           
+
         for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
             switch (bandId) {
                 /* bands to be corrected */
@@ -171,7 +175,7 @@ public class RayleighCorrection implements Constants {
                     tauRayl[bandId] = auxdata.tau_R[bandId] * ratio; /* DPM #2.6.15.2-5 */
                     break;
                 default:
-                    tauRayl[bandId] = 0.;
+                    tauRayl[bandId] = 0.0;
                     break;
             }
         }
@@ -192,6 +196,8 @@ public class RayleighCorrection implements Constants {
 
     public void trans_rayleigh(double mu, double[] tauRayl, double[] transRayl) {
 
+        final double twoThird = 2.0 / 3.0;
+        final double fourThird = 4.0 / 3.0;
         for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
             switch (bandId) {
                 /* bands to be corrected */
@@ -208,18 +214,15 @@ public class RayleighCorrection implements Constants {
                 case bb12:
                 case bb13:
                 case bb14:
-                    double tr = (2. / 3. + mu + (2. / 3. - mu) * Math.exp(-tauRayl[bandId] / mu))
-                            / (4. / 3. + tauRayl[bandId]); /* DPM #2.6.15.2-1, -3 */
-                    transRayl[bandId] = auxdata.Raytrans[0] + auxdata.Raytrans[1] * tr
-                            + auxdata.Raytrans[2] * tr * tr; /* DPM #2.6.15.2-2, -4 */
+                    double tr = (twoThird + mu + (twoThird - mu) *
+                                                 Math.exp(-tauRayl[bandId] / mu)) / (fourThird + tauRayl[bandId]); /* DPM #2.6.15.2-1, -3 */
+                    transRayl[bandId] = auxdata.Raytrans[0] + auxdata.Raytrans[1] * tr + auxdata.Raytrans[2] * tr * tr; /* DPM #2.6.15.2-2, -4 */
                     break;
-
                 default:
-                    transRayl[bandId] = 1.;
+                    transRayl[bandId] = 1.0;
                     break;
             }
         }
-        return;
     }
 /*-----------------------------------------------------------------------------*\
  * Function sphalb_rayleigh: compute Rayleigh spherical albedo
@@ -255,11 +258,11 @@ public class RayleighCorrection implements Constants {
                 case bb13:
                 case bb14:
                     Interp.interpCoord(tauRayl[bandId], auxdata.Rayalb.getTab(0), lh.ray_index[0]);
-                    sphalbRayl[bandId] = Interp.interpolate(auxdata.Rayalb.getJavaArray(), lh.ray_index); /* DPM #2.6.15.3-1 */
-
+                    sphalbRayl[bandId] = Interp.interpolate(auxdata.Rayalb.getJavaArray(),
+                                                            lh.ray_index); /* DPM #2.6.15.3-1 */
                     break;
                 default:
-                    sphalbRayl[bandId] = 0.;
+                    sphalbRayl[bandId] = 0.0;
                     break;
             }
         }
@@ -299,8 +302,9 @@ public class RayleighCorrection implements Constants {
                 case bb12:
                 case bb13:
                 case bb14:
-                    double dum = (rhoNg[bandId].getSampleFloat(x, y) - refRayl[bandId]) / (transRs[bandId] * transRv[bandId]);      /* DPM 2.6.15.4-5 */
-                    brr[bandId].setSample(x, y, dum / (1. + sphalbRayl[bandId] * dum)); /* DPM 2.6.15.4-6 */
+                    double dum = (rhoNg[bandId].getSampleFloat(x, y) - refRayl[bandId]) /
+                                 (transRs[bandId] * transRv[bandId]);      /* DPM 2.6.15.4-5 */
+                    brr[bandId].setSample(x, y, dum / (1.0 + sphalbRayl[bandId] * dum)); /* DPM 2.6.15.4-6 */
                     break;
                 default: /* no correction */
 //                    rho_ag[bandId] = rho[bandId];
@@ -310,6 +314,7 @@ public class RayleighCorrection implements Constants {
     }
 
     public static class LocalHelperVariables {
+
         /**
          * Rayleigh reflectance Fourier components. Local helper variable used in {@link RayleighCorrection#ref_rayleigh}.
          */
@@ -324,31 +329,31 @@ public class RayleighCorrection implements Constants {
          */
         private final FractIndex[] ref_rayleigh_i = FractIndex.createArray(2);
         private final FractIndex[] ray_index = FractIndex.createArray(1);
-        
-		public FractIndex[] getRef_rayleigh_i() {
-			return ref_rayleigh_i;
-		}
 
-		public FractIndex[] getRay_index() {
-			return ray_index;
-		}
+        public FractIndex[] getRef_rayleigh_i() {
+            return ref_rayleigh_i;
+        }
 
-		public double[] getRhoRayl() {
-			return rhoRayl;
-		}
+        public FractIndex[] getRay_index() {
+            return ray_index;
+        }
 
-		public double[][] getAbcd() {
-			return abcd;
-		}
-		
+        public double[] getRhoRayl() {
+            return rhoRayl;
+        }
+
+        public double[][] getAbcd() {
+            return abcd;
+        }
+
     }
 
-	public LocalHelperVariables getLh() {
-		return lh;
-	}
+    public LocalHelperVariables getLh() {
+        return lh;
+    }
 
-	public L2AuxData getAuxdata() {
-		return auxdata;
-	}
-    
+    public L2AuxData getAuxdata() {
+        return auxdata;
+    }
+
 }

@@ -78,6 +78,8 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     @Parameter
     boolean exportTg = false;
 
+    private Band[] rhoToaBands;
+
     @Override
     public void initialize() throws OperatorException {
         try {
@@ -86,6 +88,12 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);
         }
+        rhoToaBands = new Band[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
+
+        for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
+            rhoToaBands[i] = rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i + 1));
+        }
+
         createTargetProduct();
     }
 
@@ -129,21 +137,20 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
-        pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            Tile detectorIndex = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle, pm);
-			Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
-			Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm);
-			Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle, pm);
-			Tile ecmwfOzone = getSourceTile(l1bProduct.getTiePointGrid("ozone"), rectangle, pm);
-			Tile l1Flags = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle, pm);
+            Tile detectorIndex = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
+			Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+			Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+			Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle);
+			Tile ecmwfOzone = getSourceTile(l1bProduct.getTiePointGrid("ozone"), rectangle);
+			Tile l1Flags = getSourceTile(l1bProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle);
 			
-			Tile[] rhoToa = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
-			for (int i1 = 0; i1 < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i1++) {
-			    rhoToa[i1] = getSourceTile(rhoToaProduct.getBand(Rad2ReflOp.RHO_TOA_BAND_PREFIX + "_" + (i1 + 1)), rectangle, pm);
+			Tile[] rhoToa = new Tile[rhoToaBands.length];
+			for (int i = 0; i < rhoToa.length; i++) {
+                rhoToa[i] = getSourceTile(rhoToaBands[i], rectangle);
 			}
 			
-			Tile cloudFlags = getSourceTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle, pm);
+			Tile cloudFlags = getSourceTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle);
 
             Tile gasFlags = targetTiles.get(flagBand);
             Tile[] rhoNg = new Tile[rhoNgBands.length];
@@ -159,6 +166,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
             }
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y += Constants.SUBWIN_HEIGHT) {
+                checkForCancellation();
                 for (int x = rectangle.x; x < rectangle.x + rectangle.width; x += Constants.SUBWIN_WIDTH) {
                     final int xWinEnd = Math.min(rectangle.x + rectangle.width, x + Constants.SUBWIN_WIDTH) - 1;
                     final int yWinEnd = Math.min(rectangle.y + rectangle.height, y + Constants.SUBWIN_HEIGHT) - 1;
@@ -220,9 +228,11 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 					    for (int iy = y; iy <= yWinEnd; iy++) {
 					        for (int ix = x; ix <= xWinEnd; ix++) {
 					            if (gasFlags.getSampleBit(ix, iy, F_DO_CORRECT)) {
-					                double eta, x2;       /* band ratios eta, x2 */
-					
-					                /* test SZA - v4.2 */
+                                    /* band ratios eta, x2 */
+					                double eta;
+                                    double x2;
+
+                                    /* test SZA - v4.2 */
 					                if (sza.getSampleFloat(ix, iy) > auxData.TETAS_LIM) {
 					                    gasFlags.setSample(ix, iy, F_SUN70, true);
 					                }
@@ -248,15 +258,15 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 					                    x2 = x2AverageForWater;
 					                    gasFlags.setSample(ix, iy, F_ORINP0, iOrinp0);
 					                }
-					                int status = 0;
-					                status = gasCor.gas_correction(ix, iy, T_o3, eta, x2,
-					                                               rhoToa,
-					                                               detectorIndex.getSampleInt(ix, iy),
-					                                               rhoNg,
-					                                               tg,
-					                                               cloudFlags.getSampleBit(ix, iy, CloudClassificationOp.F_PCD_POL_P));
-					
-					                /* exception handling */
+                                    int status = gasCor.gas_correction(ix, iy, T_o3, eta, x2,
+                                                                       rhoToa,
+                                                                       detectorIndex.getSampleInt(ix, iy),
+                                                                       rhoNg,
+                                                                       tg,
+                                                                       cloudFlags.getSampleBit(ix, iy,
+                                                                                               CloudClassificationOp.F_PCD_POL_P));
+
+                                    /* exception handling */
 					                gasFlags.setSample(ix, iy, F_OROUT0, status != 0);
 					            } else {
 					                writeBadValue(rhoNg, ix, iy);
@@ -265,12 +275,9 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 					    }
 					}
                 }
-                pm.worked(1);
             }
         } catch (Exception e) {
             throw new OperatorException(e);
-        } finally {
-            pm.done();
         }
     }
 

@@ -16,9 +16,7 @@
  */
 package org.esa.beam.meris.brr;
 
-import java.awt.Rectangle;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
@@ -30,15 +28,16 @@ import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
 import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
+import java.util.Map;
 
 
 @OperatorMetadata(alias = "Meris.Rad2Refl",
@@ -98,21 +97,21 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
     
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
-        pm.beginTask("Processing frame...", rectangle.height);
         try {
         	Tile[] radiance = new Tile[radianceBands.length];
         	for (int i = 0; i < radiance.length; i++) {
-        		radiance[i] = getSourceTile(radianceBands[i], rectangle, pm);
+        		radiance[i] = getSourceTile(radianceBands[i], rectangle);
             }
-        	Tile detectorIndex = getSourceTile(detectorIndexBand, rectangle, pm);
-        	Tile sza = getSourceTile(sunZenihTPG, rectangle, pm);
-        	Tile isInvalid = getSourceTile(invalidBand, rectangle, pm);
+        	Tile detectorTile = getSourceTile(detectorIndexBand, rectangle);
+        	Tile sza = getSourceTile(sunZenihTPG, rectangle);
+        	Tile isInvalid = getSourceTile(invalidBand, rectangle);
 
             Tile[] rhoToa = new Tile[rhoToaBands.length];
             for (int i = 0; i < rhoToaBands.length; i++) {
                 rhoToa[i] = targetTiles.get(rhoToaBands[i]);
             }
 
+            final double seasonal_factor = auxData.seasonal_factor;
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
 					if (isInvalid.getSampleBoolean(x, y)) {
@@ -120,23 +119,19 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 							rhoToa[bandId].setSample(x, y, BAD_VALUE);
 						}
 					} else {
-						final double constantTerm = (Math.PI / Math.cos(sza
-								.getSampleFloat(x, y) * MathUtils.DTOR)) * auxData.seasonal_factor;
-						for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
-							// DPM #2.1.4-1
-							final float aRhoToa = (float) ((radiance[bandId]
-									.getSampleFloat(x, y) * constantTerm) / auxData.detector_solar_irradiance[bandId][detectorIndex
-									.getSampleInt(x, y)]);
+                        final double constantTerm = (Math.PI / Math.cos(sza.getSampleFloat(x, y) * MathUtils.DTOR)) * seasonal_factor;
+                        final int detectorIndex = detectorTile.getSampleInt(x, y);
+                        for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
+                            // DPM #2.1.4-1
+                            final float aRhoToa = (float) ((radiance[bandId].getSampleFloat(x, y) * constantTerm) /
+                                                           auxData.detector_solar_irradiance[bandId][detectorIndex]);
 							rhoToa[bandId].setSample(x, y, aRhoToa);
 						}
 					}
 				}
-				pm.worked(1);
 			}
         } catch (Exception e) {
             throw new OperatorException(e);
-        } finally {
-            pm.done();
         }
     }
 

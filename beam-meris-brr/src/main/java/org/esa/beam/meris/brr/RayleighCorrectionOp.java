@@ -104,9 +104,9 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
         flagBand = targetProduct.addBand(RAY_CORR_FLAGS, ProductData.TYPE_INT16);
         FlagCoding flagCoding = createFlagCoding(brrBands.length);
-        flagBand.setFlagCoding(flagCoding);
-        targetProduct.addFlagCoding(flagCoding);
-
+        flagBand.setSampleCoding(flagCoding);
+        targetProduct.getFlagCodingGroup().add(flagCoding);
+        
         if (exportRayCoeffs) {
             transRvBands = addBandGroup("transRv");
             transRsBands = addBandGroup("transRs");
@@ -152,23 +152,22 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
-        pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
-            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm);
-            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle, pm);
-            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm);
-            Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle, pm);
-            Tile ecmwfPressure = getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle, pm);
+            Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
+            Tile vza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle);
+            Tile saa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle);
+            Tile vaa = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle);
+            Tile altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rectangle);
+            Tile ecmwfPressure = getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle);
 
             Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
 			for (int i = 0; i < rhoNg.length; i++) {
 			    if (i == bb11 || i == bb15) {
 			        continue;
 			    }
-			    rhoNg[i] = getSourceTile(gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle, pm);
+			    rhoNg[i] = getSourceTile(gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
 			}
-			Tile isLandCons = getSourceTile(isLandBand, rectangle, pm);
+			Tile isLandCons = getSourceTile(isLandBand, rectangle);
 
 			Tile[] transRvData = null;
 			Tile[] transRsData = null;
@@ -202,9 +201,9 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
             Tile cloudTopPressure = null;
             Tile cloudFlags = null;
             if (cloudProduct != null) {
-                surfacePressure = getSourceTile(cloudProduct.getBand(CloudClassificationOp.PRESSURE_SURFACE), rectangle, pm);
-                cloudTopPressure = getSourceTile(cloudProduct.getBand(CloudClassificationOp.PRESSURE_CTP), rectangle, pm);
-                cloudFlags = getSourceTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle, pm);
+                surfacePressure = getSourceTile(cloudProduct.getBand(CloudClassificationOp.PRESSURE_SURFACE), rectangle);
+                cloudTopPressure = getSourceTile(cloudProduct.getBand(CloudClassificationOp.PRESSURE_CTP), rectangle);
+                cloudFlags = getSourceTile(cloudProduct.getBand(CloudClassificationOp.CLOUD_FLAGS), rectangle);
             }
 
             for (int y = rectangle.y; y < rectangle.y + rectangle.height; y += Constants.SUBWIN_HEIGHT) {
@@ -245,17 +244,17 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					    /*
 					    * 2. Rayleigh corrections (DPM section 7.3.3.3.2, step 2.6.15)
 					    */
-					    double press = HelperFunctions.correctEcmwfPressure(ecmwfPressure.getSampleFloat(x, y),
-					                                                              altitude.getSampleFloat(x, y),
-					                                                              auxData.press_scale_height); /* DPM #2.6.15.1-3 */
-					    final double airMass = HelperFunctions.calculateAirMassMusMuv(muv, mus);
+                        double press = HelperFunctions.correctEcmwfPressure(ecmwfPressure.getSampleFloat(x, y),
+                                                                            altitude.getSampleFloat(x, y),
+                                                                            auxData.press_scale_height); /* DPM #2.6.15.1-3 */
+                        final double airMass = HelperFunctions.calculateAirMassMusMuv(muv, mus);
 
                         /* correct pressure in presence of clouds */
                         if (cloudProduct != null) {
                             final boolean isCloud = cloudFlags.getSampleBit(x, y, CloudClassificationOp.F_CLOUD);
                             if (isCloud) {
                                 final double pressureCorrectionCloud = cloudTopPressure.getSampleDouble(x, y) / surfacePressure.getSampleDouble(x, y);
-                                press = press * pressureCorrectionCloud;
+                                press *= pressureCorrectionCloud;
                             }
                         }
 
@@ -301,7 +300,7 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					                        case bb865:
 					                        case bb890:
 					                            rayleigh_refl[bandId].setSample(ix, iy, rhoR[bandId]);
-                                                if (brr[bandId].getSampleFloat(ix, iy) <= 0.) {
+                                                if (brr[bandId].getSampleFloat(ix, iy) <= 0.0) {
 					                                /* set annotation flag for reflectance product - v4.2 */
 					                                brrFlags.setSample(ix, iy, (bandId <= bb760 ? bandId : bandId - 1), true);
 					                            }
@@ -326,12 +325,9 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					    }
 					}
                 }
-                pm.worked(1);
             }
         } catch (Exception e) {
             throw new OperatorException(e);
-        } finally {
-            pm.done();
         }
     }
 

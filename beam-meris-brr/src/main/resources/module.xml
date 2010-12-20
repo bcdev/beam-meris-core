@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-brr</symbolicName>
-    <version>2.2.1</version>
+    <version>2.3</version>
     <name>MERIS Bottom of Rayleigh Reflectance (BRR) Processor</name>
 
     <description>This processor computes the "Bottom of Rayleigh" Reflectance (BRR) from MERIS L1B products.</description>
@@ -14,6 +14,8 @@
     
     <changelog>
         <![CDATA[
+        <p>From 2.2 to 2.3:<br/>
+            Adaptions to BEAM API changes.<br/>
         <p>From 2.1 to 2.2:<br/>
             Adaptions to BEAM API changes.<br/>
         </p>
