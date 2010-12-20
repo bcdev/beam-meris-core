@@ -25,6 +25,7 @@ import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
+import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
@@ -32,8 +33,8 @@ import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.meris.AlbedomapConstants;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
@@ -61,14 +62,14 @@ import java.util.Calendar;
  * @version $Revision: 1.2 $ $Date: 2007/03/30 15:11:20 $
  */
 @OperatorMetadata(alias = "Meris.CloudTopPressureOp",
-        version = "1.0",
-        internal = true,
-        authors = "Marco Zühlke",
-        copyright = "(c) 2007-2009 by Brockmann Consult",
-        description = "Computes cloud top pressure with FUB NN.")
+                  version = "1.0",
+                  internal = true,
+                  authors = "Marco Zühlke",
+                  copyright = "(c) 2007-2009 by Brockmann Consult",
+                  description = "Computes cloud top pressure with FUB NN.")
 public class CloudTopPressureOp extends MerisBasisOp {
 
-//    private static final String INVALID_EXPRESSION = "l1_flags.INVALID or not l1_flags.LAND_OCEAN";
+    //    private static final String INVALID_EXPRESSION = "l1_flags.INVALID or not l1_flags.LAND_OCEAN";
     private static final String INVALID_EXPRESSION = "l1_flags.INVALID";
     private static final String LAND_EXPRESSION = "l1_flags.LAND_OCEAN";
 
@@ -82,18 +83,25 @@ public class CloudTopPressureOp extends MerisBasisOp {
     private float[] straylightCorrWavelengths = new float[DETECTOR_LENGTH_RR];
 
 
-    private L2AuxData auxData;
-    private JnnNet neuralNetLand;
-    private JnnNet neuralNetWater;
-    private L2CloudAuxData cloudAuxData;
-    private Band invalidBand;
-    
-    @SourceProduct(alias="input")
+    @SourceProduct(alias = "input")
     private Product sourceProduct;
     @TargetProduct
     private Product targetProduct;
-	@Parameter(description="If 'true' the algorithm will apply straylight correction.", defaultValue="false")
-    public boolean straylightCorr = false;
+    @Parameter(description = "If 'true' the algorithm will apply straylight correction.", defaultValue = "false")
+    private boolean straylightCorr = false;
+
+    private L2AuxData auxData;
+    private L2CloudAuxData cloudAuxData;
+    private ThreadLocal<JnnNet> waterNet;
+    private ThreadLocal<JnnNet> landNet;
+
+    private Band invalidBand;
+    private RasterDataNode szaNode;
+    private RasterDataNode saaNode;
+    private RasterDataNode vzaNode;
+    private RasterDataNode vaaNode;
+    private RasterDataNode latNode;
+    private RasterDataNode lonNode;
 
     @Override
     public void initialize() throws OperatorException {
@@ -105,80 +113,49 @@ public class CloudTopPressureOp extends MerisBasisOp {
         initAuxData();
         try {
             if (straylightCorr) {
-			    readStraylightCoeff();
-			    readStraylightCorrWavelengths();
+                readStraylightCoeff();
+                readStraylightCorrWavelengths();
             }
-		} catch (Exception e) {
-			throw new OperatorException("Failed to load straylight correction auxdata:\n" + e.getMessage());
-		}
+        } catch (Exception e) {
+            throw new OperatorException("Failed to load straylight correction auxdata:\n" + e.getMessage());
+        }
         createTargetProduct();
+
+        szaNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
+        saaNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME);
+        vzaNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME);
+        vaaNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME);
+        latNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME);
+        lonNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME);
+
     }
 
     private void loadNeuralNet() throws IOException, JnnException {
         String auxdataSrcPath = "auxdata/ctp";
-        final String auxdataDestPath = ".beam/" +
-                AlbedomapConstants.SYMBOLIC_NAME + "/" + auxdataSrcPath;
+        final String auxdataDestPath = ".beam/" + AlbedomapConstants.SYMBOLIC_NAME + "/" + auxdataSrcPath;
         File auxdataTargetDir = new File(SystemUtils.getUserHomeDir(), auxdataDestPath);
         URL sourceUrl = ResourceInstaller.getSourceUrl(this.getClass());
 
         ResourceInstaller resourceInstaller = new ResourceInstaller(sourceUrl, auxdataSrcPath, auxdataTargetDir);
         resourceInstaller.install(".*", new NullProgressMonitor());
-        
+
 //        File nnFile = new File(auxdataTargetDir, "ctp.nna");
-        File nnLandFile = new File(auxdataTargetDir, "ctp_NN_1.nna");
-        File nnWaterFile = new File(auxdataTargetDir, "ctp_NN_2.nna");
-        final InputStreamReader reader1 = new FileReader(nnLandFile);
-        final InputStreamReader reader2 = new FileReader(nnWaterFile);
-        try {
-            Jnn.setOptimizing(true);
-            neuralNetLand = Jnn.readNna(reader1);
-        } finally {
-            reader1.close();
-        }
-        try {
-            Jnn.setOptimizing(true);
-            neuralNetWater = Jnn.readNna(reader2);
-        } finally {
-            reader2.close();
-        }
+        final JnnNet neuralNetLand = readNeuralNet(new File(auxdataTargetDir, "ctp_NN_1.nna"));
+        final JnnNet neuralNetWater = readNeuralNet(new File(auxdataTargetDir, "ctp_NN_2.nna"));
+        landNet = new ThreadLocal<JnnNet>() {
+            @Override
+            protected JnnNet initialValue() {
+                return neuralNetLand.clone();
+            }
+        };
+        waterNet = new ThreadLocal<JnnNet>() {
+            @Override
+            protected JnnNet initialValue() {
+                return neuralNetWater.clone();
+            }
+        };
     }
 
-/**
-     * This method reads the straylight correction coefficients (RR only!)
-     *
-     * @throws IOException
-     */
-    private void readStraylightCoeff() throws IOException {
-
-        final InputStream inputStream = CloudTopPressureOp.class.getResourceAsStream(STRAYLIGHT_COEFF_FILE_NAME);
-
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        for (int i = 0; i < straylightCoefficients.length; i++) {
-            String line = bufferedReader.readLine();
-            line = line.trim();
-            straylightCoefficients[i] = Float.parseFloat(line);
-        }
-        inputStream.close();
-    }
-
-    /**
-     * This method reads the straylight correction wavelengths (RR only!)
-     *
-     * @throws IOException
-     */
-    private void readStraylightCorrWavelengths() throws IOException {
-
-        final InputStream inputStream = CloudTopPressureOp.class.getResourceAsStream(STRAYLIGHT_CORR_WAVELENGTH_FILE_NAME);
-
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-        for (int i = 0; i < straylightCorrWavelengths.length; i++) {
-            String line = bufferedReader.readLine();
-            line = line.trim();
-            straylightCorrWavelengths[i] = Float.parseFloat(line);
-        }
-        inputStream.close();
-    }
-    
 
     private void createTargetProduct() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "MER_CTP", "MER_L2");
@@ -191,7 +168,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
         BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand(INVALID_EXPRESSION, sourceProduct);
         invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
     }
-    
+
     private void initAuxData() throws OperatorException {
         try {
             L2AuxdataProvider auxdataProvider = L2AuxdataProvider.getInstance();
@@ -205,103 +182,84 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
     @Override
     public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
-    	
-    	Rectangle rectangle = targetTile.getRectangle();
-        pm.beginTask("Processing frame...", rectangle.height);
-        
-        try {
-        	Tile detector = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle, pm);
 
-        	Tile sza = null;
-			Tile saa = null;
-			Tile vza = null;
-			Tile vaa = null;
-			
-			Tile lat = null;
-			Tile lon = null;
-			
-			Tile toar10 = getSourceTile(sourceProduct.getBand("radiance_10"), rectangle, pm);
-			Tile toar11 = getSourceTile(sourceProduct.getBand("radiance_11"), rectangle, pm);
-			
-			Tile isInvalid = getSourceTile(invalidBand, rectangle, pm);
-			
-			Tile l1bFlags = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle, pm);
+        Rectangle rectangle = targetTile.getRectangle();
 
-			final double[] nnInWater = new double[6];
-			final double[] nnInLand = new double[7];
-            final double[] nnOut = new double[1];
+        Tile detector = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME), rectangle);
 
-            JnnNet nnLand = null;
-            JnnNet nnWater = null;
+        Tile sza = getSourceTile(szaNode, rectangle);
+        Tile saa = getSourceTile(saaNode, rectangle);
+        Tile vza = getSourceTile(vzaNode, rectangle);
+        Tile vaa = getSourceTile(vaaNode, rectangle);
 
-            for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
-				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
-					if (pm.isCanceled()) {
-						break;
-					}
-					if (isInvalid.getSampleBoolean(x, y)) {
-						targetTile.setSample(x, y, 0);
-					} else {
-                        if(sza == null || saa == null || vza == null || vaa == null) {
-                            sza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle, pm);
-                            saa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), rectangle, pm);
-                            vza = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), rectangle, pm);
-                            vaa = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), rectangle, pm);
+
+        Tile toar10 = getSourceTile(sourceProduct.getBand("radiance_10"), rectangle);
+        Tile toar11 = getSourceTile(sourceProduct.getBand("radiance_11"), rectangle);
+
+        Tile isInvalid = getSourceTile(invalidBand, rectangle);
+
+        Tile l1bFlags = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle);
+
+        Tile lat = null;
+        Tile lon = null;
+
+        final double[] nnInWater = new double[6];
+        final double[] nnInLand = new double[7];
+        final double[] nnOut = new double[1];
+
+        JnnNet nnLand = landNet.get();
+        JnnNet nnWater = waterNet.get();
+
+        for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+            checkForCancellation();
+            for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+                if (isInvalid.getSampleBoolean(x, y)) {
+                    targetTile.setSample(x, y, 0);
+                } else {
+
+                    double szaRad = sza.getSampleFloat(x, y) * MathUtils.DTOR;
+                    double vzaRad = vza.getSampleFloat(x, y) * MathUtils.DTOR;
+
+                    double stray = 0.0;
+                    double lambda = auxData.central_wavelength[BB760][detector.getSampleInt(x, y)];
+                    if (straylightCorr) {
+                        // apply FUB straylight correction...
+                        stray = straylightCoefficients[detector.getSampleInt(x, y)] * toar10.getSampleDouble(x, y);
+                        lambda = straylightCorrWavelengths[detector.getSampleInt(x, y)];
+                    }
+
+                    final double toar11XY_corrected = toar11.getSampleDouble(x, y) + stray;
+
+                    if (l1bFlags.getSampleBit(x, y, Constants.L1_F_LAND)) {
+                        if (lat == null || lon == null) {
+                            lat = getSourceTile(latNode, rectangle);
+                            lon = getSourceTile(lonNode, rectangle);
                         }
 
-						double szaRad = sza.getSampleFloat(x, y) * MathUtils.DTOR;
-						double vzaRad = vza.getSampleFloat(x, y) * MathUtils.DTOR;
+                        nnInLand[0] = computeSurfAlbedo(lat.getSampleFloat(x, y), lon.getSampleFloat(x, y)); // albedo
+                        nnInLand[1] = toar10.getSampleDouble(x, y);
+                        nnInLand[2] = toar11XY_corrected / toar10.getSampleDouble(x, y);
+                        nnInLand[3] = Math.cos(szaRad);
+                        nnInLand[4] = Math.cos(vzaRad);
+                        nnInLand[5] = Math.sin(vzaRad) *
+                                      Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
+                        nnInLand[6] = lambda;
 
-                        double stray = 0.0;
-                        double lambda = auxData.central_wavelength[BB760][detector.getSampleInt(x, y)];
-						if (straylightCorr) {
-							// apply FUB straylight correction...
-							stray = straylightCoefficients[detector.getSampleInt(x, y)] * toar10.getSampleDouble(x, y);
-							lambda = straylightCorrWavelengths[detector.getSampleInt(x, y)];
-						}
+                        nnLand.process(nnInLand, nnOut);
+                    } else {
+                        nnInWater[0] = toar10.getSampleDouble(x, y);
+                        nnInWater[1] = toar11XY_corrected / toar10.getSampleDouble(x, y);
+                        nnInWater[2] = Math.cos(szaRad);
+                        nnInWater[3] = Math.cos(vzaRad);
+                        nnInWater[4] = Math.sin(vzaRad) *
+                                       Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
+                        nnInWater[5] = lambda;
 
-						final double toar11XY_corrected = toar11.getSampleDouble(x, y) + stray;
-						
-						if (l1bFlags.getSampleBit(x, y, Constants.L1_F_LAND)) {
-                            if( nnLand == null ) {
-                                nnLand = neuralNetLand.clone();
-                            }
-                            if( lat == null || lon == null ) {
-                                lat = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rectangle, pm);
-                                lon = getSourceTile(sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME), rectangle, pm);
-                            }
-
-							nnInLand[0] = computeSurfAlbedo(lat.getSampleFloat(x, y), lon.getSampleFloat(x, y)); // albedo
-							nnInLand[1] = toar10.getSampleDouble(x, y);
-							nnInLand[2] = toar11XY_corrected / toar10.getSampleDouble(x, y);
-							nnInLand[3] = Math.cos(szaRad);
-							nnInLand[4] = Math.cos(vzaRad);
-							nnInLand[5] = Math.sin(vzaRad)
-									* Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
-							nnInLand[6] = lambda;
-
-                            nnLand.process(nnInLand, nnOut);
-						} else {
-                            if(nnWater == null) {
-                                nnWater = neuralNetWater.clone();
-                            }
-							nnInWater[0] = toar10.getSampleDouble(x, y);
-							nnInWater[1] = toar11XY_corrected / toar10.getSampleDouble(x, y);
-							nnInWater[2] = Math.cos(szaRad);
-							nnInWater[3] = Math.cos(vzaRad);
-							nnInWater[4] = Math.sin(vzaRad)
-									* Math.cos(MathUtils.DTOR * (vaa.getSampleFloat(x, y) - saa.getSampleFloat(x, y)));
-							nnInWater[5] = lambda;
-
-                            nnWater.process(nnInWater, nnOut);
-						}
-						targetTile.setSample(x, y, nnOut[0]);
-					}
+                        nnWater.process(nnInWater, nnOut);
+                    }
+                    targetTile.setSample(x, y, nnOut[0]);
                 }
-				pm.worked(1);
-			}
-        } finally {
-            pm.done();
+            }
         }
     }
 
@@ -322,8 +280,46 @@ public class CloudTopPressureOp extends MerisBasisOp {
         return Interp.interpolate(cloudAuxData.surfAlb.getJavaArray(), SaIndex);
     }
 
+    /*
+     * This method reads the straylight correction coefficients (RR only!)
+     */
+    private void readStraylightCoeff() throws IOException {
+        readAuxdataArray(STRAYLIGHT_COEFF_FILE_NAME, straylightCoefficients);
+    }
+
+    /*
+     * This method reads the straylight correction wavelengths (RR only!)
+     */
+    private void readStraylightCorrWavelengths() throws IOException {
+        readAuxdataArray(STRAYLIGHT_CORR_WAVELENGTH_FILE_NAME, straylightCorrWavelengths);
+    }
+
+    private void readAuxdataArray(String fileName, float[] array) throws IOException {
+        final InputStream inputStream = CloudTopPressureOp.class.getResourceAsStream(fileName);
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+        try {
+            for (int i = 0; i < array.length; i++) {
+                String line = bufferedReader.readLine();
+                line = line.trim();
+                array[i] = Float.parseFloat(line);
+            }
+        } finally {
+            bufferedReader.close();
+        }
+    }
+
+    private JnnNet readNeuralNet(File nnFile) throws IOException, JnnException {
+        final InputStreamReader reader1 = new FileReader(nnFile);
+        try {
+            Jnn.setOptimizing(true);
+            return Jnn.readNna(reader1);
+        } finally {
+            reader1.close();
+        }
+    }
 
     public static class Spi extends OperatorSpi {
+
         public Spi() {
             super(CloudTopPressureOp.class);
         }
