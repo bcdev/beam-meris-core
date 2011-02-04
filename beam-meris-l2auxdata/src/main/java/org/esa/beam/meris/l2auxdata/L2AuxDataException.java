@@ -6,7 +6,9 @@
  */
 package org.esa.beam.meris.l2auxdata;
 
-public class DpmConfigException extends Exception {
+public class L2AuxDataException extends Exception {
+
+    static final String MSG_PATTERN = "Could not load MERIS L2 auxiliary data:\n%1$s";
 
     /**
      * Constructs a new exception with the specified detail message.  The cause is not initialized, and may subsequently
@@ -15,8 +17,8 @@ public class DpmConfigException extends Exception {
      * @param message the detail message. The detail message is saved for later retrieval by the {@link #getMessage()}
      *                method.
      */
-    public DpmConfigException(String message) {
-        super(message);
+    public L2AuxDataException(String message) {
+        super(String.format(MSG_PATTERN, message));
     }
 
     /**
@@ -28,7 +30,7 @@ public class DpmConfigException extends Exception {
      *                <tt>null</tt> value is permitted, and indicates that the cause is nonexistent or unknown.)
      * @since 1.4
      */
-    public DpmConfigException(String message, Throwable cause) {
-        super(message, cause);
+    public L2AuxDataException(String message, Throwable cause) {
+        super(String.format(MSG_PATTERN, message), cause);
     }
 }

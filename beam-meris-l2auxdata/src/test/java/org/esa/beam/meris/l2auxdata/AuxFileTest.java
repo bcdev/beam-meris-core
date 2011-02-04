@@ -60,7 +60,7 @@ public class AuxFileTest extends TestCase {
     }
 
 /*
-    public void testThatNewDataInstanceIsReturnedByRead() throws DpmConfigException, IOException {
+    public void testThatNewDataInstanceIsReturnedByRead() throws L2AuxDataException, IOException {
         final File file = new File(_auxDataDir, CASE1_TEST_FILE);
         AuxFile auxFile = AuxFile.open('T', file);
         assertEquals(true, auxFile.isOpen());

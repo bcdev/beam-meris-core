@@ -31,9 +31,9 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
-import org.esa.beam.meris.l2auxdata.DpmConfigException;
+import org.esa.beam.meris.l2auxdata.L2AuxDataException;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
-import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
+import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
@@ -90,8 +90,8 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
     @Override
     public void initialize() throws OperatorException {
         try {
-            auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
-        } catch (DpmConfigException e) {
+            auxData = L2AuxDataProvider.getInstance().getAuxdata(l1bProduct);
+        } catch (L2AuxDataException e) {
             throw new OperatorException("Could not load L2Auxdata", e);
         }
         rayleighCorrection = new RayleighCorrection(auxData);

@@ -38,7 +38,7 @@ import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.meris.AlbedomapConstants;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
-import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
+import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
 import org.esa.beam.util.ResourceInstaller;
 import org.esa.beam.util.SystemUtils;
 import org.esa.beam.util.math.FractIndex;
@@ -171,7 +171,7 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
     private void initAuxData() throws OperatorException {
         try {
-            L2AuxdataProvider auxdataProvider = L2AuxdataProvider.getInstance();
+            L2AuxDataProvider auxdataProvider = L2AuxDataProvider.getInstance();
             auxData = auxdataProvider.getAuxdata(sourceProduct);
             int month = sourceProduct.getStartTime().getAsCalendar().get(Calendar.MONTH);
             cloudAuxData = new L2CloudAuxData(auxdataProvider.getDpmConfig(), month);

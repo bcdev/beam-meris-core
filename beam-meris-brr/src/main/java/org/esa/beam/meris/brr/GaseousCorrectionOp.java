@@ -32,7 +32,7 @@ import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
-import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
+import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.ProductUtils;
 
@@ -83,7 +83,7 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
     @Override
     public void initialize() throws OperatorException {
         try {
-            auxData = L2AuxdataProvider.getInstance().getAuxdata(l1bProduct);
+            auxData = L2AuxDataProvider.getInstance().getAuxdata(l1bProduct);
             gasCor = new GaseousAbsorptionCorrection(auxData);
         } catch (Exception e) {
             throw new OperatorException("could not load L2Auxdata", e);

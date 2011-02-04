@@ -29,7 +29,7 @@ import org.esa.beam.meris.brr.dpm.PixelIdentification;
 import org.esa.beam.meris.brr.dpm.RayleighCorrection;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
-import org.esa.beam.meris.l2auxdata.L2AuxdataProvider;
+import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
 import org.esa.beam.util.BitSetter;
 
 import com.bc.ceres.core.ProgressMonitor;
@@ -99,7 +99,7 @@ public class BrrOp extends MerisBasisOp {
 
     private void initAlgorithms(Product inputProduct) throws IllegalArgumentException {
         try {
-            final L2AuxData auxData = L2AuxdataProvider.getInstance().getAuxdata(inputProduct);
+            final L2AuxData auxData = L2AuxDataProvider.getInstance().getAuxdata(inputProduct);
             extdatl1 = new L1bDataExtraction(auxData);
             gaz_cor = new GaseousAbsorptionCorrection(auxData);
             pixelid = new PixelIdentification(auxData, gaz_cor);

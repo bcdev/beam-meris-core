@@ -40,10 +40,10 @@ public class DpmConfig {
     /**
      * Constructs a new configuration.
      *
-     * @throws DpmConfigException
+     * @throws L2AuxDataException
      *          if the configuration could not be loaded from the file
      */
-    public DpmConfig() throws DpmConfigException {
+    public DpmConfig() throws L2AuxDataException {
         String auxdataSrcPath = "auxdata/" + AUXDATA_DIRNAME;
         final String auxdataDestPath = ".beam/" + SYMBOLIC_NAME + "/" + auxdataSrcPath;
         auxdataTargetDir = new File(SystemUtils.getUserHomeDir(), auxdataDestPath);
@@ -54,7 +54,7 @@ public class DpmConfig {
         try {
             resourceInstaller.install(".*", new NullProgressMonitor());
         } catch (IOException e) {
-            throw new DpmConfigException("Could not install auxdata", e);
+            throw new L2AuxDataException("Could not install " + auxdataSrcPath, e);
         }
         File configFile = new File(auxdataTargetDir, MERIS_L2_CONF);
         FileReader reader = null;
@@ -62,7 +62,7 @@ public class DpmConfig {
             reader = new FileReader(configFile);
             init(reader);
         } catch (FileNotFoundException e) {
-            throw new DpmConfigException("Configuration file not found: " + configFile.getPath());
+            throw new L2AuxDataException("Configuration file not found: " + configFile.getPath());
         } finally {
             if (reader != null) {
                 try {
@@ -77,9 +77,9 @@ public class DpmConfig {
      * Gets the directory of the MERIS Level 2 auxiliary databases.
      *
      * @return the auxiliary databases directory, never <code>null</code>
-     * @throws DpmConfigException if the directory could not be retrieved from this configuration
+     * @throws L2AuxDataException if the directory could not be retrieved from this configuration
      */
-    public File getAuxDataDir() throws DpmConfigException {
+    public File getAuxDataDir() throws L2AuxDataException {
         final Element auxDataConfigElement = getMandatoryChild(_rootElement, "aux_data_config");
         final String auxDataDirPath = getOptionalAttribute(auxDataConfigElement, "dir");
         final File auxDataDir;
@@ -99,9 +99,9 @@ public class DpmConfig {
      * @param name           the database name, e.g. <code>"landaero"</code> or <code>"case2"</code>
      * @param aquisitionDate the aquisition date of a given level 1b input product, can be <code>null</code>
      * @return the file path to the database file, never <code>null</code>
-     * @throws DpmConfigException if the file could not be retrieved from this configuration
+     * @throws L2AuxDataException if the file could not be retrieved from this configuration
      */
-    public File getAuxDatabaseFile(String name, Date aquisitionDate) throws DpmConfigException {
+    public File getAuxDatabaseFile(String name, Date aquisitionDate) throws L2AuxDataException {
         String auxDatabaseFilename = null;
         final Element auxDataConfigElement = getMandatoryChild(_rootElement, "aux_data_config");
         final Element auxDataDefaultsElement = getMandatoryChild(auxDataConfigElement, "aux_data_defaults");
@@ -120,7 +120,7 @@ public class DpmConfig {
         }
 
         if (auxDatabaseFilename == null) {
-            throw new DpmConfigException("Auxiliary database name not specified in configuration: " + name);
+            throw new L2AuxDataException("Auxiliary database name not specified in configuration: " + name);
         }
 
         File auxDataDir = getAuxDataDir();
@@ -133,9 +133,9 @@ public class DpmConfig {
      * @param fileInfo       the file information
      * @param aquisitionDate the aquisition date of a given level 1b input product, can be <code>null</code>
      * @return the file path to the database file, never <code>null</code>
-     * @throws DpmConfigException if the file could not be retrieved from this configuration
+     * @throws L2AuxDataException if the file could not be retrieved from this configuration
      */
-    public AuxFile getAuxFile(AuxFileInfo fileInfo, Date aquisitionDate) throws DpmConfigException {
+    public AuxFile getAuxFile(AuxFileInfo fileInfo, Date aquisitionDate) throws L2AuxDataException {
         final Element auxDataConfigElement = getMandatoryChild(_rootElement, "aux_data_config");
         final Element auxDataDefaultsElement = getMandatoryChild(auxDataConfigElement, "aux_data_defaults");
         final Iterator auxDatabaseElementIt = getMandatoryChildren(auxDataDefaultsElement, "aux_database");
@@ -153,7 +153,7 @@ public class DpmConfig {
             // todo - loop through "aux_data_overrides" children and compare given dates with "aquisition_start" and "aquisition_end"
         }
         if (filename == null) {
-            throw new DpmConfigException("Missing filename for auxiliary file type '" + dirName + "'");
+            throw new L2AuxDataException("Missing filename for auxiliary file type '" + dirName + "'");
         }
         final File dir = new File(getAuxDataDir(), dirName);
         final File file = new File(dir, filename);
@@ -163,18 +163,18 @@ public class DpmConfig {
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Private implementation helpers
 
-    private Element getMandatoryChild(Element parent, String name) throws DpmConfigException {
+    private Element getMandatoryChild(Element parent, String name) throws L2AuxDataException {
         final Element child = parent.getChild(name);
         if (child == null) {
-            throw new DpmConfigException("Missing element '" + name + "' in element '" + parent.getName() + "'");
+            throw new L2AuxDataException("Missing element '" + name + "' in element '" + parent.getName() + "'");
         }
         return child;
     }
 
-    private Iterator getMandatoryChildren(Element parent, String name) throws DpmConfigException {
+    private Iterator getMandatoryChildren(Element parent, String name) throws L2AuxDataException {
         final Iterator iterator = (parent.getChildren(name)).iterator();
         if (!iterator.hasNext()) {
-            throw new DpmConfigException("Missing element(s) '" + name + "' in element '" + parent.getName() + "'");
+            throw new L2AuxDataException("Missing element(s) '" + name + "' in element '" + parent.getName() + "'");
         }
         return iterator;
     }
@@ -184,25 +184,25 @@ public class DpmConfig {
         return element.getAttributeValue(name);
     }
 
-    private String getMandatoryAttribute(Element element, String name) throws DpmConfigException {
+    private String getMandatoryAttribute(Element element, String name) throws L2AuxDataException {
         final String value = element.getAttributeValue(name);
         if (value == null) {
-            throw new DpmConfigException("Missing attribute '" + name + "' in element '" + element.getName() + "'");
+            throw new L2AuxDataException("Missing attribute '" + name + "' in element '" + element.getName() + "'");
         }
         return value;
     }
 
 
-    private void init(Reader reader) throws DpmConfigException {
+    private void init(Reader reader) throws L2AuxDataException {
         final SAXBuilder saxBuilder = new SAXBuilder();
         saxBuilder.setValidation(false); // todo - provide XML schema or DTD for config
         try {
             final Document document = saxBuilder.build(reader);
             _rootElement = document.getRootElement();
         } catch (JDOMException e) {
-            throw new DpmConfigException("Failed to load configuration", e);
+            throw new L2AuxDataException("Failed to load configuration", e);
         } catch (IOException e) {
-            throw new DpmConfigException("Failed to load configuration", e);
+            throw new L2AuxDataException("Failed to load configuration", e);
         }
     }
 }

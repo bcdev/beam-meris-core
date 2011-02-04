@@ -16,6 +16,7 @@
  */
 package org.esa.beam.meris.l2auxdata;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -27,23 +28,23 @@ import org.esa.beam.framework.datamodel.Product;
  * @author marcoz
  * @version $Revision: $ $Date: $
  */
-public class L2AuxdataProvider {
-    private static L2AuxdataProvider instance;
+public class L2AuxDataProvider {
+    private static L2AuxDataProvider instance;
     private DpmConfig dpmConfig;
     private final Map<Product, L2AuxData> map;
     
-    public static synchronized L2AuxdataProvider getInstance() {
+    public static synchronized L2AuxDataProvider getInstance() {
         if (instance == null) {
-            instance = new L2AuxdataProvider();
+            instance = new L2AuxDataProvider();
         }
         return instance;
     }
     
-    private L2AuxdataProvider() {
+    private L2AuxDataProvider() {
         map = new WeakHashMap<Product, L2AuxData>();
     }
     
-    public synchronized L2AuxData getAuxdata(Product product) throws DpmConfigException {
+    public synchronized L2AuxData getAuxdata(Product product) throws L2AuxDataException {
         getDpmConfig();
         L2AuxData auxData = map.get(product);
         if (auxData == null) {
@@ -53,28 +54,26 @@ public class L2AuxdataProvider {
         return auxData;
     }
     
-    public synchronized DpmConfig getDpmConfig() throws DpmConfigException {
+    public synchronized DpmConfig getDpmConfig() throws L2AuxDataException {
         if (dpmConfig == null ) {
             loadDpmConfig();
         }
         return dpmConfig;
     }
 
-    private L2AuxData loadAuxdata(Product product) throws DpmConfigException {
+    private L2AuxData loadAuxdata(Product product) throws L2AuxDataException {
         L2AuxData auxData;
         try {
             auxData = new L2AuxData(dpmConfig, product);
-        } catch (Exception e) {
-            throw new DpmConfigException("Could not load L2Auxdata: ", e);
+        } catch (L2AuxDataException e) {
+            throw e;
+        } catch (IOException e) {
+            throw new L2AuxDataException(e.getMessage(), e);
         }
         return auxData;
     }
     
-    private void loadDpmConfig() throws DpmConfigException {
-        try {
-            dpmConfig = new DpmConfig();
-        } catch (Exception e) {
-            throw new DpmConfigException("Failed to load configuration:\n" + e.getMessage(), e);
-        }
+    private void loadDpmConfig() throws L2AuxDataException {
+        dpmConfig = new DpmConfig();
     }
 }

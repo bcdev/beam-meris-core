@@ -6,8 +6,7 @@
  */
 package org.esa.beam.meris.l2auxdata;
 
-import java.io.IOException;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
@@ -18,7 +17,7 @@ import org.esa.beam.util.math.LUT;
 import org.esa.beam.util.math.MDArray;
 import org.esa.beam.util.math.Range;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.io.IOException;
 
 /**
  * The <code>L2AuxData</code> class is a collection of all relevant MERIS Level 2 DPM parameters.
@@ -244,12 +243,18 @@ public final class L2AuxData implements Constants {
 
     private Product sourceProduct;
 
-    public L2AuxData(DpmConfig config, Product product) throws DpmConfigException, IOException {
+    /**
+     * @param config
+     * @param product Source product, must have start/stop time set and have a tie-point grid "sun_zenith"
+     * @throws L2AuxDataException
+     * @throws IOException
+     */
+    public L2AuxData(DpmConfig config, Product product) throws L2AuxDataException, IOException {
         sourceProduct = product;
         loadAuxData(config);
     }
 
-    private void loadAuxData(DpmConfig config) throws DpmConfigException, IOException {
+    private void loadAuxData(DpmConfig config) throws L2AuxDataException, IOException {
         final AuxFile auxFileO = AuxFile.open('O', config.getAuxDatabaseFile("lv2conf", null));
         final AuxFile auxFileP = AuxFile.open('P', config.getAuxDatabaseFile("atmosphere", null));
         final AuxFile auxFileS = AuxFile.open('S', config.getAuxDatabaseFile("landaero", null));
@@ -267,7 +272,7 @@ public final class L2AuxData implements Constants {
         }
     }
 
-    private void loadConfigurationAuxData(final AuxFile auxFileO) throws IOException {
+    private void loadConfigurationAuxData(final AuxFile auxFileO) throws IOException, L2AuxDataException {
 
         // Default radiance for saturated pixels.
         Saturation_L = auxFileO.readDoubleArray("O202", L1_BAND_NUM);
@@ -284,7 +289,7 @@ public final class L2AuxData implements Constants {
             // DPM 2.1.4-3
             final double daysSince2000 = 0.5 * (startTime.getMJD() + stopTime.getMJD());
             seasonal_factor = Utils.computeSeasonalFactor(daysSince2000,
-                                                             sun_earth_distance_square);
+                                                          sun_earth_distance_square);
         }
 
         final byte[] sw_land_smile = auxFileO.readRecord("O301", ProductData.TYPE_ASCII).getElemString().getBytes();
@@ -315,7 +320,7 @@ public final class L2AuxData implements Constants {
             central_wavelength_key = "O309";
             detector_solar_irradiance_key = "O30A";
         } else {
-            throw new IOException("Input product is neither MERIS RR nor FR");
+            throw new L2AuxDataException("Input product is neither MERIS RR nor FR");
         }
         int num_elems = L1_BAND_NUM * detector_count;
 
@@ -588,7 +593,7 @@ public final class L2AuxData implements Constants {
         Rayscatt_coeff_s.setTab(3, ang_scale);
     }
 
-    private void loadLandAerosolAuxData(final AuxFile auxFileS, final AuxFile auxFileT) throws IOException {
+    private void loadLandAerosolAuxData(final AuxFile auxFileS, final AuxFile auxFileT) throws IOException, L2AuxDataException {
         assert R7T_NUM_SZA == R7T_NUM_VZA;
         final double[] r7thresh_tab1 = auxFileS.readDoubleArray("S200", R7T_NUM_SZA);
         final double[] r7thresh_tab2 = r7thresh_tab1;
@@ -650,6 +655,12 @@ public final class L2AuxData implements Constants {
         lap_beta_w = auxFileS.readDouble("S206");
 
         TiePointGrid szaGrid = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
+        if (szaGrid == null) {
+            String msg = String.format("Source product does not contain tie-point grid '%s'",
+                                       EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
+            throw new L2AuxDataException(msg);
+        }
+
         Range szaRange = szaGrid.computeRasterDataRange(null, ProgressMonitor.NULL);
 
         /* Read thetas tabulated values for LUTs turbid and Glint */
@@ -671,7 +682,7 @@ public final class L2AuxData implements Constants {
         }
         /* table does not accomodate whole thetas range : issue a warning */
         if (max >= min + ROG_NUM_SZA) {
-            throw new IllegalArgumentException("wrong thetas(ROG) range: " + min + " " + max);
+            throw new L2AuxDataException("Wrong thetas(ROG) range: " + min + " to " + max);
         }
 
         min = Math.min(min, ROG_ALL_SZA - ROG_NUM_SZA);

@@ -19,7 +19,7 @@ package org.esa.beam.meris.cloud;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.meris.l2auxdata.AuxFile;
 import org.esa.beam.meris.l2auxdata.DpmConfig;
-import org.esa.beam.meris.l2auxdata.DpmConfigException;
+import org.esa.beam.meris.l2auxdata.L2AuxDataException;
 import org.esa.beam.util.math.LUT;
 
 import java.io.IOException;
@@ -41,12 +41,12 @@ public class L2CloudAuxData {
 
     private int month;
 
-    public L2CloudAuxData(DpmConfig config, int month) throws IOException, DpmConfigException {
+    public L2CloudAuxData(DpmConfig config, int month) throws IOException, L2AuxDataException {
         this.month = month;
         loadAuxdata(config);
     }
 
-    private void loadAuxdata(DpmConfig config) throws IOException, DpmConfigException {
+    private void loadAuxdata(DpmConfig config) throws IOException, L2AuxDataException {
         final AuxFile auxFileO = AuxFile.open('V', config.getAuxDatabaseFile("cloud", null));
         try {
             loadCloudFile(auxFileO);
