@@ -32,6 +32,7 @@ import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
+import org.esa.beam.meris.l2auxdata.L2AuxDataException;
 import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
 import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
@@ -68,8 +69,8 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
     public void initialize() throws OperatorException {
         try {
             auxData = L2AuxDataProvider.getInstance().getAuxdata(sourceProduct);
-        } catch (Exception e) {
-            throw new OperatorException("could not load L2Auxdata", e);
+        } catch (L2AuxDataException e) {
+            throw new OperatorException(e.getMessage(), e);
         }
 
         targetProduct = createCompatibleProduct(sourceProduct, "MER", "MER_L2");

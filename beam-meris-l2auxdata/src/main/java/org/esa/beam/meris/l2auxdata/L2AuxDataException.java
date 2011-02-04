@@ -8,7 +8,7 @@ package org.esa.beam.meris.l2auxdata;
 
 public class L2AuxDataException extends Exception {
 
-    static final String MSG_PATTERN = "Could not load MERIS L2 auxiliary data:\n%1$s";
+    static final String MSG_PATTERN = "Could not load MERIS L2 auxiliary data: %1$s";
 
     /**
      * Constructs a new exception with the specified detail message.  The cause is not initialized, and may subsequently
