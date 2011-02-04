@@ -16,11 +16,11 @@
         <module>beam-meris-brr</module>
         <module>beam-meris-l2auxdata</module>
         <module>beam-meris-sdr</module>
-        
+
         <!-- disabled module so it doe not accidentally deployed -->
         <!--<module>beam-meris-l2auxdata-bundle</module>-->
     </modules>
-    
+
     <repositories>
         <repository>
             <id>bc-mvn</id>
@@ -61,5 +61,5 @@
             <uniqueVersion>false</uniqueVersion>
         </snapshotRepository>
     </distributionManagement>
-    
+
 </project>

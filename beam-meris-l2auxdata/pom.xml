@@ -62,6 +62,21 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- Source JARs are used in IDEs only, we don't need resources -->
+                    <excludeResources>true</excludeResources>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -108,7 +123,7 @@
         </pluginRepository>
     </pluginRepositories>
 
- <distributionManagement>
+    <distributionManagement>
         <repository>
             <id>bc-mvn-repo-public</id>
             <name>Public Maven Repository at Brockmann Consult</name>

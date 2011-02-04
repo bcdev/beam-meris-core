@@ -30,7 +30,7 @@
         </dependency>
     </dependencies>
 
-	<repositories>
+    <repositories>
         <repository>
             <id>bc-mvn-repo-http</id>
             <name>Public Maven Repository at Brockmann Consult</name>
@@ -50,19 +50,19 @@
             <url>http://maven.geotools.fr/repository</url>
         </repository>
     </repositories>
-	
-	<distributionManagement>
+
+    <distributionManagement>
         <repository>
             <id>bc-mvn-repo-public</id>
             <name>Public Maven Repository at Brockmann Consult</name>
             <url>scp://www.brockmann-consult.de/var/www/www.brockmann-consult.de/mvn/os</url>
-			<uniqueVersion>false</uniqueVersion>
+            <uniqueVersion>false</uniqueVersion>
         </repository>
         <snapshotRepository>
             <id>bc-mvn-repo-public</id>
             <name>Public Maven Repository at Brockmann Consult</name>
             <url>scp://www.brockmann-consult.de/var/www/www.brockmann-consult.de/mvn/os</url>
-			<uniqueVersion>false</uniqueVersion>
+            <uniqueVersion>false</uniqueVersion>
         </snapshotRepository>
     </distributionManagement>
 
@@ -74,7 +74,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    
+
     <build>
         <plugins>
             <plugin>
@@ -85,6 +85,21 @@
                     <debug>true</debug>
                     <fork>false</fork>
                     <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- Source JARs are used in IDEs only, we don't need resources -->
+                    <excludeResources>true</excludeResources>
                 </configuration>
             </plugin>
         </plugins>
