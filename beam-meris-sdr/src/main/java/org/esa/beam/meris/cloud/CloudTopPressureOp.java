@@ -23,6 +23,8 @@ import com.bc.jnn.JnnException;
 import com.bc.jnn.JnnNet;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
+import org.esa.beam.framework.datamodel.GeoPos;
+import org.esa.beam.framework.datamodel.PixelPos;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.RasterDataNode;
@@ -100,8 +102,6 @@ public class CloudTopPressureOp extends MerisBasisOp {
     private RasterDataNode saaNode;
     private RasterDataNode vzaNode;
     private RasterDataNode vaaNode;
-    private RasterDataNode latNode;
-    private RasterDataNode lonNode;
 
     @Override
     public void initialize() throws OperatorException {
@@ -125,8 +125,6 @@ public class CloudTopPressureOp extends MerisBasisOp {
         saaNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME);
         vzaNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME);
         vaaNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME);
-        latNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME);
-        lonNode = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_LON_DS_NAME);
 
     }
 
@@ -200,9 +198,6 @@ public class CloudTopPressureOp extends MerisBasisOp {
 
         Tile l1bFlags = getSourceTile(sourceProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME), rectangle);
 
-        Tile lat = null;
-        Tile lon = null;
-
         final double[] nnInWater = new double[6];
         final double[] nnInLand = new double[7];
         final double[] nnOut = new double[1];
@@ -231,12 +226,8 @@ public class CloudTopPressureOp extends MerisBasisOp {
                     final double toar11XY_corrected = toar11.getSampleDouble(x, y) + stray;
 
                     if (l1bFlags.getSampleBit(x, y, Constants.L1_F_LAND)) {
-                        if (lat == null || lon == null) {
-                            lat = getSourceTile(latNode, rectangle);
-                            lon = getSourceTile(lonNode, rectangle);
-                        }
-
-                        nnInLand[0] = computeSurfAlbedo(lat.getSampleFloat(x, y), lon.getSampleFloat(x, y)); // albedo
+                        final GeoPos geoPos =  sourceProduct.getGeoCoding().getGeoPos(new PixelPos(x,y), null);
+                        nnInLand[0] = computeSurfAlbedo(geoPos.getLat(), geoPos.getLon()); // albedo
                         nnInLand[1] = toar10.getSampleDouble(x, y);
                         nnInLand[2] = toar11XY_corrected / toar10.getSampleDouble(x, y);
                         nnInLand[3] = Math.cos(szaRad);
