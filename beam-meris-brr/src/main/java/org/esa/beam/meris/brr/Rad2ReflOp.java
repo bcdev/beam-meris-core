@@ -20,6 +20,7 @@ import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
+import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
@@ -34,6 +35,7 @@ import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxDataException;
 import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
+import org.esa.beam.util.ProductUtils;
 import org.esa.beam.util.math.MathUtils;
 
 import java.awt.Rectangle;
@@ -71,11 +73,17 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
 
         detectorIndexBand = sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME);
         sunZenihTPG = sourceProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME);
-        invalidImage = VirtualBandOpImage.createMask("l1_flags.INVALID", sourceProduct,
-                                                     ResolutionLevel.MAXRES);
+        invalidImage = VirtualBandOpImage.createMask("l1_flags.INVALID", sourceProduct, ResolutionLevel.MAXRES);
 
         targetProduct = createCompatibleProduct(sourceProduct, "MER", "MER_L2");
-
+        for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
+            Band rhoToaBand = targetProduct.addBand(RHO_TOA_BAND_PREFIX + "_" + (i + 1),
+                                      ProductData.TYPE_FLOAT32);
+            Band radianceBand = sourceProduct.getBandAt(i);
+            ProductUtils.copySpectralBandProperties(radianceBand, rhoToaBand);
+            rhoToaBand.setNoDataValueUsed(true);
+            rhoToaBand.setNoDataValue(BAD_VALUE);
+        }
         if (sourceProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(sourceProduct.getPreferredTileSize());
         }
