@@ -207,10 +207,4 @@ public class GaseousAbsorptionCorrection implements Constants {
 
         return th2o;
     }
-
-    private static class LocalHelperVariables {
-
-        final FractIndex spectralShift760 = new FractIndex();
-        final FractIndex spectralShift705 = new FractIndex();
-    }
 }
