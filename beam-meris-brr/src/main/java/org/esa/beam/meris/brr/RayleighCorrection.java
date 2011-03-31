@@ -14,7 +14,7 @@ import org.esa.beam.util.math.Interp;
 
 public class RayleighCorrection implements Constants {
 
-    static final int[] BANDS_TO_CORRECT = new int[]{bb1, bb2, bb3, bb4, bb5, bb6, bb7, bb7, bb8, bb9, bb10, bb12, bb13, bb14};
+    static final int[] BANDS_TO_CORRECT = new int[]{bb1, bb2, bb3, bb4, bb5, bb6, bb7, bb8, bb9, bb10, bb12, bb13, bb14};
     static final int[] BANDS_TO_NOT_CORRECT = new int[]{bb11, bb15};
 
     private L2AuxData auxdata;
