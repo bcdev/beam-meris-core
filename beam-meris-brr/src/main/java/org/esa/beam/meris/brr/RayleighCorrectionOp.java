@@ -125,16 +125,12 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
     private Band[] addBandGroup(String prefix) {
         Band[] bands = new Band[L1_BAND_NUM];
-        for (int i = 0; i < bands.length; i++) {
-            if (i == bb11 || i == bb15) {
-                continue;
-            }
-            final Band inBand = l1bProduct.getBandAt(i);
-
-            bands[i] = targetProduct.addBand(prefix + "_" + (i + 1), ProductData.TYPE_FLOAT32);
-            ProductUtils.copySpectralBandProperties(inBand, bands[i]);
-            bands[i].setNoDataValueUsed(true);
-            bands[i].setNoDataValue(BAD_VALUE);
+        for(int bandId : RayleighCorrection.BANDS_TO_CORRECT) {
+            Band targetBand = targetProduct.addBand(prefix + "_" + (bandId + 1), ProductData.TYPE_FLOAT32);
+            ProductUtils.copySpectralBandProperties(l1bProduct.getBandAt(bandId), targetBand);
+            targetBand.setNoDataValueUsed(true);
+            targetBand.setNoDataValue(BAD_VALUE);
+            bands[bandId] = targetBand;
         }
         return bands;
     }
@@ -142,11 +138,8 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
     public static FlagCoding createFlagCoding(int bandLength) {
         FlagCoding flagCoding = new FlagCoding(RAY_CORR_FLAGS);
         int bitIndex = 0;
-        for (int i = 0; i < bandLength; i++) {
-            if (i == bb11 || i == bb15) {
-                continue;
-            }
-            flagCoding.addFlag("F_NEGATIV_BRR_" + (i + 1), BitSetter.setFlag(0, bitIndex), null);
+        for(int bandId : RayleighCorrection.BANDS_TO_CORRECT) {
+            flagCoding.addFlag("F_NEGATIV_BRR_" + (bandId + 1), BitSetter.setFlag(0, bitIndex), null);
             bitIndex++;
         }
         return flagCoding;
@@ -163,12 +156,10 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
             Tile ecmwfPressure = getSourceTile(l1bProduct.getTiePointGrid("atm_press"), rectangle);
 
             Tile[] rhoNg = new Tile[EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS];
-			for (int i = 0; i < rhoNg.length; i++) {
-			    if (i == bb11 || i == bb15) {
-			        continue;
-			    }
-			    rhoNg[i] = getSourceTile(gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (i + 1)), rectangle);
-			}
+            for(int bandId : RayleighCorrection.BANDS_TO_CORRECT) {
+                Band band = gascorProduct.getBand(GaseousCorrectionOp.RHO_NG_BAND_PREFIX + "_" + (bandId + 1));
+                rhoNg[bandId] = getSourceTile(band, rectangle);
+            }
 			Tile isLandCons = getSourceTile(isLandBand, rectangle);
 
 			Tile[] transRvData = null;
@@ -289,30 +280,12 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					                                                 rhoNg, brr, ix, iy); /*  (2.6.15.4) */
 
 					                /* flag negative Rayleigh-corrected reflectance */
-					                for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
-					                    switch (bandId) {
-					                        case bb412:
-					                        case bb442:
-					                        case bb490:
-					                        case bb510:
-					                        case bb560:
-					                        case bb620:
-					                        case bb665:
-					                        case bb681:
-					                        case bb705:
-					                        case bb753:
-					                        case bb775:
-					                        case bb865:
-					                        case bb890:
-                                                if (brr[bandId].getSampleFloat(ix, iy) <= 0.0) {
-					                                /* set annotation flag for reflectance product - v4.2 */
-					                                brrFlags.setSample(ix, iy, (bandId <= bb760 ? bandId : bandId - 1), true);
-					                            }
-					                            break;
-					                        default:
-					                            break;
-					                    }
-					                }
+                                    for(int bandId : RayleighCorrection.BANDS_TO_CORRECT) {
+                                        if (brr[bandId].getSampleFloat(ix, iy) <= 0.0) {
+                                            /* set annotation flag for reflectance product - v4.2 */
+                                            brrFlags.setSample(ix, iy, (bandId <= bb760 ? bandId : bandId - 1), true);
+                                        }
+                                    }
                                     if (exportRhoR) {
                                         for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
                                             if (bandId != bb11 && bandId != bb15) {
