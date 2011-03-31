@@ -14,16 +14,14 @@ import org.esa.beam.util.math.Interp;
 
 public class RayleighCorrection implements Constants {
 
-    private LocalHelperVariables lh;
-
     private L2AuxData auxdata;
 
     /**
      * Constructs the module
+     * @param auxData level 2 auxdata
      */
     public RayleighCorrection(L2AuxData auxData) {
         auxdata = auxData;
-        lh = new LocalHelperVariables();
     }
 
     /**
@@ -47,10 +45,21 @@ public class RayleighCorrection implements Constants {
                              double mus, double muv, double airMass,
                              double[] phaseRayl, double[] tauRayl, double[] refRayl) {
 
-        LocalHelperVariables lhLocal = new LocalHelperVariables();
+        /**
+         * Rayleigh reflectance Fourier components.
+         */
+        final double[] rhoRayl = new double[RAYSCATT_NUM_SER];
+        /**
+         * Polynomial coeff for computation, a(s) in DPM.
+         */
+        final double[][] abcd = new double[RAYSCATT_NUM_SER][RAYSCATT_NUM_ORD];
+        /**
+         * Interp. coordinates into table {@link L2AuxData#Rayscatt_coeff_s}.
+         */
+        final FractIndex[] ref_rayleigh_i = FractIndex.createArray(2);
 
-        FractIndex tsi = lhLocal.ref_rayleigh_i[0];         /* interp coordinates for thetas in LUT scale */
-        FractIndex tvi = lhLocal.ref_rayleigh_i[1];          /* interp coordinates for thetav in LUT scale */
+        FractIndex tsi = ref_rayleigh_i[0];         /* interp coordinates for thetas in LUT scale */
+        FractIndex tvi = ref_rayleigh_i[1];          /* interp coordinates for thetav in LUT scale */
 
         double mud = Math.cos(RAD * delta_azimuth); /* used for all bands, compute once */
         double mu2d = 2.0 * mud * mud - 1.0;
@@ -63,9 +72,9 @@ public class RayleighCorrection implements Constants {
         /* pre-computation of multiple scatt coefficients, wavelength independent */
         for (int is = 0; is < RAYSCATT_NUM_SER; is++) {
             /* DPM #2.1.17-4 to 2.1.17-7 */
-            final double[] lhLocal_abcd_is = lhLocal.abcd[is];
+            final double[] lhLocal_abcd_is = abcd[is];
             for (int ik = 0; ik < RAYSCATT_NUM_ORD; ik++) {
-                lhLocal_abcd_is[ik] = Interp.interpolate(Rayscatt_coeff_s[ik][is], lhLocal.ref_rayleigh_i);
+                lhLocal_abcd_is[ik] = Interp.interpolate(Rayscatt_coeff_s[ik][is], ref_rayleigh_i);
             }
         }
 
@@ -89,23 +98,23 @@ public class RayleighCorrection implements Constants {
                     double constTerm = (1.0 - Math.exp(-tauRayl_bandId * airMass)) / (4.0 * (mus + muv));
                     for (int is = 0; is < RAYSCATT_NUM_SER; is++) {
                         /* primary scattering reflectance */
-                        lhLocal.rhoRayl[is] = phaseRayl[is] * constTerm; /* DPM #2.1.17-8 CORRECTED */
+                        rhoRayl[is] = phaseRayl[is] * constTerm; /* DPM #2.1.17-8 CORRECTED */
 
-                        final double[] lhLocal_abcd_is = lhLocal.abcd[is];
+                        final double[] abcd_is = abcd[is];
                         /* coefficient for multiple scattering correction */
                         double multiScatteringCoeff = 0.0;
                         for (int ik = RAYSCATT_NUM_ORD - 1; ik >= 0; ik--) {
-                            multiScatteringCoeff = tauRayl_bandId * multiScatteringCoeff + lhLocal_abcd_is[ik]; /* DPM #2.1.17.9 */
+                            multiScatteringCoeff = tauRayl_bandId * multiScatteringCoeff + abcd_is[ik]; /* DPM #2.1.17.9 */
                         }
 
                         /* Fourier component of Rayleigh reflectance */
-                        lhLocal.rhoRayl[is] *= multiScatteringCoeff; /* DPM #2.1.17-10 */
+                        rhoRayl[is] *= multiScatteringCoeff; /* DPM #2.1.17-10 */
                     }
 
                     /* Rayleigh reflectance */
-                    refRayl[bandId] = lhLocal.rhoRayl[0] +
-                                      2.0 * mud * lhLocal.rhoRayl[1] +
-                                      2.0 * mu2d * lhLocal.rhoRayl[2]; /* DPM #2.1.17-11 */
+                    refRayl[bandId] = rhoRayl[0] +
+                                      2.0 * mud * rhoRayl[1] +
+                                      2.0 * mu2d * rhoRayl[2]; /* DPM #2.1.17-11 */
                     break;
 
                 default:
@@ -240,7 +249,7 @@ public class RayleighCorrection implements Constants {
 \*-----------------------------------------------------------------------------*/
 
     public void sphAlb_rayleigh(double[] tauRayl, double[] sphalbRayl) {
-
+        FractIndex[] indexes = FractIndex.createArray(1);
         for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
             switch (bandId) {
                 /* bands to be corrected */
@@ -257,9 +266,9 @@ public class RayleighCorrection implements Constants {
                 case bb12:
                 case bb13:
                 case bb14:
-                    Interp.interpCoord(tauRayl[bandId], auxdata.Rayalb.getTab(0), lh.ray_index[0]);
+                    Interp.interpCoord(tauRayl[bandId], auxdata.Rayalb.getTab(0), indexes[0]);
                     sphalbRayl[bandId] = Interp.interpolate(auxdata.Rayalb.getJavaArray(),
-                                                            lh.ray_index); /* DPM #2.6.15.3-1 */
+                                                            indexes); /* DPM #2.6.15.3-1 */
                     break;
                 default:
                     sphalbRayl[bandId] = 0.0;
@@ -311,49 +320,6 @@ public class RayleighCorrection implements Constants {
                     break;
             }
         }
-    }
-
-    public static class LocalHelperVariables {
-
-        /**
-         * Rayleigh reflectance Fourier components. Local helper variable used in {@link RayleighCorrection#ref_rayleigh}.
-         */
-        private final double[] rhoRayl = new double[RAYSCATT_NUM_SER];
-        /**
-         * Polynomial coeff for computation, a(s) in DPM. Local helper variable used in {@link RayleighCorrection#ref_rayleigh}.
-         */
-        private final double[][] abcd = new double[RAYSCATT_NUM_SER][RAYSCATT_NUM_ORD];
-        /**
-         * Interp. coordinates into table {@link L2AuxData#Rayscatt_coeff_s}. Local
-         * helper variable used in {@link RayleighCorrection#ref_rayleigh}.
-         */
-        private final FractIndex[] ref_rayleigh_i = FractIndex.createArray(2);
-        private final FractIndex[] ray_index = FractIndex.createArray(1);
-
-        public FractIndex[] getRef_rayleigh_i() {
-            return ref_rayleigh_i;
-        }
-
-        public FractIndex[] getRay_index() {
-            return ray_index;
-        }
-
-        public double[] getRhoRayl() {
-            return rhoRayl;
-        }
-
-        public double[][] getAbcd() {
-            return abcd;
-        }
-
-    }
-
-    public LocalHelperVariables getLh() {
-        return lh;
-    }
-
-    public L2AuxData getAuxdata() {
-        return auxdata;
     }
 
 }

@@ -16,17 +16,14 @@ import org.esa.beam.util.math.Interp;
 public class GaseousAbsorptionCorrection implements Constants {
 
     private L2AuxData auxData;
-    private LocalHelperVariables lh;
 
     public GaseousAbsorptionCorrection(L2AuxData auxData) {
-        lh = new LocalHelperVariables();
         this.auxData = auxData;
     }
 
     /**
      * Computes the gaseous corrections for all bands of a given pixel.
      * This routine is called for every non-cloud pixel.
-     * Called by {@link PixelIdentification#pixel_classification}.
      * <p/>
      * Reference: Level 2 DPM : step 2.6.12<br>
      * <p/>
@@ -128,15 +125,15 @@ public class GaseousAbsorptionCorrection implements Constants {
         double to2;
 
         if (ib == bb775) {
-
+            final FractIndex spectralShift760 = new FractIndex();
             /* DPM #2.6.12.2-3,  DPM #2.6.12.2-4, DPM #2.6.12.2-5, DPM #2.6.12.2-6 */
             Interp.interpCoord(auxData.central_wavelength[bb760][detector],
                                auxData.spectral_shift_wavelength,
-                               lh.spectralShift760);
+                               spectralShift760);
 
-            if (lh.spectralShift760.index == (PPOL_NUM_SHIFT - 1)) {
-                lh.spectralShift760.index = PPOL_NUM_SHIFT - 2;
-                lh.spectralShift760.fraction = 1.;
+            if (spectralShift760.index == (PPOL_NUM_SHIFT - 1)) {
+                spectralShift760.index = PPOL_NUM_SHIFT - 2;
+                spectralShift760.fraction = 1.;
             }
 
             double to2_blw = 0.;
@@ -145,12 +142,12 @@ public class GaseousAbsorptionCorrection implements Constants {
 
             for (int k = O2T_POLY_K - 1; k >= 0; k--) {
                 /* DPM #2.6.12.3-2 */
-                to2_blw = R_o2 * to2_blw + auxData.O2coef[lh.spectralShift760.index][k];
+                to2_blw = R_o2 * to2_blw + auxData.O2coef[spectralShift760.index][k];
                 /* DPM #2.6.12.3-2 */
-                to2_abv = R_o2 * to2_abv + auxData.O2coef[lh.spectralShift760.index + 1][k];
+                to2_abv = R_o2 * to2_abv + auxData.O2coef[spectralShift760.index + 1][k];
             }
 
-            to2 = (1. - lh.spectralShift760.fraction) * to2_blw + (lh.spectralShift760.fraction) * to2_abv;
+            to2 = (1. - spectralShift760.fraction) * to2_blw + (spectralShift760.fraction) * to2_abv;
 
         } else {
             to2 = 1.0;    /* DPM #2.6.12.2-3 */
@@ -176,36 +173,34 @@ public class GaseousAbsorptionCorrection implements Constants {
      * @return h2o transmission in band ib
      */
     private double trans_h2o(int ib, double R_h2o, int detector) {
-        double th2o = -999., th2o_blw = -999., th2o_abv = -999.;
+        double th2o;
 
-        int k;
-
-        if (ib == bb705)
-            /* if (FALSE)  */ {
+        if (ib == bb705) {
+            final FractIndex spectralShift705 = new FractIndex();
 
             /* DPM #2.1.3-1,2,3,4-b900 */
             Interp.interpCoord(auxData.central_wavelength[bb705][detector],
                                auxData.spectral_shift_H2Owavelength,
-                               lh.spectralShift705);
+                               spectralShift705);
 
-            if (lh.spectralShift705.index == (PPOL_NUM_SHIFT - 1)) {
-                lh.spectralShift705.index = PPOL_NUM_SHIFT - 2;
-                lh.spectralShift705.fraction = 1.;
+            if (spectralShift705.index == (PPOL_NUM_SHIFT - 1)) {
+                spectralShift705.index = PPOL_NUM_SHIFT - 2;
+                spectralShift705.fraction = 1.;
             }
 
-            th2o_blw = 0.;
-            th2o_abv = 0.;
+            double th2o_blw = 0.;
+            double th2o_abv = 0.;
             th2o = 0.;
 
-            for (k = H2OT_POLY_K - 1; k >= 0; k--) {
-                th2o_blw = R_h2o * th2o_blw + auxData.H2OcoefSpecShift[lh.spectralShift705.index][k]; /* DPM #2.6.12.3-2 */
-                th2o_abv = R_h2o * th2o_abv + auxData.H2OcoefSpecShift[lh.spectralShift705.index + 1][k]; /* DPM #2.6.12.3-2 */
+            for (int k = H2OT_POLY_K - 1; k >= 0; k--) {
+                th2o_blw = R_h2o * th2o_blw + auxData.H2OcoefSpecShift[spectralShift705.index][k]; /* DPM #2.6.12.3-2 */
+                th2o_abv = R_h2o * th2o_abv + auxData.H2OcoefSpecShift[spectralShift705.index + 1][k]; /* DPM #2.6.12.3-2 */
             }
 
-            th2o = (1. - lh.spectralShift705.fraction) * th2o_blw + (lh.spectralShift705.fraction) * th2o_abv;
+            th2o = (1. - spectralShift705.fraction) * th2o_blw + (spectralShift705.fraction) * th2o_abv;
         } else {
             th2o = 0.;
-            for (k = H2OT_POLY_K - 1; k >= 0; k--) {
+            for (int k = H2OT_POLY_K - 1; k >= 0; k--) {
                 th2o = R_h2o * th2o + auxData.H2Ocoef[ib][k]; /* DPM #2.6.12.3-2 */
             }
         }
@@ -214,9 +209,7 @@ public class GaseousAbsorptionCorrection implements Constants {
     }
 
     private static class LocalHelperVariables {
-        /**
-         * Local helper variables used in {@link GaseousAbsorptionCorrection#trans_h2o}.
-         */
+
         final FractIndex spectralShift760 = new FractIndex();
         final FractIndex spectralShift705 = new FractIndex();
     }
