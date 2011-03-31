@@ -100,7 +100,9 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         targetProduct = createCompatibleProduct(l1bProduct, "MER", "MER_L2");
 
         brrBands = addBandGroup(BRR_BAND_PREFIX);
-        rayleighReflBands = addBandGroup(RAYLEIGH_REFL_BAND_PREFIX);
+        if (exportRhoR) {
+            rayleighReflBands = addBandGroup(RAYLEIGH_REFL_BAND_PREFIX);
+        }
 
         flagBand = targetProduct.addBand(RAY_CORR_FLAGS, ProductData.TYPE_INT16);
         FlagCoding flagCoding = createFlagCoding(brrBands.length);
@@ -179,8 +181,11 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 				tauRData = getTargetTileGroup(tauRBands, targetTiles);
 				sphAlbRData = getTargetTileGroup(sphAlbRBands, targetTiles);
             }
+            Tile[] rayleigh_refl = null;
+            if (exportRhoR) {
+                rayleigh_refl = getTargetTileGroup(rayleighReflBands, targetTiles);
+            }
             Tile[] brr = getTargetTileGroup(brrBands, targetTiles);
-            Tile[] rayleigh_refl = getTargetTileGroup(rayleighReflBands, targetTiles);
             Tile brrFlags = targetTiles.get(flagBand);
 
             boolean[][] do_corr = new boolean[SUBWIN_HEIGHT][SUBWIN_WIDTH];
@@ -299,7 +304,6 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					                        case bb775:
 					                        case bb865:
 					                        case bb890:
-					                            rayleigh_refl[bandId].setSample(ix, iy, rhoR[bandId]);
                                                 if (brr[bandId].getSampleFloat(ix, iy) <= 0.0) {
 					                                /* set annotation flag for reflectance product - v4.2 */
 					                                brrFlags.setSample(ix, iy, (bandId <= bb760 ? bandId : bandId - 1), true);
@@ -309,15 +313,21 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 					                            break;
 					                    }
 					                }
+                                    if (exportRhoR) {
+                                        for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
+                                            if (bandId != bb11 && bandId != bb15) {
+                                                rayleigh_refl[bandId].setSample(ix, iy, rhoR[bandId]);
+                                            }
+                                        }
+                                    }
 					                if (exportRayCoeffs) {
 					                	for (int bandId = 0; bandId < L1_BAND_NUM; bandId++) {
-					                		if (bandId == bb11 || bandId == bb15) {
-					                			continue;
-					                		}
-					                		transRvData[bandId].setSample(ix, iy, transRv[bandId]);
-					                		transRsData[bandId].setSample(ix, iy, transRs[bandId]);
-					                		tauRData[bandId].setSample(ix, iy, tauR[bandId]);
-					                		sphAlbRData[bandId].setSample(ix, iy, sphAlbR[bandId]);
+                                            if (bandId != bb11 && bandId != bb15) {
+                                                transRvData[bandId].setSample(ix, iy, transRv[bandId]);
+                                                transRsData[bandId].setSample(ix, iy, transRs[bandId]);
+                                                tauRData[bandId].setSample(ix, iy, tauR[bandId]);
+                                                sphAlbRData[bandId].setSample(ix, iy, sphAlbR[bandId]);
+                                            }
 					                	}
 					                }
 					            }
