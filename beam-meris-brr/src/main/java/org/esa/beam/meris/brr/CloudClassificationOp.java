@@ -31,8 +31,8 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.l2auxdata.Constants;
-import org.esa.beam.meris.l2auxdata.L2AuxDataException;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
+import org.esa.beam.meris.l2auxdata.L2AuxDataException;
 import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.math.FractIndex;
@@ -103,8 +103,8 @@ public class CloudClassificationOp extends MerisBasisOp implements Constants {
         
         Band cloudFlagBand = targetProduct.addBand(CLOUD_FLAGS, ProductData.TYPE_INT16);
         FlagCoding flagCoding = createFlagCoding();
-        cloudFlagBand.setFlagCoding(flagCoding);
-        targetProduct.addFlagCoding(flagCoding);
+        cloudFlagBand.setSampleCoding(flagCoding);
+        targetProduct.getFlagCodingGroup().add(flagCoding);
         
         if (ctpProduct != null) {
             Band ctpBand = targetProduct.addBand(PRESSURE_CTP, ProductData.TYPE_FLOAT32);

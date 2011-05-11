@@ -82,14 +82,18 @@ public class SdrAlgorithmTest extends TestCase {
     private double[][] readTestPixels() throws IOException {
         final InputStream stream = SdrAlgorithmTest.class.getResourceAsStream(TEST_PIXEL_RESOURCE_PATH);
         final Reader reader = new InputStreamReader(stream);
+        final List<String[]> recordList;
         final CsvReader csvReader = new CsvReader(reader, new char[]{' ', '\t'}, true, "#");
-        final List recordList = csvReader.readAllRecords();
-        csvReader.close();
-        final String[] header = (String[]) recordList.get(0);
+        try {
+            recordList = csvReader.readStringRecords();
+        } finally {
+            csvReader.close();
+        }
+        final String[] header = recordList.get(0);
         recordList.remove(0);
         final double[][] testData = new double[recordList.size()][header.length];
         for (int i = 0; i < recordList.size(); i++) {
-            String[] record = (String[]) recordList.get(i);
+            String[] record = recordList.get(i);
             if (record.length != header.length) {
                 throw new IOException("record.length != header.length");
             }
@@ -97,7 +101,7 @@ public class SdrAlgorithmTest extends TestCase {
                 final String value = record[j];
                 try {
                     testData[i][j] = Double.parseDouble(value);
-                } catch (NumberFormatException e) {
+                } catch (NumberFormatException ignored) {
                     throw new IOException("record #" + (j + 1) + ": invalid number: " + value);
                 }
             }

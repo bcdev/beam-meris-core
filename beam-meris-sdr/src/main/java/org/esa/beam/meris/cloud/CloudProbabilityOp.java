@@ -32,8 +32,8 @@ import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.meris.AlbedoUtils;
 import org.esa.beam.meris.AlbedomapConstants;
 import org.esa.beam.util.ResourceInstaller;
@@ -134,12 +134,12 @@ public class CloudProbabilityOp extends MerisBasisOp {
 
         // create and add the flags coding
         FlagCoding cloudFlagCoding = createCloudFlagCoding(targetProduct);
-        targetProduct.addFlagCoding(cloudFlagCoding);
+        targetProduct.getFlagCodingGroup().add(cloudFlagCoding);
 
         // create and add the SDR flags dataset
         cloudFlagBand = targetProduct.addBand(CLOUD_FLAG_BAND, ProductData.TYPE_UINT8);
         cloudFlagBand.setDescription("Cloud specific flags");
-        cloudFlagBand.setFlagCoding(cloudFlagCoding);
+        cloudFlagBand.setSampleCoding(cloudFlagCoding);
         
         String[] radianceBandNames = EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES;
         radianceBands = new Band[radianceBandNames.length];

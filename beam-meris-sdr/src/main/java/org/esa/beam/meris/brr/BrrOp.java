@@ -1,9 +1,6 @@
 package org.esa.beam.meris.brr;
 
-import java.awt.Color;
-import java.awt.Rectangle;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.BitmaskDef;
@@ -32,7 +29,9 @@ import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
 import org.esa.beam.util.BitSetter;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Color;
+import java.awt.Rectangle;
+import java.util.Map;
 
 
 @OperatorMetadata(alias = "Meris.Brr",
@@ -233,13 +232,13 @@ public class BrrOp extends MerisBasisOp {
         addFlagCodingAndCreateBMD(flagCodingP1, rf1, gf1, bf1);
         final Band l2FlagsP1Band = new Band(flagCodingP1.getName(), ProductData.TYPE_INT32,
                                         targetProduct.getSceneRasterWidth(), targetProduct.getSceneRasterHeight());
-        l2FlagsP1Band.setFlagCoding(flagCodingP1);
+        l2FlagsP1Band.setSampleCoding(flagCodingP1);
         targetProduct.addBand(l2FlagsP1Band);
         return l2FlagsP1Band;
     }
 
     protected void addFlagCodingAndCreateBMD(FlagCoding flagCodingP1, double rf1, double gf1, double bf1) {
-        targetProduct.addFlagCoding(flagCodingP1);
+        targetProduct.getFlagCodingGroup().add(flagCodingP1);
         for (int i = 0; i < flagCodingP1.getNumAttributes(); i++) {
             final MetadataAttribute attribute = flagCodingP1.getAttributeAt(i);
             final double a = 2 * Math.PI * (i / 31.0);

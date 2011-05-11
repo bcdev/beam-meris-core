@@ -6,17 +6,10 @@
  */
 package org.esa.beam.meris.aerosol;
 
-import java.awt.Color;
-import java.awt.Rectangle;
-import java.io.File;
-import java.io.IOException;
-import java.util.Date;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import ncsa.hdf.hdflib.HDFConstants;
 import ncsa.hdf.hdflib.HDFException;
 import ncsa.hdf.hdflib.HDFLibrary;
-
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.BitmaskDef;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -38,7 +31,12 @@ import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.LUT;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Color;
+import java.awt.Rectangle;
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
+import java.util.Map;
 
 
 
@@ -113,12 +111,12 @@ public class ModisAerosolOp extends MerisBasisOp {
 
         // create and add the flags coding
         FlagCoding cloudFlagCoding = createFlagCoding(targetProduct);
-        targetProduct.addFlagCoding(cloudFlagCoding);
+        targetProduct.getFlagCodingGroup().add(cloudFlagCoding);
 
         // create and add the SDR flags dataset
         _flagsBand = targetProduct.addBand(BAND_NAME_FLAGS, ProductData.TYPE_UINT8);
         _flagsBand.setDescription("Aerosol specific flags");
-        _flagsBand.setFlagCoding(cloudFlagCoding);
+        _flagsBand.setSampleCoding(cloudFlagCoding);
     }
 
     @Override

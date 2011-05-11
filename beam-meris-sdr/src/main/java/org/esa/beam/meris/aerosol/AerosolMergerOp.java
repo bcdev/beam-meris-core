@@ -16,10 +16,7 @@
  */
 package org.esa.beam.meris.aerosol;
 
-import java.awt.Color;
-import java.awt.Rectangle;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.BitmaskDef;
 import org.esa.beam.framework.datamodel.FlagCoding;
@@ -33,7 +30,9 @@ import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Color;
+import java.awt.Rectangle;
+import java.util.Map;
 
 
 /**
@@ -70,11 +69,11 @@ public class AerosolMergerOp extends MerisBasisOp {
         angstrBand = targetProduct.addBand("ang", ProductData.TYPE_FLOAT32);
 
         FlagCoding cloudFlagCoding = createFlagCoding(mod08Product);
-        mod08Product.addFlagCoding(cloudFlagCoding);
+        mod08Product.getFlagCodingGroup().add(cloudFlagCoding);
 
         flagBand = targetProduct.addBand("aerosol_flags", ProductData.TYPE_UINT8);
         flagBand.setDescription("Aerosol specific flags");
-        flagBand.setFlagCoding(cloudFlagCoding);
+        flagBand.setSampleCoding(cloudFlagCoding);
     }
 
     private FlagCoding createFlagCoding(Product outputProduct) {

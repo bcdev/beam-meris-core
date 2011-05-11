@@ -123,13 +123,13 @@ public class SdrOp extends MerisBasisOp {
         }
         // create and add the NDVI flags coding
         FlagCoding sdiFlagCoding = createSdiFlagCoding(targetProduct);
-        targetProduct.addFlagCoding(sdiFlagCoding);
+        targetProduct.getFlagCodingGroup().add(sdiFlagCoding);
 
         // create and add the SDR flags dataset
         sdrFlagBand = targetProduct.addBand(SDR_FLAGS_BAND_NAME,
                                ProductData.TYPE_UINT16);
         sdrFlagBand.setDescription("SDR specific flags");
-        sdrFlagBand.setFlagCoding(sdiFlagCoding);
+        sdrFlagBand.setSampleCoding(sdiFlagCoding);
 
         validBand = maskProduct.getBand(validBandName);
     }

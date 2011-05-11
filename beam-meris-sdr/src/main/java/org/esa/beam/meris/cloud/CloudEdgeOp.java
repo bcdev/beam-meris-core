@@ -60,7 +60,7 @@ public class CloudEdgeOp extends MerisBasisOp {
         sourceBand = sourceProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME);
 		FlagCoding sourceFlagCoding = sourceBand.getFlagCoding();
         ProductUtils.copyFlagCoding(sourceFlagCoding, targetProduct);
-        targetBand.setFlagCoding(targetProduct.getFlagCoding(sourceFlagCoding.getName()));
+        targetBand.setSampleCoding(targetProduct.getFlagCodingGroup().get(sourceFlagCoding.getName()));
 
         if (cloudWidth == 0) {
             cloudWidth = 1;

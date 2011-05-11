@@ -1,7 +1,6 @@
 package org.esa.beam.meris.cloud;
 
-import java.awt.Rectangle;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.MetadataAttribute;
@@ -15,7 +14,7 @@ import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.util.BitSetter;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
 
 
 /**
@@ -48,12 +47,12 @@ public class CombinedCloudOp extends MerisBasisOp {
         targetProduct = createCompatibleProduct(cloudProduct, "MER_COMBINED_CLOUD", "MER_L2");
         // create and add the flags coding
         FlagCoding flagCoding = createFlagCoding();
-        targetProduct.addFlagCoding(flagCoding);
+        targetProduct.getFlagCodingGroup().add(flagCoding);
 
         // create and add the flags dataset
         Band combinedCloudBand = targetProduct.addBand(FLAG_BAND_NAME, ProductData.TYPE_UINT8);
         combinedCloudBand.setDescription("combined cloud flags");
-        combinedCloudBand.setFlagCoding(flagCoding);
+        combinedCloudBand.setSampleCoding(flagCoding);
     }
 
     @Override

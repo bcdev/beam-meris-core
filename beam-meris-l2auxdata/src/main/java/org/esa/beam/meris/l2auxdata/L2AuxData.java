@@ -10,12 +10,12 @@ import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
+import org.esa.beam.framework.datamodel.Stx;
 import org.esa.beam.framework.datamodel.TiePointGrid;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.LUT;
 import org.esa.beam.util.math.MDArray;
-import org.esa.beam.util.math.Range;
 
 import java.io.IOException;
 
@@ -661,7 +661,7 @@ public final class L2AuxData implements Constants {
             throw new L2AuxDataException(msg);
         }
 
-        Range szaRange = szaGrid.computeRasterDataRange(null, ProgressMonitor.NULL);
+        Stx stx = szaGrid.getStx(true, ProgressMonitor.NULL);
 
         /* Read thetas tabulated values for LUTs turbid and Glint */
         fbuf = auxFileT.readFloatArray("T203", -1);
@@ -671,11 +671,12 @@ public final class L2AuxData implements Constants {
             fbufCopy[i] = fbuf[i];
         }
 
-        int min, max;
+        int min;
+        int max;
         FractIndex fract = new FractIndex();
-        Interp.interpCoord(szaRange.getMin(), fbufCopy, fract);
+        Interp.interpCoord(stx.getMin(), fbufCopy, fract);
         min = fract.index;
-        Interp.interpCoord(szaRange.getMax(), fbufCopy, fract);
+        Interp.interpCoord(stx.getMax(), fbufCopy, fract);
         max = fract.index;
         if (fract.fraction > 0) {
             max++;

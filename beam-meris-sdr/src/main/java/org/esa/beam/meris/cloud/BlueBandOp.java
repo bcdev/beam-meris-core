@@ -29,8 +29,8 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 
 import java.awt.Rectangle;
 import java.util.Calendar;
@@ -107,12 +107,12 @@ public class BlueBandOp extends MerisBasisOp {
         
         // create and add the flags coding
         FlagCoding flagCoding = createFlagCoding();
-        targetProduct.addFlagCoding(flagCoding);
+        targetProduct.getFlagCodingGroup().add(flagCoding);
 
         // create and add the flags dataset
         Band cloudFlagBand = targetProduct.addBand(BLUE_FLAG_BAND, ProductData.TYPE_UINT8);
         cloudFlagBand.setDescription("blue band cloud flags");
-        cloudFlagBand.setFlagCoding(flagCoding);
+        cloudFlagBand.setSampleCoding(flagCoding);
         
         landBand = createBooleanBandForExpression("$toar.l2_flags_p1.F_LANDCONS or (($toar.l2_flags_p1.F_LAND or $l1b.dem_alt > "
                 + MIN_LAND_ALT + " )and $toar.l2_flags_p1.F_CLOUD)");

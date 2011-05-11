@@ -74,7 +74,7 @@ public class CloudShadowOp extends MerisBasisOp {
         Band cloudBand = ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, cloudProduct, targetProduct);
         FlagCoding sourceFlagCoding = cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME).getFlagCoding();
         ProductUtils.copyFlagCoding(sourceFlagCoding, targetProduct);
-        cloudBand.setFlagCoding(targetProduct.getFlagCoding(sourceFlagCoding.getName()));
+        cloudBand.setSampleCoding(targetProduct.getFlagCodingGroup().get(sourceFlagCoding.getName()));
 
         if (l1bProduct.getProductType().equals(
                 EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
