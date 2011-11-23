@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-l2auxdata</symbolicName>
-    <version>1.2</version>
+    <version>1.2.1</version>
     <name>MERIS L2 auxiliary data</name>
 
     <description>

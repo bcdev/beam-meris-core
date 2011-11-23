@@ -27,7 +27,7 @@ public class Utils {
     }
 
     public static boolean isProductRR(Product product) {
-        return product.getProductType().indexOf("_RR_") > 0;
+        return product.getProductType().indexOf("_RR") > 0;
     }
 
     public static boolean isProductFR(Product product) {
