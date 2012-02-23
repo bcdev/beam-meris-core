@@ -254,7 +254,6 @@ public class BrrOp extends MerisBasisOp {
     }
 
     protected void createOutputBands(Band[] bands, final String name) {
-        final Product soucreProduct = getSourceProduct("input");
         final int sceneWidth = targetProduct.getSceneRasterWidth();
         final int sceneHeight = targetProduct.getSceneRasterHeight();
 
@@ -264,9 +263,9 @@ public class BrrOp extends MerisBasisOp {
                                          sceneHeight);
                 aNewBand.setNoDataValueUsed(true);
                 aNewBand.setNoDataValue(-1);
-                aNewBand.setSpectralBandIndex(soucreProduct.getBandAt(bandId).getSpectralBandIndex());
-                aNewBand.setSpectralWavelength(soucreProduct.getBandAt(bandId).getSpectralWavelength());
-                aNewBand.setSpectralBandwidth(soucreProduct.getBandAt(bandId).getSpectralBandwidth());
+                aNewBand.setSpectralBandIndex(sourceProduct.getBandAt(bandId).getSpectralBandIndex());
+                aNewBand.setSpectralWavelength(sourceProduct.getBandAt(bandId).getSpectralWavelength());
+                aNewBand.setSpectralBandwidth(sourceProduct.getBandAt(bandId).getSpectralBandwidth());
                 targetProduct.addBand(aNewBand);
                 bands[bandId] = aNewBand;
             }
