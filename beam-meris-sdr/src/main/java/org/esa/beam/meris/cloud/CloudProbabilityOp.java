@@ -205,6 +205,14 @@ public class CloudProbabilityOp extends MerisBasisOp {
 
         centralWavelengthProvider = new CentralWavelengthProvider();
         centralWavelengthProvider.readAuxData(auxdataTargetDir);
+
+        try {
+            landAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties.getProperty("land"));
+            oceanAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties.getProperty("ocean"));
+        } catch (IOException e) {
+            throw new OperatorException("Could not load auxdata", e);
+        }
+
     }
 
     public static FlagCoding createCloudFlagCoding(Product outputProduct) {
@@ -270,15 +278,6 @@ public class CloudProbabilityOp extends MerisBasisOp {
 
         final double[] cloudIn = new double[15];
         pm.beginTask("Processing frame...", rectangle.height);
-
-        CloudAlgorithm landAlgo;
-        CloudAlgorithm oceanAlgo;
-        try {
-            landAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties.getProperty("land"));
-            oceanAlgo = new CloudAlgorithm(auxdataTargetDir, configProperties.getProperty("ocean"));
-        } catch (IOException e) {
-            throw new OperatorException("Could not load auxdata", e);
-        }
 
         try {
         	//sources
