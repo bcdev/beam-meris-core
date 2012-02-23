@@ -16,11 +16,15 @@
  */
 package org.esa.beam.meris;
 
+import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.esa.beam.framework.datamodel.Band;
+import org.esa.beam.framework.datamodel.ColorPaletteDef;
+import org.esa.beam.framework.datamodel.ImageInfo;
+import org.esa.beam.framework.datamodel.IndexCoding;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.GPF;
@@ -65,7 +69,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
             "$l1b.l1_flags.INVALID"};
 
     private Band[] bands;
-    
+
     @SourceProduct(alias="l1b")
     private Product l1bProduct;
     @SourceProduct(alias="brr")
@@ -81,6 +85,36 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
         Band processFurtherBand = targetProduct.addBand(PROCESS_FURTHER_BAND_NAME, ProductData.TYPE_INT8);
         processFurtherBand.setDescription("process further state");
 
+        processFurtherBand.setNoDataValue(-1);
+        processFurtherBand.setNoDataValueUsed(true);
+        final IndexCoding indexCoding = new IndexCoding(PROCESS_FURTHER_BAND_NAME);
+        ColorPaletteDef.Point[] points = new ColorPaletteDef.Point[7];
+
+        indexCoding.addIndex("land", 0, "");
+        points[0] = new ColorPaletteDef.Point(0, Color.GREEN, "land");
+
+        indexCoding.addIndex("flooded_area", 1, "");
+        points[1] = new ColorPaletteDef.Point(1, Color.BLUE.brighter(), "flooded_area");
+
+        indexCoding.addIndex("cloud_suspect", 2, "Cloud suspicion (cloud edge or shadow)");
+        points[2] = new ColorPaletteDef.Point(2, Color.GRAY, "cloud_suspect");
+
+        indexCoding.addIndex("cloud", 3, "");
+        points[3] = new ColorPaletteDef.Point(3, Color.WHITE, "cloud");
+
+        indexCoding.addIndex("water", 4, "");
+        points[4] = new ColorPaletteDef.Point(4, Color.BLUE, "water");
+
+        indexCoding.addIndex("snow", 5, "");
+        points[5] = new ColorPaletteDef.Point(4, Color.YELLOW, "snow");
+
+        indexCoding.addIndex("invalid", 6, "");
+        points[6] = new ColorPaletteDef.Point(4, Color.RED, "invalid");
+
+        targetProduct.getIndexCodingGroup().add(indexCoding);
+        processFurtherBand.setSampleCoding(indexCoding);
+        processFurtherBand.setImageInfo(new ImageInfo(new ColorPaletteDef(points, points.length)));
+
         Map<String, Object> parameters = new HashMap<String, Object>();
         BandMathsOp.BandDescriptor[] bandDescriptions = new BandMathsOp.BandDescriptor[EXPRESSIONS.length];
         for (int i = 0; i < EXPRESSIONS.length; i++) {
@@ -91,16 +125,16 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
 			bandDescriptions[i] = bandDescriptor;
     	}
 		parameters.put("targetBands", bandDescriptions);
-		
+
 		Map<String, Product> products = new HashMap<String, Product>();
 		products.put(getSourceProductId(l1bProduct), l1bProduct);
 		products.put(getSourceProductId(brrProduct), brrProduct);
 		products.put(getSourceProductId(cloudProduct), cloudProduct);
 		Product expressionProduct = GPF.createProduct("BandMaths", parameters, products);
-		
+
 		bands = expressionProduct.getBands();
     }
-    
+
     @Override
     public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
