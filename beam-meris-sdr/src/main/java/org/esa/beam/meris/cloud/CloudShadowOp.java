@@ -19,7 +19,6 @@ package org.esa.beam.meris.cloud;
 import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
 import org.esa.beam.framework.datamodel.Band;
-import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.GeoCoding;
 import org.esa.beam.framework.datamodel.GeoPos;
 import org.esa.beam.framework.datamodel.PixelPos;
@@ -71,10 +70,7 @@ public class CloudShadowOp extends MerisBasisOp {
     @Override
     public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(cloudProduct, "MER_CLOUD_SHADOW", "MER_L2");
-        Band cloudBand = ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, cloudProduct, targetProduct);
-        FlagCoding sourceFlagCoding = cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME).getFlagCoding();
-        ProductUtils.copyFlagCoding(sourceFlagCoding, targetProduct);
-        cloudBand.setSampleCoding(targetProduct.getFlagCodingGroup().get(sourceFlagCoding.getName()));
+        ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, cloudProduct, targetProduct);
 
         if (l1bProduct.getProductType().equals(
                 EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {

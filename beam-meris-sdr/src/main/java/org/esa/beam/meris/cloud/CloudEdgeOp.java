@@ -18,7 +18,6 @@ package org.esa.beam.meris.cloud;
 
 import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.framework.datamodel.Band;
-import org.esa.beam.framework.datamodel.FlagCoding;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
@@ -56,11 +55,8 @@ public class CloudEdgeOp extends MerisBasisOp {
     @Override
     public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "cloude_edge", "MER_L2");
-        Band targetBand = ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, sourceProduct, targetProduct);
         sourceBand = sourceProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME);
-		FlagCoding sourceFlagCoding = sourceBand.getFlagCoding();
-        ProductUtils.copyFlagCoding(sourceFlagCoding, targetProduct);
-        targetBand.setSampleCoding(targetProduct.getFlagCodingGroup().get(sourceFlagCoding.getName()));
+        ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, sourceProduct, targetProduct);
 
         if (cloudWidth == 0) {
             cloudWidth = 1;
