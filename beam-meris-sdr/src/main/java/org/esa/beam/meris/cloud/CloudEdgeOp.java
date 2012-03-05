@@ -56,7 +56,7 @@ public class CloudEdgeOp extends MerisBasisOp {
     public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "cloude_edge", "MER_L2");
         sourceBand = sourceProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME);
-        ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, sourceProduct, targetProduct);
+        ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, sourceProduct, targetProduct, false);
 
         if (cloudWidth == 0) {
             cloudWidth = 1;

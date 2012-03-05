@@ -70,7 +70,7 @@ public class CloudShadowOp extends MerisBasisOp {
     @Override
     public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(cloudProduct, "MER_CLOUD_SHADOW", "MER_L2");
-        ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, cloudProduct, targetProduct);
+        ProductUtils.copyBand(CombinedCloudOp.FLAG_BAND_NAME, cloudProduct, targetProduct, false);
 
         if (l1bProduct.getProductType().equals(
                 EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
