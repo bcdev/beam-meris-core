@@ -674,9 +674,9 @@ public final class L2AuxData implements Constants {
         int min;
         int max;
         FractIndex fract = new FractIndex();
-        Interp.interpCoord(stx.getMin(), fbufCopy, fract);
+        Interp.interpCoord(stx.getMinimum(), fbufCopy, fract);
         min = fract.index;
-        Interp.interpCoord(stx.getMax(), fbufCopy, fract);
+        Interp.interpCoord(stx.getMaximum(), fbufCopy, fract);
         max = fract.index;
         if (fract.fraction > 0) {
             max++;
