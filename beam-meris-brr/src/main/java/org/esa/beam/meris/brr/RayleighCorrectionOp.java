@@ -50,6 +50,7 @@ import java.util.Map;
                   description = "MERIS L2 rayleigh correction.")
 public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
 
+    public static final String RADIANCE_BAND_PREFIX = "radiance";
     public static final String BRR_BAND_PREFIX = "brr";
     public static final String RAYLEIGH_REFL_BAND_PREFIX = "rayleigh_refl";
     public static final String RAY_CORR_FLAGS = "ray_corr_flags";
@@ -127,7 +128,9 @@ public class RayleighCorrectionOp extends MerisBasisOp implements Constants {
         Band[] bands = new Band[L1_BAND_NUM];
         for(int bandId : RayleighCorrection.BANDS_TO_CORRECT) {
             Band targetBand = targetProduct.addBand(prefix + "_" + (bandId + 1), ProductData.TYPE_FLOAT32);
-            ProductUtils.copySpectralBandProperties(l1bProduct.getBandAt(bandId), targetBand);
+//            ProductUtils.copySpectralBandProperties(l1bProduct.getBandAt(bandId), targetBand);
+            final String srcBandName = RADIANCE_BAND_PREFIX + "_" + (bandId + 1);
+            ProductUtils.copySpectralBandProperties(l1bProduct.getBand(srcBandName), targetBand);
             targetBand.setNoDataValueUsed(true);
             targetBand.setNoDataValue(BAD_VALUE);
             bands[bandId] = targetBand;

@@ -43,17 +43,18 @@ import java.awt.image.Raster;
 
 
 @OperatorMetadata(alias = "Meris.Rad2Refl",
-        version = "1.0",
-        internal = true,
-        authors = "Marco Zühlke",
-        copyright = "(c) 2007 by Brockmann Consult",
-        description = "Converts radiances into reflectances.")
+                  version = "1.0",
+                  internal = true,
+                  authors = "Marco Zühlke",
+                  copyright = "(c) 2007 by Brockmann Consult",
+                  description = "Converts radiances into reflectances.")
 public class Rad2ReflOp extends MerisBasisOp implements Constants {
 
+    public static final String RADIANCE_BAND_PREFIX = "radiance";
     public static final String RHO_TOA_BAND_PREFIX = "rho_toa";
 
 
-    @SourceProduct(alias="input")
+    @SourceProduct(alias = "input")
     private Product sourceProduct;
     @TargetProduct
     private Product targetProduct;
@@ -76,13 +77,17 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
         invalidImage = VirtualBandOpImage.createMask("l1_flags.INVALID", sourceProduct, ResolutionLevel.MAXRES);
 
         targetProduct = createCompatibleProduct(sourceProduct, "MER", "MER_L2");
-        for (int i = 0; i < EnvisatConstants.MERIS_L1B_NUM_SPECTRAL_BANDS; i++) {
-            Band rhoToaBand = targetProduct.addBand(RHO_TOA_BAND_PREFIX + "_" + (i + 1),
-                                      ProductData.TYPE_FLOAT32);
-            Band radianceBand = sourceProduct.getBandAt(i);
-            ProductUtils.copySpectralBandProperties(radianceBand, rhoToaBand);
-            rhoToaBand.setNoDataValueUsed(true);
-            rhoToaBand.setNoDataValue(BAD_VALUE);
+        int spectralBandIndex = 0;
+        for (int i = 0; i < sourceProduct.getNumBands(); i++) {
+            if (sourceProduct.getBandAt(i).getName().startsWith(RADIANCE_BAND_PREFIX)) {
+                Band rhoToaBand = targetProduct.addBand(RHO_TOA_BAND_PREFIX + "_" + (spectralBandIndex + 1),
+                                                        ProductData.TYPE_FLOAT32);
+                Band radianceBand = sourceProduct.getBand(RADIANCE_BAND_PREFIX + "_" + (spectralBandIndex + 1));
+                ProductUtils.copySpectralBandProperties(radianceBand, rhoToaBand);
+                rhoToaBand.setNoDataValueUsed(true);
+                rhoToaBand.setNoDataValue(BAD_VALUE);
+                spectralBandIndex++;
+            }
         }
         if (sourceProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(sourceProduct.getPreferredTileSize());
@@ -96,7 +101,8 @@ public class Rad2ReflOp extends MerisBasisOp implements Constants {
         Tile sza = getSourceTile(sunZenihTPG, rectangle);
         Raster isInvalid = invalidImage.getData(rectangle);
         final int spectralBandIndex = targetBand.getSpectralBandIndex();
-        final Tile radianceTile = getSourceTile(sourceProduct.getBandAt(spectralBandIndex), rectangle);
+        final String srcBandName = RADIANCE_BAND_PREFIX + "_" + (spectralBandIndex + 1);
+        final Tile radianceTile = getSourceTile(sourceProduct.getBand(srcBandName), rectangle);
         final double seasonal_factor = auxData.seasonal_factor;
 
         for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
