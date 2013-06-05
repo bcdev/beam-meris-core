@@ -150,14 +150,14 @@ public class BrrOp extends MerisBasisOp {
         int[] l2FlagsP3Frame = new int[frameSize];
         Tile[] l1bTiePoints = new Tile[tpGrids.length];
         for (int i = 0; i < tpGrids.length; i++) {
-            l1bTiePoints[i] = getSourceTile(tpGrids[i], rectangle, pm);
+            l1bTiePoints[i] = getSourceTile(tpGrids[i], rectangle);
         }
         Tile[] l1bRadiances = new Tile[l1bRadiance.length];
         for (int i = 0; i < l1bRadiance.length; i++) {
-            l1bRadiances[i] = getSourceTile(l1bRadiance[i], rectangle, pm);
+            l1bRadiances[i] = getSourceTile(l1bRadiance[i], rectangle);
         }
-        Tile l1bDetectorIndex = getSourceTile(detectorIndex, rectangle, pm);
-        Tile l1bFlagRaster = getSourceTile(l1bFlags, rectangle, pm);
+        Tile l1bDetectorIndex = getSourceTile(detectorIndex, rectangle);
+        Tile l1bFlagRaster = getSourceTile(l1bFlags, rectangle);
         
         for (int pixelIndex = 0; pixelIndex < frameSize; pixelIndex++) {
             DpmPixel pixel = frame[pixelIndex];

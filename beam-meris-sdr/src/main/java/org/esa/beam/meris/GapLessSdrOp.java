@@ -16,10 +16,7 @@
  */
 package org.esa.beam.meris;
 
-import java.awt.Rectangle;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.gpf.OperatorException;
@@ -27,11 +24,13 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.util.ProductUtils;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Rectangle;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -81,9 +80,9 @@ public class GapLessSdrOp extends MerisBasisOp {
     	Rectangle rectangle = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rectangle.height + 1);
         try {
-        	Tile sdrTile = getSourceTile(sdrBands.get(band), rectangle, pm);
-        	Tile toarTile = getSourceTile(toarBands.get(band), rectangle, pm);
-        	Tile invalid = getSourceTile(invalidBand, rectangle, pm);
+        	Tile sdrTile = getSourceTile(sdrBands.get(band), rectangle);
+        	Tile toarTile = getSourceTile(toarBands.get(band), rectangle);
+        	Tile invalid = getSourceTile(invalidBand, rectangle);
         	
         	pm.worked(1);
 

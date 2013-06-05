@@ -16,11 +16,7 @@
  */
 package org.esa.beam.meris;
 
-import java.awt.Color;
-import java.awt.Rectangle;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.ColorPaletteDef;
 import org.esa.beam.framework.datamodel.ImageInfo;
@@ -33,10 +29,13 @@ import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.awt.Color;
+import java.awt.Rectangle;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -141,7 +140,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     	Rectangle rectangle = targetTile.getRectangle();
     	Tile[] isValid = new Tile[EXPRESSIONS.length];
     	for (int i = 0; i < isValid.length; i++) {
-    	    isValid[i] = getSourceTile(bands[i], rectangle, pm);
+    	    isValid[i] = getSourceTile(bands[i], rectangle);
     	}
 
     	for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {

@@ -282,12 +282,12 @@ public class FillAerosolOp extends MerisBasisOp {
         	Tile maskTile = null;
             boolean useMask = false;
             if (maskProduct != null && StringUtils.isNotNullAndNotEmpty(config.maskBand)) {
-            	maskTile = getSourceTile(maskProduct.getBand(config.maskBand), sourceRect, pm);
+            	maskTile = getSourceTile(maskProduct.getBand(config.maskBand), sourceRect);
             	useMask = true;
             }
-            Tile defaultTile = getSourceTile(defaultBands.get(band), sourceRect, pm);
-            Tile validDataTile = getSourceTile(validProduct.getBand(band.getName()), sourceRect, pm);
-            Tile dataTile = getSourceTile(sourceBands.get(band), sourceRect, pm);
+            Tile defaultTile = getSourceTile(defaultBands.get(band), sourceRect);
+            Tile validDataTile = getSourceTile(validProduct.getBand(band.getName()), sourceRect);
+            Tile dataTile = getSourceTile(sourceBands.get(band), sourceRect);
             
             if (!config.frs) {
             	float[] scaledData = getScaledArrayFromTile(dataTile);

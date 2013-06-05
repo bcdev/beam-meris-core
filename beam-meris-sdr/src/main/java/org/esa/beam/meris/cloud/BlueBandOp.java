@@ -144,25 +144,25 @@ public class BlueBandOp extends MerisBasisOp {
     	Rectangle rect = targetTile.getRectangle();
         pm.beginTask("Processing frame...", rect.height);
         try {
-            float[] toar1 = (float[]) getSourceTile(brrProduct.getBand("toar_1"), rect, pm).getRawSamples().getElems();
-			float[] toar7 = (float[]) getSourceTile(brrProduct.getBand("toar_7"), rect, pm).getRawSamples().getElems();
-			float[] toar9 = (float[]) getSourceTile(brrProduct.getBand("toar_9"), rect, pm).getRawSamples().getElems();
-			float[] toar10 = (float[]) getSourceTile(brrProduct.getBand("toar_10"), rect, pm).getRawSamples().getElems();
-			float[] toar11 = (float[]) getSourceTile(brrProduct.getBand("toar_11"), rect, pm).getRawSamples().getElems();
-			float[] toar13 = (float[]) getSourceTile(brrProduct.getBand("toar_13"), rect, pm).getRawSamples().getElems();
-			float[] toar14 = (float[]) getSourceTile(brrProduct.getBand("toar_14"), rect, pm).getRawSamples().getElems();
+            float[] toar1 = (float[]) getSourceTile(brrProduct.getBand("toar_1"), rect).getRawSamples().getElems();
+			float[] toar7 = (float[]) getSourceTile(brrProduct.getBand("toar_7"), rect).getRawSamples().getElems();
+			float[] toar9 = (float[]) getSourceTile(brrProduct.getBand("toar_9"), rect).getRawSamples().getElems();
+			float[] toar10 = (float[]) getSourceTile(brrProduct.getBand("toar_10"), rect).getRawSamples().getElems();
+			float[] toar11 = (float[]) getSourceTile(brrProduct.getBand("toar_11"), rect).getRawSamples().getElems();
+			float[] toar13 = (float[]) getSourceTile(brrProduct.getBand("toar_13"), rect).getRawSamples().getElems();
+			float[] toar14 = (float[]) getSourceTile(brrProduct.getBand("toar_14"), rect).getRawSamples().getElems();
 			
 			Tile latitude;
 			Tile altitude;
 			if (l1bProduct.getProductType().equals(
 			        EnvisatConstants.MERIS_FSG_L1B_PRODUCT_TYPE_NAME)) {
-			    latitude = getSourceTile(l1bProduct.getBand("corr_latitude"), rect, pm);
-			    altitude = getSourceTile(l1bProduct.getBand("altitude"), rect, pm);
+			    latitude = getSourceTile(l1bProduct.getBand("corr_latitude"), rect);
+			    altitude = getSourceTile(l1bProduct.getBand("altitude"), rect);
 			} else {
-			    latitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect, pm);
-			    altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect, pm);
+			    latitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_LAT_DS_NAME), rect);
+			    altitude = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME), rect);
 			}
-			Tile sourceTile = getSourceTile(landBand, rect, pm);
+			Tile sourceTile = getSourceTile(landBand, rect);
 			ProductData rawSamples = sourceTile.getRawSamples();
 //			boolean[] safeLand = (boolean[]) rawSamples.getElems(); // This cast does not work!?
 			

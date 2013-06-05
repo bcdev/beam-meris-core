@@ -72,7 +72,7 @@ public class CloudEdgeOp extends MerisBasisOp {
         final int size = sourceRectangle.height * sourceRectangle.width;
         pm.beginTask("Processing frame...", size + 1);
         try {
-            Tile cloudSource = getSourceTile(sourceBand, sourceRectangle, pm);
+            Tile cloudSource = getSourceTile(sourceBand, sourceRectangle);
 
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
                 for (int x = targetRectangle.x; x < targetRectangle.x + targetRectangle.width; x++) {
