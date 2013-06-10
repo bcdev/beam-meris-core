@@ -28,6 +28,7 @@ import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
 import org.esa.beam.util.BitSetter;
+import org.esa.beam.util.ProductUtils;
 
 import java.awt.Color;
 import java.awt.Rectangle;
@@ -70,6 +71,8 @@ public class BrrOp extends MerisBasisOp {
     public boolean outputToar = false;
     @Parameter(description="If 'false' the algorithm will only be aplied over land.", defaultValue="true")
     public boolean correctWater = true;
+    @Parameter(description="If 'true' the L1 flag band will be copied to the target product.", defaultValue="false")
+    public boolean copyL1Flags = false;
 
 
     @Override
@@ -81,6 +84,9 @@ public class BrrOp extends MerisBasisOp {
 
 
         targetProduct = createCompatibleProduct(sourceProduct, "BRR", "BRR");
+        if (copyL1Flags) {
+            ProductUtils.copyFlagBands(sourceProduct, targetProduct, true);
+        }
 
         createOutputBands(brrReflecBands, "brr");
         if (outputToar) {
