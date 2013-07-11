@@ -703,17 +703,13 @@ public final class L2AuxData implements Constants {
         /* Read Wind azimuth tabulated values for LUT Glint */
         final float[] rog_tab1 = auxFileT.readFloatArray("T20H", ROG_NUM_WA);
 
-        final double[] rog_tab5d = new double[ROG_NUM_SZA];
-        for (int i = 0; i < ROG_NUM_SZA; i++) {
-            rog_tab5d[i] = rog_tab5[i];
-        }
-
         float[][][][][] rog_LUT = new float[ROG_NUM_WA][ROG_NUM_VZA][ROG_NUM_ADA][ROG_NUM_WIND][ROG_NUM_SZA];
         /* loop on selected Sun zenith angles */
         for (int its = 0; its < ROG_NUM_SZA; its++) {
             /* read five successive tables */
             int ws = 0;
-            fbuf = auxFileT.readFloatArray("T700", -1);
+            fbuf = (float[]) auxFileT.readRecord("T700", min + its, -1, ProductData.TYPE_FLOAT32, null).getElems();
+
             z = 0;
             for (int wa = 0; wa < ROG_NUM_WA; wa++) {
                 for (int itv = 0; itv < ROG_NUM_VZA; itv++) {
@@ -724,7 +720,7 @@ public final class L2AuxData implements Constants {
                 }
             }
             for (ws = 1; ws < ROG_NUM_WIND; ws++) {
-                fbuf = auxFileT.readFloatArray("T70" + ws, -1);
+                fbuf = (float[]) auxFileT.readRecord("T70" + ws, min + its, -1, ProductData.TYPE_FLOAT32, null).getElems();
                 z = 0;
                 for (int wa = 0; wa < ROG_NUM_WA; wa++) {
                     for (int itv = 0; itv < ROG_NUM_VZA; itv++) {
