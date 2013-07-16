@@ -7,15 +7,17 @@
     <description>This processor computes the "Bottom of Rayleigh" Reflectance (BRR) from MERIS L1B products.</description>
 
     <vendor>Brockmann Consult GmbH</vendor>
-    <contactAddress>Max Planck Str.2, 21502 Geesthacht (Germany)</contactAddress>
+    <contactAddress>Max-Planck-Str. 2, 21502 Geesthacht (Germany)</contactAddress>
     <copyright>(C) 2008 by Brockmann Consult GmbH</copyright>
     <url>http://envisat.esa.int/beam</url>
     <licenseUrl>http://www.gnu.org/licenses/gpl.html</licenseUrl>
     
     <changelog>
         <![CDATA[
-        <p>From 2.3.1 to 2.3.3:<br/>
+        <p>From 2.3.2 to 2.3.3:<br/>
             Fix reading of GLint auxiliary data.<br/>
+        <p>From 2.3.1 to 2.3.2:<br/>
+            Adaptions to BEAM API changes.<br/>
         <p>From 2.3 to 2.3.1:<br/>
             Support for MERIS RRG products.<br/>
         <p>From 2.2 to 2.3:<br/>
