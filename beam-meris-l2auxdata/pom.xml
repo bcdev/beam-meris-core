@@ -8,7 +8,7 @@
     <name>BEAM MERIS L2 Auxdata</name>
     <groupId>org.esa.beam</groupId>
     <artifactId>beam-meris-l2auxdata</artifactId>
-    <version>1.2.3</version>
+    <version>1.2.4-SNAPSHOT</version>
 
     <packaging>jar</packaging>
 
@@ -16,7 +16,7 @@
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-core</artifactId>
-            <version>4.11</version>
+            <version>4.11.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam</groupId>
