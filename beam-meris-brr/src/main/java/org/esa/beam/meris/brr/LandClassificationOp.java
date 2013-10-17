@@ -41,7 +41,7 @@ import java.awt.Rectangle;
 
 
 @OperatorMetadata(alias = "Meris.LandClassification",
-        version = "1.0",
+        version = "2.3.4",
         internal = true,
         authors = "Marco Zühlke",
         copyright = "(c) 2007 by Brockmann Consult",

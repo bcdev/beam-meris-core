@@ -36,7 +36,7 @@ import java.util.Map;
 
 
 @OperatorMetadata(alias = "Meris.Brr",
-        version = "1.0",
+        version = "2.3.4",
         authors = "Marco Zühlke",
         copyright = "(c) 2007 by Brockmann Consult",
         description = "Compute the BRR of a MERIS L1b product.")

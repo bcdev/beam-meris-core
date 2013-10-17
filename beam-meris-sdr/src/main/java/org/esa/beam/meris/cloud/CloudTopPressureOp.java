@@ -64,7 +64,7 @@ import java.util.Calendar;
  * @version $Revision: 1.2 $ $Date: 2007/03/30 15:11:20 $
  */
 @OperatorMetadata(alias = "Meris.CloudTopPressureOp",
-                  version = "1.0",
+                  version = "2.3.4",
                   internal = true,
                   authors = "Marco Zühlke",
                   copyright = "(c) 2007-2009 by Brockmann Consult",

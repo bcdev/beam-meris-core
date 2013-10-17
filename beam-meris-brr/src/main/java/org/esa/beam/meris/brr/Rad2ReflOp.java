@@ -43,7 +43,7 @@ import java.awt.image.Raster;
 
 
 @OperatorMetadata(alias = "Meris.Rad2Refl",
-                  version = "1.0",
+                  version = "2.3.4",
                   internal = true,
                   authors = "Marco Zühlke",
                   copyright = "(c) 2007 by Brockmann Consult",
