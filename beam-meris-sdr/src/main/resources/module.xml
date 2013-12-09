@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-sdr</symbolicName>
-    <version>2.3.3</version>
+    <version>2.3.5</version>
     <name>MERIS Surface Directional Reflectance (SDR) Processor</name>
 
     <description>This processor computes the Surface Directional Reflectance (SDR) from MERIS L1B products.</description>
@@ -59,4 +59,19 @@
             <blue>sdr_2</blue>
         </rgbProfile>
     </extension>
+
+    <extension point="beam-ui:actions">
+        <action>
+            <id>Meris.Brr</id>
+            <class>org.esa.beam.visat.actions.DefaultOperatorAction</class>
+            <operatorName>Meris.Brr</operatorName>
+            <text>MERIS.BRR ...</text>
+            <shortDescr>Compute the BRR of a MERIS L1b product.</shortDescr>
+            <longDescr>Compute the BRR of a MERIS L1b product.</longDescr>
+            <mnemonic/>
+            <parent>tools</parent>
+            <helpId/>
+        </action>
+    </extension>
+
 </module>
