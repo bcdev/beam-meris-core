@@ -42,13 +42,6 @@ import java.util.Map;
         description = "Compute the BRR of a MERIS L1b product.")
 public class BrrOp extends MerisBasisOp {
 
-    protected L1bDataExtraction extdatl1;
-    protected PixelIdentification pixelid;
-    protected CloudClassification classcloud;
-    protected GaseousAbsorptionCorrection gaz_cor;
-    protected RayleighCorrection ray_cor;
-    protected AtmosphericCorrectionLand landac;
-
     // source product
     private RasterDataNode[] tpGrids;
     private RasterDataNode[] l1bRadiance;
@@ -73,6 +66,7 @@ public class BrrOp extends MerisBasisOp {
     public boolean correctWater = true;
     @Parameter(description="If 'true' the L1 flag band will be copied to the target product.", defaultValue="false")
     public boolean copyL1Flags = false;
+    private L2AuxData auxData;
 
 
     @Override
@@ -98,19 +92,11 @@ public class BrrOp extends MerisBasisOp {
         l2FlagsP3 = addFlagsBand(createFlagCodingP3(), 0.8, 0.1, 0.3);
 
         initAlgorithms(sourceProduct); 
-        pixelid.setCorrectWater(correctWater);
-        landac.setCorrectWater(correctWater);
     }
 
     private void initAlgorithms(Product inputProduct) throws IllegalArgumentException {
         try {
-            final L2AuxData auxData = L2AuxDataProvider.getInstance().getAuxdata(inputProduct);
-            extdatl1 = new L1bDataExtraction(auxData);
-            gaz_cor = new GaseousAbsorptionCorrection(auxData);
-            pixelid = new PixelIdentification(auxData, gaz_cor);
-            ray_cor = new RayleighCorrection(auxData);
-            classcloud = new CloudClassification(auxData, ray_cor);
-            landac = new AtmosphericCorrectionLand(ray_cor);
+            auxData = L2AuxDataProvider.getInstance().getAuxdata(inputProduct);
         } catch (Exception e) { // todo handle IOException and DpmException
             e.printStackTrace();
             throw new IllegalArgumentException(e.getMessage());
@@ -140,6 +126,16 @@ public class BrrOp extends MerisBasisOp {
     
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+
+        L1bDataExtraction extdatl1 = new L1bDataExtraction(auxData);
+        GaseousAbsorptionCorrection gaz_cor = new GaseousAbsorptionCorrection(auxData);
+        PixelIdentification pixelid = new PixelIdentification(auxData, gaz_cor);
+        RayleighCorrection ray_cor = new RayleighCorrection(auxData);
+        CloudClassification classcloud = new CloudClassification(auxData, ray_cor);
+        AtmosphericCorrectionLand landac = new AtmosphericCorrectionLand(ray_cor);
+
+        pixelid.setCorrectWater(correctWater);
+        landac.setCorrectWater(correctWater);
 
         final int frameSize = rectangle.height * rectangle.width;
         DpmPixel[] frame = new DpmPixel[frameSize];

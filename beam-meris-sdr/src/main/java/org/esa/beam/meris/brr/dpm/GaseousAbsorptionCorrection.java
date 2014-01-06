@@ -14,7 +14,7 @@ import org.esa.beam.util.math.Interp;
 
 public class GaseousAbsorptionCorrection implements Constants {
 
-    private L2AuxData auxData;
+    private final L2AuxData auxData;
     private LocalHelperVariables lh;
 
     public GaseousAbsorptionCorrection(L2AuxData auxData) {

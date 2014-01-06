@@ -16,7 +16,7 @@ import org.esa.beam.util.BitSetter;
  */
 public class L1bDataExtraction implements Constants {
 
-    private L2AuxData auxData;
+    private final L2AuxData auxData;
 
     /**
      * Constructs the module
