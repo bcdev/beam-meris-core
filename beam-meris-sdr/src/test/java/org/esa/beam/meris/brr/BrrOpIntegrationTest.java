@@ -12,7 +12,9 @@ import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class BrrOpIntegrationTest {
 
@@ -48,6 +50,7 @@ public class BrrOpIntegrationTest {
     @Test
     public void testProcessMerisL1B() throws IOException {
         final Product merisL1BProduct = MerisL1BProduct.create();
+       // ProductIO.writeProduct(merisL1BProduct, testOutDirectory.getAbsolutePath() + File.separator + "meris_l1b.dim", "BEAM-DIMAP");
 
         Product savedProduct = null;
         final Product target = GPF.createProduct("Meris.Brr", GPF.NO_PARAMS, merisL1BProduct);
@@ -58,19 +61,19 @@ public class BrrOpIntegrationTest {
             savedProduct = ProductIO.readProduct(targetProductPath);
             assertNotNull(savedProduct);
 
-            assertCorrectBand("brr_1", new float[]{0.17513838410377502f, 0.17518553137779236f}, savedProduct);
-            assertCorrectBand("brr_2", new float[]{0.13967828452587128f, 0.14011628925800323f}, savedProduct);
-            assertCorrectBand("brr_3", new float[]{0.10279937833547592f, 0.10264705866575241f}, savedProduct);
-            assertCorrectBand("brr_4", new float[]{0.08967681229114532f, 0.08933483064174652f}, savedProduct);
-            assertCorrectBand("brr_5", new float[]{0.06188041716814041f, 0.061751339584589005f}, savedProduct);
-            assertCorrectBand("brr_6", new float[]{0.04040605574846268f, 0.040280744433403015f}, savedProduct);
-            assertCorrectBand("brr_7", new float[]{0.0338885635137558f, 0.03377619758248329f}, savedProduct);
-            assertCorrectBand("brr_8", new float[]{0.031664226204156876f, 0.03201078623533249f}, savedProduct);
-            assertCorrectBand("brr_9", new float[]{0.028185680508613586f, 0.028215745463967323f}, savedProduct);
-            assertCorrectBand("brr_10", new float[]{0.023523956537246704f, 0.023352349177002907f}, savedProduct);
-            assertCorrectBand("brr_12", new float[]{0.02157190628349781f, 0.021620457991957664f}, savedProduct);
-            assertCorrectBand("brr_13", new float[]{0.01653626374900341f, 0.0162785854190588f}, savedProduct);
-            assertCorrectBand("brr_14", new float[]{0.015317732468247414f, 0.014979645609855652f}, savedProduct);
+            assertCorrectBand("brr_1", new float[]{0.03289416432380676f, 0.032959673553705215f}, savedProduct);
+            assertCorrectBand("brr_2", new float[]{0.031884822994470596f, 0.032448794692754745f}, savedProduct);
+            assertCorrectBand("brr_3", new float[]{0.033055514097213745f, 0.032872218638658524f}, savedProduct);
+            assertCorrectBand("brr_4", new float[]{0.03199249505996704f, 0.031583573669195175f}, savedProduct);
+            assertCorrectBand("brr_5", new float[]{0.025552496314048767f, 0.025396578013896942f}, savedProduct);
+            assertCorrectBand("brr_6", new float[]{0.01606384664773941f, 0.015916751697659492f}, savedProduct);
+            assertCorrectBand("brr_7", new float[]{0.014079447835683823f, 0.013955960981547832f}, savedProduct);
+            assertCorrectBand("brr_8", new float[]{0.01331784762442112f, 0.013692145235836506f}, savedProduct);
+            assertCorrectBand("brr_9", new float[]{0.012169723398983479f, 0.012201455421745777f}, savedProduct);
+            assertCorrectBand("brr_10", new float[]{0.010856962762773037f, 0.010678501799702644f}, savedProduct);
+            assertCorrectBand("brr_12", new float[]{0.01044550258666277f, 0.010495727881789207f}, savedProduct);
+            assertCorrectBand("brr_13", new float[]{0.0091937854886055f, 0.008930962532758713f}, savedProduct);
+            assertCorrectBand("brr_14", new float[]{0.008603006601333618f, 0.0082590002566576f}, savedProduct);
         } finally {
             if (savedProduct != null) {
                 savedProduct.dispose();

@@ -161,6 +161,46 @@ class MerisL1BProduct {
         addTiePointRaster(merisL1BProduct, "lat_corr", new float[]{-1.7532325E-4f, -1.7534228E-4f});
     }
 
+    private static void addLonCorr(Product merisL1BProduct) {
+        addTiePointRaster(merisL1BProduct, "lon_corr", new float[]{0.0012349063f, 0.0012350469f});
+    }
+
+    private static void addSunZenith(Product merisL1BProduct) {
+        addTiePointRaster(merisL1BProduct, "sun_zenith", new float[]{30.868954f, 30.872784f});
+    }
+
+    private static void addSunAzimuth(Product merisL1BProduct) {
+        addTiePointRaster(merisL1BProduct, "sun_azimuth", new float[]{127.82522f, 127.837845f});
+    }
+
+    private static void addViewZenith(Product merisL1BProduct) {
+        addTiePointRaster(merisL1BProduct, "view_zenith", new float[]{29.379765f, 29.379715f});
+    }
+
+    private static void addViewAzimuth(Product merisL1BProduct) {
+        addTiePointRaster(merisL1BProduct, "view_azimuth", new float[]{101.36201f, 101.362305f});
+    }
+
+    private static void addZonalWind(Product merisL1BProduct) {
+        addTiePointRaster(merisL1BProduct, "zonal_wind", new float[]{-0.6052734f, -0.618457f});
+    }
+
+    private static void addMeridWind(Product merisL1BProduct) {
+        addTiePointRaster(merisL1BProduct, "merid_wind", new float[]{0.46982425f, 0.46235356f});
+    }
+
+    private static void addAtmPress(Product merisL1BProduct) {
+        addTiePointRaster(merisL1BProduct, "atm_press", new float[]{1013.0114f, 1013.0095f});
+    }
+
+    private static void addOzone(Product merisL1BProduct) {
+        addTiePointRaster(merisL1BProduct, "ozone", new float[]{370.99918f, 370.97424f});
+    }
+
+    private static void addRelHum(Product merisL1BProduct) {
+        addTiePointRaster(merisL1BProduct, "rel_hum", new float[]{85.31759f, 85.427155f});
+    }
+
     private static void addTiePointRaster(Product merisL1BProduct, String name, float[] data) {
         float[] tiePointData = new float[16];
         tiePointData[0] = data[0];
@@ -169,75 +209,5 @@ class MerisL1BProduct {
         }
 
         merisL1BProduct.addTiePointGrid(new TiePointGrid(name, 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
-    }
-
-    private static void addLonCorr(Product merisL1BProduct) {
-        float[] tiePointData = new float[16];
-        tiePointData[0] = 0.0012349063f;
-        tiePointData[1] = 0.0012350469f;
-        merisL1BProduct.addTiePointGrid(new TiePointGrid("lon_corr", 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
-    }
-
-    private static void addSunZenith(Product merisL1BProduct) {
-        float[] tiePointData = new float[16];
-        tiePointData[0] = 30.868954f;
-        tiePointData[1] = 30.872784f;
-        merisL1BProduct.addTiePointGrid(new TiePointGrid("sun_zenith", 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
-    }
-
-    private static void addSunAzimuth(Product merisL1BProduct) {
-        float[] tiePointData = new float[16];
-        tiePointData[0] = 127.82522f;
-        tiePointData[1] = 127.837845f;
-        merisL1BProduct.addTiePointGrid(new TiePointGrid("sun_azimuth", 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
-    }
-
-    private static void addViewZenith(Product merisL1BProduct) {
-        float[] tiePointData = new float[16];
-        tiePointData[0] = 29.379765f;
-        tiePointData[1] = 29.379715f;
-        merisL1BProduct.addTiePointGrid(new TiePointGrid("view_zenith", 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
-    }
-
-    private static void addViewAzimuth(Product merisL1BProduct) {
-        float[] tiePointData = new float[16];
-        tiePointData[0] = 101.36201f;
-        tiePointData[1] = 101.362305f;
-        merisL1BProduct.addTiePointGrid(new TiePointGrid("view_azimuth", 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
-    }
-
-    private static void addZonalWind(Product merisL1BProduct) {
-        float[] tiePointData = new float[16];
-        tiePointData[0] = -0.6052734f;
-        tiePointData[1] = -0.618457f;
-        merisL1BProduct.addTiePointGrid(new TiePointGrid("zonal_wind", 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
-    }
-
-    private static void addMeridWind(Product merisL1BProduct) {
-        float[] tiePointData = new float[16];
-        tiePointData[0] = 0.46982425f;
-        tiePointData[1] = 0.46235356f;
-        merisL1BProduct.addTiePointGrid(new TiePointGrid("merid_wind", 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
-    }
-
-    private static void addAtmPress(Product merisL1BProduct) {
-        float[] tiePointData = new float[16];
-        tiePointData[0] = 1013.0114f;
-        tiePointData[1] = 1013.0095f;
-        merisL1BProduct.addTiePointGrid(new TiePointGrid("atm_press", 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
-    }
-
-    private static void addOzone(Product merisL1BProduct) {
-        float[] tiePointData = new float[16];
-        tiePointData[0] = 370.99918f;
-        tiePointData[1] = 370.97424f;
-        merisL1BProduct.addTiePointGrid(new TiePointGrid("ozone", 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
-    }
-
-    private static void addRelHum(Product merisL1BProduct) {
-        float[] tiePointData = new float[16];
-        tiePointData[0] = 85.31759f;
-        tiePointData[1] = 85.427155f;
-        merisL1BProduct.addTiePointGrid(new TiePointGrid("rel_hum", 4, 4, 0.5f, 0.5f, 1, 1, tiePointData));
     }
 }
