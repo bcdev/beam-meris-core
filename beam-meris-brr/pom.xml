@@ -5,8 +5,13 @@
 
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <artifactId>beam-meris-core</artifactId>
+        <version>2.3.6-SNAPSHOT</version>
+        <groupId>org.esa.beam</groupId>
+    </parent>
+
     <name>BEAM MERIS BRR Implementation</name>
-    <groupId>org.esa.beam</groupId>
     <artifactId>beam-meris-brr</artifactId>
     <version>2.3.5-SNAPSHOT</version>
 
@@ -16,17 +21,14 @@
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-gpf</artifactId>
-            <version>4.11.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-meris-l2auxdata</artifactId>
-            <version>1.2.4</version>
         </dependency>
         <dependency>
             <groupId>org.esa.beam</groupId>
             <artifactId>beam-envisat-reader</artifactId>
-            <version>1.5.2</version>
         </dependency>
     </dependencies>
 

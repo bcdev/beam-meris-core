@@ -107,8 +107,13 @@ public class AtmosphericCorrectionLand implements Constants {
             for (il = il0; il <= il1; il++) {
                 for (ic = ic0; ic <= ic1; ic++) {
                     if (lh.do_corr[il - il0][ic - ic0]) {
+
                         rayleighCorrection.corr_rayleigh(pixel0.rhoR, pixel0.sphalbR, pixel0.transRs, pixel0.transRv,
                                                          pixels[il][ic].rho_ag, pixels[il][ic].rho_top); /*  (2.6.15.4) */
+                        final double[] rho_top = pixels[il][ic].rho_top;
+//                        if (pixels[il][ic].x == 742 && pixels[il][ic].y == 338) {
+//                            System.out.println("rho[620nm - 754nm] = " + rho_top[5] + ", " + rho_top[6] + ", " + rho_top[7]+ ", " + rho_top[8] + ", " + rho_top[9]);
+//                        }
                     }
                 }
             }

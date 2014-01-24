@@ -2,13 +2,7 @@ package org.esa.beam.meris.brr;
 
 import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
-import org.esa.beam.framework.datamodel.Band;
-import org.esa.beam.framework.datamodel.BitmaskDef;
-import org.esa.beam.framework.datamodel.FlagCoding;
-import org.esa.beam.framework.datamodel.MetadataAttribute;
-import org.esa.beam.framework.datamodel.Product;
-import org.esa.beam.framework.datamodel.ProductData;
-import org.esa.beam.framework.datamodel.RasterDataNode;
+import org.esa.beam.framework.datamodel.*;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
@@ -17,28 +11,21 @@ import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
-import org.esa.beam.meris.brr.dpm.AtmosphericCorrectionLand;
-import org.esa.beam.meris.brr.dpm.CloudClassification;
-import org.esa.beam.meris.brr.dpm.DpmPixel;
-import org.esa.beam.meris.brr.dpm.GaseousAbsorptionCorrection;
-import org.esa.beam.meris.brr.dpm.L1bDataExtraction;
-import org.esa.beam.meris.brr.dpm.PixelIdentification;
-import org.esa.beam.meris.brr.dpm.RayleighCorrection;
+import org.esa.beam.meris.brr.dpm.*;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
 import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.ProductUtils;
 
-import java.awt.Color;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.util.Map;
 
 
 @OperatorMetadata(alias = "Meris.Brr",
         version = "2.3.4",
-        authors = "Marco Zühlke",
-        copyright = "(c) 2007 by Brockmann Consult",
+        authors = "Marco Zühlke, Tom Block",
+        copyright = "(c) 2007-2014 by Brockmann Consult",
         description = "Compute the BRR of a MERIS L1b product.")
 public class BrrOp extends MerisBasisOp {
 
@@ -48,6 +35,19 @@ public class BrrOp extends MerisBasisOp {
     private RasterDataNode detectorIndex;
     private RasterDataNode l1bFlags;
 
+    private final ThreadLocal<DpmPixel[]> frame = new ThreadLocal<DpmPixel[]>() {
+        @Override
+        protected DpmPixel[] initialValue() {
+            return new DpmPixel[0];
+        }
+    };
+    private final ThreadLocal<DpmPixel[][]> block = new ThreadLocal<DpmPixel[][]>() {
+        @Override
+        protected DpmPixel[][] initialValue() {
+            return new DpmPixel[0][0];
+        }
+    };
+
     // target product
     protected Band l2FlagsP1;
     protected Band l2FlagsP2;
@@ -56,15 +56,15 @@ public class BrrOp extends MerisBasisOp {
     protected Band[] brrReflecBands = new Band[Constants.L1_BAND_NUM];
     protected Band[] toaReflecBands = new Band[Constants.L1_BAND_NUM];
 
-    @SourceProduct(alias="input")
+    @SourceProduct(alias = "input")
     private Product sourceProduct;
     @TargetProduct
     private Product targetProduct;
-    @Parameter(description="If 'true' the TOA reflectances will be included into the target product.", defaultValue="false")
+    @Parameter(description = "If 'true' the TOA reflectances will be included into the target product.", defaultValue = "false")
     public boolean outputToar = false;
-    @Parameter(description="If 'false' the algorithm will only be aplied over land.", defaultValue="true")
+    @Parameter(description = "If 'false' the algorithm will only be aplied over land.", defaultValue = "true")
     public boolean correctWater = true;
-    @Parameter(description="If 'true' the L1 flag band will be copied to the target product.", defaultValue="false")
+    @Parameter(description = "If 'true' the L1 flag band will be copied to the target product.", defaultValue = "false")
     public boolean copyL1Flags = false;
     private L2AuxData auxData;
 
@@ -78,6 +78,10 @@ public class BrrOp extends MerisBasisOp {
 
 
         targetProduct = createCompatibleProduct(sourceProduct, "BRR", "BRR");
+        // set tile-size smaller than the one that GPF might associate. We need to allocate A LOT of memory per tile.
+        // preferred tile-size must be odd in x-direction to cope with the 4x4 window required by the algo and the odd
+        // line length of a meris product. Tiles of width=1 force exceptions. tb 2014-01-24
+        targetProduct.setPreferredTileSize(129, 128);
         if (copyL1Flags) {
             ProductUtils.copyFlagBands(sourceProduct, targetProduct, true);
         }
@@ -91,7 +95,7 @@ public class BrrOp extends MerisBasisOp {
         l2FlagsP2 = addFlagsBand(createFlagCodingP2(), 0.2, 0.7, 0.0);
         l2FlagsP3 = addFlagsBand(createFlagCodingP3(), 0.8, 0.1, 0.3);
 
-        initAlgorithms(sourceProduct); 
+        initAlgorithms(sourceProduct);
     }
 
     private void initAlgorithms(Product inputProduct) throws IllegalArgumentException {
@@ -115,17 +119,18 @@ public class BrrOp extends MerisBasisOp {
 //            tpGrids[Constants.LATITUDE_TPG_INDEX] = sourceProduct.getBand("corr_latitude");
 //            tpGrids[Constants.LONGITUDE_TPG_INDEX] = sourceProduct.getBand("corr_longitude");
 //        }
-        
+
         l1bRadiance = new RasterDataNode[EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES.length];
         for (int i = 0; i < l1bRadiance.length; i++) {
-        	l1bRadiance[i] = sourceProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[i]);
+            l1bRadiance[i] = sourceProduct.getBand(EnvisatConstants.MERIS_L1B_SPECTRAL_BAND_NAMES[i]);
         }
         detectorIndex = sourceProduct.getBand(EnvisatConstants.MERIS_DETECTOR_INDEX_DS_NAME);
         l1bFlags = sourceProduct.getBand(EnvisatConstants.MERIS_L1B_FLAGS_DS_NAME);
     }
-    
+
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
+//        System.out.println("rectangle = " + rectangle);
 
         L1bDataExtraction extdatl1 = new L1bDataExtraction(auxData);
         GaseousAbsorptionCorrection gaz_cor = new GaseousAbsorptionCorrection(auxData);
@@ -137,19 +142,15 @@ public class BrrOp extends MerisBasisOp {
         pixelid.setCorrectWater(correctWater);
         landac.setCorrectWater(correctWater);
 
-        final int frameSize = rectangle.height * rectangle.width;
-        DpmPixel[] frame = new DpmPixel[frameSize];
-        DpmPixel[][] block = new DpmPixel[rectangle.height][rectangle.width];
-        for (int pixelIndex = 0; pixelIndex < frameSize; pixelIndex++) {
-            final DpmPixel pixel = new DpmPixel();
-            pixel.i = pixelIndex % rectangle.width;
-            pixel.j = pixelIndex / rectangle.width;
-            frame[pixelIndex] = block[pixel.j][pixel.i] = pixel;
-        }
+        final FrameAndBlock frameAndBlock = getFrameAndBlock(rectangle);
+        final DpmPixel[] frameLocal = frameAndBlock.frame;
+        final DpmPixel[][] blockLocal = frameAndBlock.block;
 
+        final int frameSize = rectangle.height * rectangle.width;
         int[] l2FlagsP1Frame = new int[frameSize];
         int[] l2FlagsP2Frame = new int[frameSize];
         int[] l2FlagsP3Frame = new int[frameSize];
+
         Tile[] l1bTiePoints = new Tile[tpGrids.length];
         for (int i = 0; i < tpGrids.length; i++) {
             l1bTiePoints[i] = getSourceTile(tpGrids[i], rectangle);
@@ -160,16 +161,16 @@ public class BrrOp extends MerisBasisOp {
         }
         Tile l1bDetectorIndex = getSourceTile(detectorIndex, rectangle);
         Tile l1bFlagRaster = getSourceTile(l1bFlags, rectangle);
-        
+
         for (int pixelIndex = 0; pixelIndex < frameSize; pixelIndex++) {
-            DpmPixel pixel = frame[pixelIndex];
+            DpmPixel pixel = frameLocal[pixelIndex];
             extdatl1.l1_extract_pixbloc(pixel,
-                                        rectangle.x + pixel.i,
-                                        rectangle.y + pixel.j,
-                                        l1bTiePoints,
-                                        l1bRadiances,
-                                        l1bDetectorIndex,
-                                        l1bFlagRaster);
+                    rectangle.x + pixel.i,
+                    rectangle.y + pixel.j,
+                    l1bTiePoints,
+                    l1bRadiances,
+                    l1bDetectorIndex,
+                    l1bFlagRaster);
 
             if (!BitSetter.isFlagSet(pixel.l2flags, Constants.F_INVALID)) {
                 pixelid.rad2reflect(pixel);
@@ -181,13 +182,13 @@ public class BrrOp extends MerisBasisOp {
             for (int iPC1 = 0; iPC1 < rectangle.width; iPC1 += Constants.SUBWIN_WIDTH) {
                 final int iPC2 = Math.min(rectangle.width, iPC1 + Constants.SUBWIN_WIDTH) - 1;
                 final int iPL2 = Math.min(rectangle.height, iPL1 + Constants.SUBWIN_HEIGHT) - 1;
-                pixelid.pixel_classification(block, iPC1, iPC2, iPL1, iPL2);
-                landac.landAtmCor(block, iPC1, iPC2, iPL1, iPL2);
+                pixelid.pixel_classification(blockLocal, iPC1, iPC2, iPL1, iPL2);
+                landac.landAtmCor(blockLocal, iPC1, iPC2, iPL1, iPL2);
             }
         }
 
-        for (int iP = 0; iP < frame.length; iP++) {
-            DpmPixel pixel = frame[iP];
+        for (int iP = 0; iP < frameLocal.length; iP++) {
+            DpmPixel pixel = frameLocal[iP];
             l2FlagsP1Frame[iP] = (int) ((pixel.l2flags & 0x00000000ffffffffL));
             l2FlagsP2Frame[iP] = (int) ((pixel.l2flags & 0xffffffff00000000L) >> 32);
             l2FlagsP3Frame[iP] = pixel.ANNOT_F;
@@ -199,7 +200,7 @@ public class BrrOp extends MerisBasisOp {
                 ProductData data = targetTiles.get(brrReflecBands[bandIndex]).getRawSamples();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
-                    ddata[iP] = (float) frame[iP].rho_top[bandIndex];
+                    ddata[iP] = (float) frameLocal[iP].rho_top[bandIndex];
                 }
                 targetTiles.get(brrReflecBands[bandIndex]).setRawSamples(data);
             }
@@ -209,7 +210,7 @@ public class BrrOp extends MerisBasisOp {
                 ProductData data = targetTiles.get(toaReflecBands[bandIndex]).getRawSamples();
                 float[] ddata = (float[]) data.getElems();
                 for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
-                    ddata[iP] = (float) frame[iP].rho_toa[bandIndex];
+                    ddata[iP] = (float) frameLocal[iP].rho_toa[bandIndex];
                 }
                 targetTiles.get(toaReflecBands[bandIndex]).setRawSamples(data);
             }
@@ -218,7 +219,7 @@ public class BrrOp extends MerisBasisOp {
         int[] intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP1Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
         targetTiles.get(l2FlagsP1).setRawSamples(flagData);
-        
+
         flagData = targetTiles.get(l2FlagsP2).getRawSamples();
         intFlag = (int[]) flagData.getElems();
         System.arraycopy(l2FlagsP2Frame, 0, intFlag, 0, rectangle.width * rectangle.height);
@@ -233,7 +234,7 @@ public class BrrOp extends MerisBasisOp {
     protected Band addFlagsBand(final FlagCoding flagCodingP1, final double rf1, final double gf1, final double bf1) {
         addFlagCodingAndCreateBMD(flagCodingP1, rf1, gf1, bf1);
         final Band l2FlagsP1Band = new Band(flagCodingP1.getName(), ProductData.TYPE_INT32,
-                                        targetProduct.getSceneRasterWidth(), targetProduct.getSceneRasterHeight());
+                targetProduct.getSceneRasterWidth(), targetProduct.getSceneRasterHeight());
         l2FlagsP1Band.setSampleCoding(flagCodingP1);
         targetProduct.addBand(l2FlagsP1Band);
         return l2FlagsP1Band;
@@ -245,13 +246,13 @@ public class BrrOp extends MerisBasisOp {
             final MetadataAttribute attribute = flagCodingP1.getAttributeAt(i);
             final double a = 2 * Math.PI * (i / 31.0);
             final Color color = new Color((float) (0.5 + 0.5 * Math.sin(a + rf1 * Math.PI)),
-                                          (float) (0.5 + 0.5 * Math.sin(a + gf1 * Math.PI)),
-                                          (float) (0.5 + 0.5 * Math.sin(a + bf1 * Math.PI)));
+                    (float) (0.5 + 0.5 * Math.sin(a + gf1 * Math.PI)),
+                    (float) (0.5 + 0.5 * Math.sin(a + bf1 * Math.PI)));
             targetProduct.addBitmaskDef(new BitmaskDef(attribute.getName(),
-                                                       null,
-                                                       flagCodingP1.getName() + "." + attribute.getName(),
-                                                       color,
-                                                       0.4F));
+                    null,
+                    flagCodingP1.getName() + "." + attribute.getName(),
+                    color,
+                    0.4F));
         }
     }
 
@@ -262,7 +263,7 @@ public class BrrOp extends MerisBasisOp {
         for (int bandId = 0; bandId < bands.length; bandId++) {
             if (isValidRhoSpectralIndex(bandId) || name.equals("toar")) {
                 Band aNewBand = new Band(name + "_" + (bandId + 1), ProductData.TYPE_FLOAT32, sceneWidth,
-                                         sceneHeight);
+                        sceneHeight);
                 aNewBand.setNoDataValueUsed(true);
                 aNewBand.setNoDataValue(-1);
                 aNewBand.setSpectralBandIndex(sourceProduct.getBandAt(bandId).getSpectralBandIndex());
@@ -370,9 +371,43 @@ public class BrrOp extends MerisBasisOp {
         }
         return flagCoding;
     }
-    
+
     static boolean isValidRhoSpectralIndex(int i) {
         return i >= Constants.bb1 && i < Constants.bb15 && i != Constants.bb11;
+    }
+
+    private FrameAndBlock getFrameAndBlock(Rectangle rectangle) {
+        final FrameAndBlock frameAndBlock = new FrameAndBlock();
+        final int frameSize = rectangle.width * rectangle.height;
+
+        DpmPixel[] frameLocal = frame.get();
+        DpmPixel[][] blockLocal = block.get();
+        if (frameLocal.length != frameSize) {
+            // reallocate
+            frameLocal = new DpmPixel[frameSize];
+            blockLocal = new DpmPixel[rectangle.height][rectangle.width];
+            for (int pixelIndex = 0; pixelIndex < frameSize; pixelIndex++) {
+                final DpmPixel pixel = new DpmPixel(pixelIndex % rectangle.width, pixelIndex / rectangle.width);
+                frameLocal[pixelIndex] = blockLocal[pixel.j][pixel.i] = pixel;
+                frame.set(frameLocal);
+                block.set(blockLocal);
+            }
+        } else {
+            for (int pixelIndex = 0; pixelIndex < frameSize; pixelIndex++) {
+                frameLocal[pixelIndex].reset(pixelIndex % rectangle.width, pixelIndex / rectangle.width);
+            }
+        }
+
+        frameAndBlock.frame = frameLocal;
+        frameAndBlock.block = blockLocal;
+
+        return frameAndBlock;
+    }
+
+    private class FrameAndBlock {
+        DpmPixel[] frame;
+        DpmPixel[][] block;
+
     }
 
     public static class Spi extends OperatorSpi {

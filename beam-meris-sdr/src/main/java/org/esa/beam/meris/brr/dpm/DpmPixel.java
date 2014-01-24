@@ -144,6 +144,48 @@ public final class DpmPixel {
      * Rayleigh spherical albedo s_R
      */
     public final double[] sphalbR = new double[Constants.L1_BAND_NUM];
+
+    public DpmPixel(int i, int j) {
+        this.i = i;
+        this.j = j;
+    }
+
+
+    public void reset(int i, int j) {
+        this.i = i;
+        this.j = j;
+
+        x = 0;
+        y = 0;
+        detector = 0;
+        view_zenith = 0.0;
+        sun_zenith = 0.0;
+        delta_azimuth = 0.0;
+        sun_azimuth = 0.0;
+        mus = 0.0;
+        muv = 0.0;
+        airMass = 0.0;
+        altitude = 0.0;
+        windu = 0.0;
+        windv = 0.0;
+        press_ecmwf = 0.0;
+        ozone_ecmwf = 0.0;
+        l1flags = 0;
+        l2flags = 0;
+        SATURATED_F = 0;
+        ANNOT_F = 0;
+
+        for (int n = 0; n < Constants.L1_BAND_NUM; n++) {
+            TOAR[n] = 0.0;
+            rho_ag[n] = 0.0;
+            rho_toa[n] = 0.0;
+            rho_top[n] = 0.0;
+            rhoR[n] = 0.0;
+            transRv[n] = 0.0;
+            transRs[n] = 0.0;
+            sphalbR[n] = 0.0;
+        }
+    }
 }
 
 
