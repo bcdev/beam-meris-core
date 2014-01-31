@@ -91,11 +91,11 @@ public class BrrOpIntegrationTest {
     @Ignore
     public void testProcessL1FSG() throws IOException {
         SystemUtils.init3rdPartyLibs(getClass().getClassLoader());
-        final Product product = ProductIO.readProduct(new File("/usr/local/data/BRR-test/MER_FSG_1PNBCG20030605_160024_000000172017_00040_06607_0001.N1"));
+        final Product product = ProductIO.readProduct(new File("C:/Data/DIVERSITY/MER_FSG_1PNBCG20030605_160024_000000172017_00040_06607_0001.N1"));
 
         final Product target = GPF.createProduct("Meris.Brr", createParameter(), product);
 
-        final String targetProductPath = "/usr/local/data/BRR-test/meris_FSG_brr.dim";
+        final String targetProductPath = "C:/Data/DIVERSITY/meris_FSG_brr.dim";
         final long t0 = System.currentTimeMillis();
         GPF.writeProduct(target, new File(targetProductPath), "BEAM-DIMAP", false, ProgressMonitor.NULL);
         final long t1 = System.currentTimeMillis();

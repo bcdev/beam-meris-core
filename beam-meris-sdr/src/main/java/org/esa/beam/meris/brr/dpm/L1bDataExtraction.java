@@ -65,9 +65,7 @@ public class L1bDataExtraction implements Constants {
 
         pixel.x = x;
         pixel.y = y;
-//        if (x == 742 && y == 338) {
-//            System.out.println("pixel = " + pixel);
-//        }
+
         pixel.SATURATED_F = 0;
         for (int band = 0; band < 15; band++) {
             pixel.TOAR[band] = toars[band].getSampleDouble(x, y);
