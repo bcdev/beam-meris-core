@@ -63,15 +63,22 @@
     <extension point="beam-ui:actions">
         <action>
             <id>Meris.Brr</id>
-            <class>org.esa.beam.visat.actions.DefaultOperatorAction</class>
+            <class>org.esa.beam.meris.brr.ui.BrrProcessingAction</class>
             <operatorName>Meris.Brr</operatorName>
-            <text>MERIS.BRR ...</text>
-            <shortDescr>Compute the BRR of a MERIS L1b product.</shortDescr>
-            <longDescr>Compute the BRR of a MERIS L1b product.</longDescr>
+            <text>Compute Rayleigh correction of a MERIS L1b product ...</text>
+            <shortDescr>Performs the Rayleigh correction on a MERIS L1b product.</shortDescr>
+            <longDescr>Performs the Rayleigh correction on a MERIS L1b product.</longDescr>
             <mnemonic/>
             <parent>tools</parent>
-            <helpId/>
+            <helpID>BrrProcessorPlugIn</helpID>
         </action>
+    </extension>
+
+    <extension point="beam-ui:helpSets">
+        <helpSet>
+            <parent>beam-help</parent>
+            <path>doc/help/BrrProcessor.hs</path>
+        </helpSet>
     </extension>
 
 </module>

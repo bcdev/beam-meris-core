@@ -1,4 +1,4 @@
-package org.esa.beam.meris.brr;
+package org.esa.beam.meris.brr.operator;
 
 
 import org.esa.beam.framework.datamodel.Band;

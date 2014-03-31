@@ -1,4 +1,4 @@
-package org.esa.beam.meris.brr;
+package org.esa.beam.meris.brr.operator;
 
 
 import com.bc.ceres.core.ProgressMonitor;
@@ -7,6 +7,7 @@ import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.gpf.operators.standard.WriteOp;
+import org.esa.beam.meris.brr.operator.MerisL1BProduct;
 import org.esa.beam.util.SystemUtils;
 import org.esa.beam.util.io.FileUtils;
 import org.junit.*;

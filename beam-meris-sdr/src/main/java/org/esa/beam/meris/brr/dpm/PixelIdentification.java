@@ -12,6 +12,7 @@ import org.esa.beam.util.BitSetter;
 import org.esa.beam.util.math.FractIndex;
 import org.esa.beam.util.math.Interp;
 import org.esa.beam.util.math.MathUtils;
+import org.esa.beam.meris.brr.operator.*;
 
 /**
  * The MERIS Level 2 pixel identification module.
@@ -22,7 +23,8 @@ import org.esa.beam.util.math.MathUtils;
  */
 public class PixelIdentification implements Constants {
 
-    private boolean correctWater = false;
+//    private boolean correctWater = false;
+    private CorrectionSurfaceEnum correctionSurface;
     private GaseousAbsorptionCorrection gaseousCorr;
     private LocalHelperVariables lh;
     private L2AuxData auxData;
@@ -36,8 +38,11 @@ public class PixelIdentification implements Constants {
         gaseousCorr = gasCorr;
     }
 
-    public void setCorrectWater(boolean correctLandOnly) {
-        this.correctWater = correctLandOnly;
+//    public void setCorrectWater(boolean correctLandOnly) {
+//        this.correctWater = correctLandOnly;
+//    }
+    public void setCorrectionSurface(CorrectionSurfaceEnum correctionSurface) {
+        this.correctionSurface = correctionSurface;
     }
 
 /*----------------------------------------------------------------*\
@@ -107,7 +112,9 @@ public class PixelIdentification implements Constants {
                 long flags = pixel.l2flags;
 
                 if (!BitSetter.isFlagSet(flags, F_INVALID) /*&& !AlbedoUtils.isFlagSet(flags, F_CLOUD)*/) {
-                    if (!correctWater && pixel.altitude < -50.0 && !BitSetter.isFlagSet(pixel.l1flags, L1_F_LAND)) {
+                    if (correctionSurface == CorrectionSurfaceEnum.LAND &&
+                            pixel.altitude < -50.0 && !BitSetter.isFlagSet(pixel.l1flags, L1_F_LAND)) {
+//                    if (!correctWater && pixel.altitude < -50.0 && !BitSetter.isFlagSet(pixel.l1flags, L1_F_LAND)) {
                         do_corr[il - il0][ic - ic0] = false;
                     } else {
                         correctPixel = true;
@@ -331,8 +338,7 @@ public class PixelIdentification implements Constants {
      * {@link L2AuxData#lap_beta_l}
      *
      * @param r7thresh_val threshold at 665nm
-     * @param pixel        the pixel  in order to read from {@link org.esa.beam.dataproc.meris.sdr.dpm.DpmPixel#rho_ag pixel.rho_ag} and write to
-     *                     {@link org.esa.beam.dataproc.meris.sdr.dpm.DpmPixel#l2flags pixel.l2flags}
+     * @param pixel        the pixel
      * @param b_thresh
      * @param a_thresh
      * @return inland water flag

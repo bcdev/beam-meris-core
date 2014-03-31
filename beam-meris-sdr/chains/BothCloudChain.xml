@@ -11,7 +11,7 @@
 
     <node>
         <id>brr</id>
-        <operator>org.esa.beam.meris.brr.BrrOp$Spi</operator>
+        <operator>org.esa.beam.meris.brr.operator.BrrOp$Spi</operator>
         <parameters>
             <outputToar>true</outputToar>
         </parameters>

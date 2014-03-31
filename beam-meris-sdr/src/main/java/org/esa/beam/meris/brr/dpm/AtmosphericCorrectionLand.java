@@ -2,6 +2,7 @@ package org.esa.beam.meris.brr.dpm;
 
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.util.BitSetter;
+import org.esa.beam.meris.brr.operator.*;
 
 /**
  * Created by IntelliJ IDEA.
@@ -16,7 +17,8 @@ public class AtmosphericCorrectionLand implements Constants {
 
     private LocalHelperVariables lh;
 
-    private boolean correctWater = false;
+    //    private boolean correctWater = false;
+    private CorrectionSurfaceEnum correctionSurface;
 
     /**
      * Constructs the module
@@ -26,8 +28,8 @@ public class AtmosphericCorrectionLand implements Constants {
         rayleighCorrection = rayCorr;
     }
 
-    public void setCorrectWater(boolean correctLandOnly) {
-        this.correctWater = correctLandOnly;
+    public void setCorrectionSurface(CorrectionSurfaceEnum correctionSurface) {
+        this.correctionSurface = correctionSurface;
     }
 
     public void landAtmCor(DpmPixel[][] pixels, int ic0, int ic1, int il0, int il1) {
@@ -48,21 +50,29 @@ public class AtmosphericCorrectionLand implements Constants {
                  */
                 pixel = pixels[il][ic];
                 flags = pixel.l2flags;
-                /* do NOT correct invalid + DO correct land */
-                if (!BitSetter.isFlagSet(flags, F_INVALID) &&
-                        (correctWater || 
-                        (BitSetter.isFlagSet(flags, F_LANDCONS) ||
-                                (BitSetter.isFlagSet(flags, F_LAND) && BitSetter.isFlagSet(flags, F_CLOUD))))) {
-// test was: (changed for better snow detection)                    
-//                  if (!AlbedoUtils.isFlagSet(flags, F_INVALID) &&
-//                  (AlbedoUtils.isFlagSet(flags, F_LANDCONS) ||
-//                          (correctWater && !AlbedoUtils.isFlagSet(flags, F_CLOUD)*/))) {
-                    
+
+                final boolean landCorrOk = BitSetter.isFlagSet(flags, F_LANDCONS) ||
+                        (BitSetter.isFlagSet(flags, F_LAND) && BitSetter.isFlagSet(flags, F_CLOUD));
+                final boolean waterCorrOk = !landCorrOk;
+                final boolean allCorrOk = landCorrOk || waterCorrOk;
+
+
+                if ((landCorrOk && correctionSurface != CorrectionSurfaceEnum.WATER) ||
+                        (waterCorrOk && correctionSurface != CorrectionSurfaceEnum.LAND) ||
+                        correctionSurface == CorrectionSurfaceEnum.ALL_SURFACES) {
                     correctPixel = true;
                     lh.do_corr[il - il0][ic - ic0] = true;
                 } else {
                     lh.do_corr[il - il0][ic - ic0] = false;
                 }
+
+//                if (!BitSetter.isFlagSet(flags, F_INVALID) &&
+//                        (correctWater || landCorrOk)) {
+//                    correctPixel = true;
+//                    lh.do_corr[il - il0][ic - ic0] = true;
+//                } else {
+//                    lh.do_corr[il - il0][ic - ic0] = false;
+//                }
             }
         }
 

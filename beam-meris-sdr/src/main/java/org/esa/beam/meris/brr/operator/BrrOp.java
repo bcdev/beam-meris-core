@@ -1,4 +1,4 @@
-package org.esa.beam.meris.brr;
+package org.esa.beam.meris.brr.operator;
 
 import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.dataio.envisat.EnvisatConstants;
@@ -10,7 +10,6 @@ import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 import org.esa.beam.meris.brr.dpm.*;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
@@ -24,10 +23,10 @@ import java.util.Map;
 
 @OperatorMetadata(alias = "Meris.Brr",
         version = "2.3.4",
-        authors = "Marco Zühlke, Tom Block",
-        copyright = "(c) 2007-2014 by Brockmann Consult",
-        description = "Compute the BRR of a MERIS L1b product.")
-public class BrrOp extends MerisBasisOp {
+        authors = "R. Santer, Marco Zühlke, Tom Block",
+        copyright = "(c) European Space Agency",
+        description = "Performs the Rayleigh correction on a MERIS L1b product.")
+public class BrrOp extends BrrBasisOp {
 
     // source product
     private RasterDataNode[] tpGrids;
@@ -56,18 +55,23 @@ public class BrrOp extends MerisBasisOp {
     protected Band[] brrReflecBands = new Band[Constants.L1_BAND_NUM];
     protected Band[] toaReflecBands = new Band[Constants.L1_BAND_NUM];
 
-    @SourceProduct(alias = "input")
+    @SourceProduct(alias = "MERIS_L1b")
     private Product sourceProduct;
     @TargetProduct
     private Product targetProduct;
-    @Parameter(description = "If 'true' the TOA reflectances will be included into the target product.", defaultValue = "false")
-    public boolean outputToar = false;
-    @Parameter(description = "If 'false' the algorithm will only be aplied over land.", defaultValue = "true")
-    public boolean correctWater = true;
-    @Parameter(description = "If 'true' the L1 flag band will be copied to the target product.", defaultValue = "false")
-    public boolean copyL1Flags = false;
-    private L2AuxData auxData;
 
+    @Parameter(description = "Write L1 flags to the target product.", defaultValue = "false")
+    public boolean copyL1Flags = false;
+    @Parameter(description = "Write TOA reflectances to the target product.", defaultValue = "false")
+    public boolean outputToar = false;
+
+    @Parameter(defaultValue = "ALL_SURFACES",
+               valueSet = {"ALL_SURFACES", "LAND", "WATER"},
+               label = "Perform Rayleigh correction over",
+               description = "Specify the surface where the Rayleigh correction shall be performed")
+    private CorrectionSurfaceEnum correctionSurface;
+
+    private L2AuxData auxData;
 
     @Override
     public void initialize() throws OperatorException {
@@ -75,7 +79,6 @@ public class BrrOp extends MerisBasisOp {
 
         checkInputProduct(sourceProduct);
         prepareSourceProducts();
-
 
         targetProduct = createCompatibleProduct(sourceProduct, "BRR", "BRR");
         // set tile-size smaller than the one that GPF might associate. We need to allocate A LOT of memory per tile.
@@ -139,8 +142,10 @@ public class BrrOp extends MerisBasisOp {
         CloudClassification classcloud = new CloudClassification(auxData, ray_cor);
         AtmosphericCorrectionLand landac = new AtmosphericCorrectionLand(ray_cor);
 
-        pixelid.setCorrectWater(correctWater);
-        landac.setCorrectWater(correctWater);
+//        pixelid.setCorrectWater(correctWater);
+        pixelid.setCorrectionSurface(correctionSurface);
+//        landac.setCorrectionSurface(correctWater);
+        landac.setCorrectionSurface(correctionSurface);
 
         final FrameAndBlock frameAndBlock = getFrameAndBlock(rectangle);
         final DpmPixel[] frameLocal = frameAndBlock.frame;

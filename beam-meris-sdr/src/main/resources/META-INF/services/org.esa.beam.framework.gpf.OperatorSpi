@@ -4,7 +4,7 @@ org.esa.beam.meris.cloud.CloudProbabilityOp$Spi
 org.esa.beam.meris.cloud.CombinedCloudOp$Spi
 org.esa.beam.meris.cloud.CloudTopPressureOp$Spi
 org.esa.beam.meris.cloud.CloudShadowOp$Spi
-org.esa.beam.meris.brr.BrrOp$Spi
+org.esa.beam.meris.brr.operator.BrrOp$Spi
 org.esa.beam.meris.sdr.SdrOp$Spi
 org.esa.beam.meris.FillAerosolOp$Spi
 org.esa.beam.meris.FillBandOp$Spi
