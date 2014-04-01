@@ -11,7 +11,7 @@ import org.esa.beam.visat.actions.AbstractVisatAction;
  * @author olafd
  */
 public class BrrProcessingAction extends AbstractVisatAction {
-    private ModelessDialog dialog;
+    private DefaultSingleTargetProductDialog dialog;
 
     @Override
     public void actionPerformed(CommandEvent event) {
@@ -20,6 +20,7 @@ public class BrrProcessingAction extends AbstractVisatAction {
                                                           getAppContext(),
                                                           "MERIS Rayleigh Correction - v1.0",
                                                           "BrrProcessorPlugIn");
+            dialog.setTargetProductNameSuffix("_BRR");
         }
         dialog.show();
     }

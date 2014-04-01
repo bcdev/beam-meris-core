@@ -218,7 +218,7 @@ public class PixelIdentification implements Constants {
                             pixel.l2flags = BitSetter.setFlag(pixel.l2flags, F_ORINP0, iOrinp0);
                         }
 
-                        status = gaseousCorr.gas_correction(pixel.airMass, T_o3, eta, x2,
+                        status = gaseousCorr.gas_correction(T_o3, eta, x2,
                                                             pixel.rho_toa,
                                                             pixel.detector,
                                                             pixel.rho_ag,
@@ -233,8 +233,6 @@ public class PixelIdentification implements Constants {
                             /* DPM step 2.6.26 */
                             /* TODO: restrict land-water reclassification to altitude > -50 */
 
-                            is_water = false;
-                            is_land = false;
                             int b_thresh;           /*added V7 to manage 2 bands reclassif threshold LUT */
                             double a_thresh;  /*added V7 to manage 2 bands reclassif threshold LUT */
                             double rThresh;
@@ -325,9 +323,7 @@ public class PixelIdentification implements Constants {
                 lh.smileCorrectedRho[bandId] = rho[bandId];
             }
         }
-        for (int band_id = 0; band_id < L1_BAND_NUM; band_id++) {
-            rho[band_id] = lh.smileCorrectedRho[band_id];
-        }
+        System.arraycopy(lh.smileCorrectedRho, 0, rho, 0, L1_BAND_NUM);
     }
 
     /**
@@ -382,8 +378,7 @@ public class PixelIdentification implements Constants {
         Interp.interpCoord(delta, auxData.rog.getTab(2), rogIndex[2]);
         Interp.interpCoord(windm, auxData.rog.getTab(3), rogIndex[3]);
         Interp.interpCoord(thetas, auxData.rog.getTab(4), rogIndex[4]);
-        double rhoGlint = Interp.interpolate(auxData.rog.getJavaArray(), rogIndex);
-        return rhoGlint;
+        return Interp.interpolate(auxData.rog.getJavaArray(), rogIndex);
     }
 
     /*----------------------------------------------------------------------*\

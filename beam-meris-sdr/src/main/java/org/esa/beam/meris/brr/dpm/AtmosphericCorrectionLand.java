@@ -5,11 +5,9 @@ import org.esa.beam.util.BitSetter;
 import org.esa.beam.meris.brr.operator.*;
 
 /**
- * Created by IntelliJ IDEA.
- * User: marcoz
- * Date: 11.04.2005
- * Time: 16:22:26
- * To change this template use File | Settings | File Templates.
+ * Land atmospheric correction algorithm
+ *
+ * @author marcoz, olafd
  */
 public class AtmosphericCorrectionLand implements Constants {
 
@@ -17,7 +15,6 @@ public class AtmosphericCorrectionLand implements Constants {
 
     private LocalHelperVariables lh;
 
-    //    private boolean correctWater = false;
     private CorrectionSurfaceEnum correctionSurface;
 
     /**
@@ -54,9 +51,8 @@ public class AtmosphericCorrectionLand implements Constants {
                 final boolean landCorrOk = BitSetter.isFlagSet(flags, F_LANDCONS) ||
                         (BitSetter.isFlagSet(flags, F_LAND) && BitSetter.isFlagSet(flags, F_CLOUD));
                 final boolean waterCorrOk = !landCorrOk;
-                final boolean allCorrOk = landCorrOk || waterCorrOk;
 
-
+                // new: correct either over land, water, or both (CB/OD, 20140331)
                 if ((landCorrOk && correctionSurface != CorrectionSurfaceEnum.WATER) ||
                         (waterCorrOk && correctionSurface != CorrectionSurfaceEnum.LAND) ||
                         correctionSurface == CorrectionSurfaceEnum.ALL_SURFACES) {
@@ -65,14 +61,6 @@ public class AtmosphericCorrectionLand implements Constants {
                 } else {
                     lh.do_corr[il - il0][ic - ic0] = false;
                 }
-
-//                if (!BitSetter.isFlagSet(flags, F_INVALID) &&
-//                        (correctWater || landCorrOk)) {
-//                    correctPixel = true;
-//                    lh.do_corr[il - il0][ic - ic0] = true;
-//                } else {
-//                    lh.do_corr[il - il0][ic - ic0] = false;
-//                }
             }
         }
 
@@ -120,10 +108,6 @@ public class AtmosphericCorrectionLand implements Constants {
 
                         rayleighCorrection.corr_rayleigh(pixel0.rhoR, pixel0.sphalbR, pixel0.transRs, pixel0.transRv,
                                                          pixels[il][ic].rho_ag, pixels[il][ic].rho_top); /*  (2.6.15.4) */
-                        final double[] rho_top = pixels[il][ic].rho_top;
-//                        if (pixels[il][ic].x == 742 && pixels[il][ic].y == 338) {
-//                            System.out.println("rho[620nm - 754nm] = " + rho_top[5] + ", " + rho_top[6] + ", " + rho_top[7]+ ", " + rho_top[8] + ", " + rho_top[9]);
-//                        }
                     }
                 }
             }
@@ -180,22 +164,6 @@ public class AtmosphericCorrectionLand implements Constants {
          * rayleigh optical thickness, tauR0 in DPM
          */
         double[] tauR = new double[L1_BAND_NUM];
-        /**
-         * rayleigh reflectance, rhoR4x4 in DPM
-         */
-//        double[] refR = new double[L1_BAND_NUM];
-        /**
-         * rayleigh down transmittance, T_R_thetas_4x4
-         */
-        //double[] transRs = new double[L1_BAND_NUM];
-        /**
-         * rayleigh up transmittance, T_R_thetav_4x4
-         */
-        //double[] transRv = new double[L1_BAND_NUM];
-        /*
-        * rayleigh spherical albedo, SR_4x4
-        */
-        //double[] sphalbR = new double[L1_BAND_NUM];
 
         boolean[][] do_corr = new boolean[4][4];
     }

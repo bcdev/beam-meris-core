@@ -216,7 +216,6 @@ public class RayleighCorrection implements Constants {
                     break;
             }
         }
-        return;
     }
 /*-----------------------------------------------------------------------------*\
  * Function sphalb_rayleigh: compute Rayleigh spherical albedo

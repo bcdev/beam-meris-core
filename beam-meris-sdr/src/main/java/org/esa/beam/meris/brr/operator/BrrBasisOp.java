@@ -13,15 +13,17 @@ import org.esa.beam.util.ProductUtils;
  */
 public abstract class BrrBasisOp extends Operator {
 
-    @Parameter(description="Write all tiepoints to the target product", defaultValue="true")
+    @Parameter(description = "Write all tie points to the target product",
+               label = "Write all tie points to the target product",
+               defaultValue = "true")
     private boolean copyAllTiePoints = true;
 
     /**
      * creates a new product with the same size
      *
-     * @param sourceProduct
-     * @param name
-     * @param type
+     * @param sourceProduct - the source product
+     * @param name - the product name
+     * @param type - the product type
      * @return targetProduct
      */
     public Product createCompatibleProduct(Product sourceProduct, String name, String type) {
@@ -36,8 +38,8 @@ public abstract class BrrBasisOp extends Operator {
     /**
      * Copies basic information for a MERIS product to the target product
      *
-     * @param sourceProduct
-     * @param targetProduct
+     * @param sourceProduct - the source product
+     * @param targetProduct - the target product
      */
     public void copyProductTrunk(Product sourceProduct,
                                  Product targetProduct) {
@@ -48,8 +50,8 @@ public abstract class BrrBasisOp extends Operator {
     /**
      * Copies the tie point data.
      *
-     * @param sourceProduct
-     * @param targetProduct
+     * @param sourceProduct - the source product
+     * @param targetProduct - the target product
      */
     private void copyTiePoints(Product sourceProduct,
                                Product targetProduct) {
@@ -69,8 +71,8 @@ public abstract class BrrBasisOp extends Operator {
     /**
      * Copies geocoding and the start and stop time.
      *
-     * @param sourceProduct
-     * @param targetProduct
+     * @param sourceProduct - the source product
+     * @param targetProduct - the target product
      */
     private void copyBaseGeoInfo(Product sourceProduct,
                                  Product targetProduct) {

@@ -6,22 +6,16 @@ import org.esa.beam.framework.dataio.ProductIO;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.gpf.GPF;
-import org.esa.beam.gpf.operators.standard.WriteOp;
-import org.esa.beam.meris.brr.operator.MerisL1BProduct;
 import org.esa.beam.util.SystemUtils;
 import org.esa.beam.util.io.FileUtils;
 import org.junit.*;
 
-import javax.media.jai.JAI;
-import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.HashMap;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class BrrOpIntegrationTest {
 
@@ -97,9 +91,9 @@ public class BrrOpIntegrationTest {
         final Product target = GPF.createProduct("Meris.Brr", createParameter(), product);
 
         final String targetProductPath = "C:/Data/DIVERSITY/meris_FSG_brr.dim";
-        final long t0 = System.currentTimeMillis();
+//        final long t0 = System.currentTimeMillis();
         GPF.writeProduct(target, new File(targetProductPath), "BEAM-DIMAP", false, ProgressMonitor.NULL);
-        final long t1 = System.currentTimeMillis();
+//        final long t1 = System.currentTimeMillis();
         //System.out.println("delta_t = " + (t1-t0));
         //ProductIO.writeProduct(target, targetProductPath, "BEAM-DIMAP");
     }

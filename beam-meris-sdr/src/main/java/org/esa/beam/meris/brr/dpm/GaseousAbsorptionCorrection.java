@@ -32,7 +32,6 @@ public class GaseousAbsorptionCorrection implements Constants {
      * Uses:<br>
      * {@link L2AuxData#spectral_shift_H2Owavelength}, <br>
      *
-     * @param m         air mass for pixel
      * @param T_o3      ozone transmission for 15 bands
      * @param eta       ratio TOAR(760)/TOAR(753)
      * @param x2        ratio TOAR(900)/TOAR(885)
@@ -42,7 +41,7 @@ public class GaseousAbsorptionCorrection implements Constants {
      * @param PCD_POL_F
      * @return success code (1: out or range output)
      */
-    public int gas_correction(double m, double[] T_o3, double eta, double x2, double[] rho, int detector,
+    public int gas_correction(double[] T_o3, double eta, double x2, double[] rho, int detector,
                               double[] rho_ag, boolean PCD_POL_F) {
         int status = 0;
         double T_o2;  /* o2 transmission */
@@ -133,7 +132,6 @@ public class GaseousAbsorptionCorrection implements Constants {
 
             double to2_blw = 0.;
             double to2_abv = 0.;
-            to2 = 0.;
 
             for (int k = O2T_POLY_K - 1; k >= 0; k--) {
                 /* DPM #2.6.12.3-2 */
@@ -168,7 +166,7 @@ public class GaseousAbsorptionCorrection implements Constants {
      * @return h2o transmission in band ib
      */
     private double trans_h2o(int ib, double R_h2o, int detector) {
-        double th2o = -999., th2o_blw = -999., th2o_abv = -999.;
+        double th2o, th2o_blw, th2o_abv;
 
         int k;
 
@@ -187,7 +185,6 @@ public class GaseousAbsorptionCorrection implements Constants {
 
             th2o_blw = 0.;
             th2o_abv = 0.;
-            th2o = 0.;
 
             for (k = H2OT_POLY_K - 1; k >= 0; k--) {
                 th2o_blw = R_h2o * th2o_blw + auxData.H2OcoefSpecShift[lh.spectralShift705.index][k]; /* DPM #2.6.12.3-2 */
