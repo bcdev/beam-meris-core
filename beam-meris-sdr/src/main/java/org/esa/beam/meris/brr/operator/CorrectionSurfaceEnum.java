@@ -11,7 +11,7 @@ public enum CorrectionSurfaceEnum {
     WATER {
         @Override
         public String toString() {
-            return "Correction over " + super.toString();
+            return super.toString();
         }
     }
 }
