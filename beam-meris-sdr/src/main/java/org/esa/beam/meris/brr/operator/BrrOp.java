@@ -25,10 +25,10 @@ import java.util.Map;
 
 
 @OperatorMetadata(alias = "Meris.Brr",
-        version = "2.4",
-        authors = "R. Santer, M. Zuehlke, T. Block, O. Danne",
-        copyright = "(c) European Space Agency",
-        description = "Performs the Rayleigh correction on a MERIS L1b product.")
+                  version = "2.4",
+                  authors = "R. Santer, M. Zuehlke, T. Block, O. Danne",
+                  copyright = "(c) European Space Agency",
+                  description = "Performs the Rayleigh correction on a MERIS L1b product.")
 public class BrrOp extends BrrBasisOp {
 
     // source product
@@ -54,8 +54,11 @@ public class BrrOp extends BrrBasisOp {
     protected Band[] brrReflecBands = new Band[Constants.L1_BAND_NUM];
     protected Band[] toaReflecBands = new Band[Constants.L1_BAND_NUM];
 
-    @SourceProduct(alias = "MERIS_L1b")
+    @SourceProduct(alias = "merisL1bProduct",
+                   label = "MERIS L1b product",
+                   description = "The MERIS L1b source product")
     private Product sourceProduct;
+
     @TargetProduct
     private Product targetProduct;
 
@@ -158,12 +161,12 @@ public class BrrOp extends BrrBasisOp {
         for (int pixelIndex = 0; pixelIndex < frameSize; pixelIndex++) {
             DpmPixel pixel = frameLocal[pixelIndex];
             extdatl1.l1_extract_pixbloc(pixel,
-                    rectangle.x + pixel.i,
-                    rectangle.y + pixel.j,
-                    l1bTiePoints,
-                    l1bRadiances,
-                    l1bDetectorIndex,
-                    l1bFlagRaster);
+                                        rectangle.x + pixel.i,
+                                        rectangle.y + pixel.j,
+                                        l1bTiePoints,
+                                        l1bRadiances,
+                                        l1bDetectorIndex,
+                                        l1bFlagRaster);
 
             if (!BitSetter.isFlagSet(pixel.l2flags, Constants.F_INVALID)) {
                 pixelid.rad2reflect(pixel);
@@ -209,7 +212,7 @@ public class BrrOp extends BrrBasisOp {
         for (int bandId = 0; bandId < bands.length; bandId++) {
             if (isValidRhoSpectralIndex(bandId) || name.equals("toar")) {
                 Band aNewBand = new Band(name + "_" + (bandId + 1), ProductData.TYPE_FLOAT32, sceneWidth,
-                        sceneHeight);
+                                         sceneHeight);
                 aNewBand.setNoDataValueUsed(true);
                 aNewBand.setNoDataValue(-1);
                 aNewBand.setSpectralBandIndex(sourceProduct.getBandAt(bandId).getSpectralBandIndex());
