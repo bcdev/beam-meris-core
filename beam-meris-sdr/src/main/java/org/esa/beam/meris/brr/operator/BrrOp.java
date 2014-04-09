@@ -31,6 +31,8 @@ import java.util.Map;
                   description = "Performs the Rayleigh correction on a MERIS L1b product.")
 public class BrrOp extends BrrBasisOp {
 
+    private static final float NODATA_VALUE = -1.0f;
+
     // source product
     private RasterDataNode[] tpGrids;
     private RasterDataNode[] l1bRadiance;
@@ -98,8 +100,6 @@ public class BrrOp extends BrrBasisOp {
         if (outputToar) {
             createOutputBands(toaReflecBands, "toar");
         }
-
-        ProductUtils.copyFlagBands(sourceProduct, targetProduct, true);
 
         initAlgorithms(sourceProduct);
     }
@@ -189,8 +189,11 @@ public class BrrOp extends BrrBasisOp {
                 float[] dData = (float[]) data.getElems();
                 for (int iP = 0; iP < rectangle.width * rectangle.height; iP++) {
                     dData[iP] = (float) frameLocal[iP].rho_top[bandIndex];
+                    if (BitSetter.isFlagSet((int) frameLocal[iP].l2flags, Constants.F_INVALID)) {
+                        dData[iP] = NODATA_VALUE;
+                    }
                 }
-                targetTiles.get(brrReflecBands[bandIndex]).setRawSamples(data);
+                targetTiles.get(brrReflecBands[bandIndex]).setSamples(dData);
             }
         }
         if (outputToar) {
@@ -214,7 +217,7 @@ public class BrrOp extends BrrBasisOp {
                 Band aNewBand = new Band(name + "_" + (bandId + 1), ProductData.TYPE_FLOAT32, sceneWidth,
                                          sceneHeight);
                 aNewBand.setNoDataValueUsed(true);
-                aNewBand.setNoDataValue(-1);
+                aNewBand.setNoDataValue(NODATA_VALUE);
                 aNewBand.setSpectralBandIndex(sourceProduct.getBandAt(bandId).getSpectralBandIndex());
                 aNewBand.setSpectralWavelength(sourceProduct.getBandAt(bandId).getSpectralWavelength());
                 aNewBand.setSpectralBandwidth(sourceProduct.getBandAt(bandId).getSpectralBandwidth());
