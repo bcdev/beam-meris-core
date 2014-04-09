@@ -128,10 +128,14 @@ public class GaseousCorrectionOp extends MerisBasisOp implements Constants {
 
     public static FlagCoding createFlagCoding() {
         FlagCoding flagCoding = new FlagCoding(GAS_FLAGS);
-        flagCoding.addFlag("F_DO_CORRECT", BitSetter.setFlag(0, F_DO_CORRECT), null);
-        flagCoding.addFlag("F_SUN70", BitSetter.setFlag(0, F_SUN70), null);
-        flagCoding.addFlag("F_ORINP0", BitSetter.setFlag(0, F_ORINP0), null);
-        flagCoding.addFlag("F_OROUT0", BitSetter.setFlag(0, F_OROUT0), null);
+        flagCoding.addFlag("F_DO_CORRECT", BitSetter.setFlag(0, F_DO_CORRECT),
+                           "Indicates if gaseous correction is applied for given pixel");
+        flagCoding.addFlag("F_SUN70", BitSetter.setFlag(0, F_SUN70),
+                           "Sun zenith angle is out of range and set to upper limit of 70deg.");
+        flagCoding.addFlag("F_ORINP0", BitSetter.setFlag(0, F_ORINP0),
+                           "One or more TOA input values out of range (i.e. < 0)");
+        flagCoding.addFlag("F_OROUT0", BitSetter.setFlag(0, F_OROUT0),
+                           "Output status != 0 (gaseous correction failed)");
         return flagCoding;
     }
 
