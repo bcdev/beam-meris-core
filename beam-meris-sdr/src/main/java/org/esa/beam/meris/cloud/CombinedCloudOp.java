@@ -9,6 +9,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
@@ -16,14 +17,7 @@ import org.esa.beam.util.BitSetter;
 
 import java.awt.Rectangle;
 
-
-/**
- * Created by IntelliJ IDEA.
- * User: marcoz
- * Date: 08.02.2006
- * Time: 10:12:01
- * To change this template use File | Settings | File Templates.
- */
+@OperatorMetadata(alias = "Meris.CombinedCloud", internal = true)
 public class CombinedCloudOp extends MerisBasisOp {
 
     public static final String FLAG_BAND_NAME = "combined_cloud";
@@ -94,9 +88,7 @@ public class CombinedCloudOp extends MerisBasisOp {
                         result = FLAG_SNOW;
                     } else if (!snowPlausible && (snowIndex || combined == FLAG_SNOW)) {
                         result = FLAG_CLOUD;
-                    } else if (brightLand && !snowPlausible &&
-                                    ((snowIndex && combined != FLAG_CLOUD)
-                                    || combined == FLAG_SNOW)) {
+                    } else if (brightLand && !snowPlausible && ((snowIndex && combined != FLAG_CLOUD) || combined == FLAG_SNOW)) {
                         result = FLAG_CLOUD;
                     } else if (combined == FLAG_CLOUD && !snowIndex) {
                         result = FLAG_CLOUD;
@@ -146,7 +138,7 @@ public class CombinedCloudOp extends MerisBasisOp {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(CombinedCloudOp.class, "Meris.CombinedCloud");
+            super(CombinedCloudOp.class);
         }
     }
 }
