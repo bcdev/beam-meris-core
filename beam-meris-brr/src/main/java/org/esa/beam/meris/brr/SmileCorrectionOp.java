@@ -24,10 +24,11 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.meris.l2auxdata.Constants;
 import org.esa.beam.meris.l2auxdata.L2AuxData;
 import org.esa.beam.meris.l2auxdata.L2AuxDataProvider;
@@ -36,13 +37,7 @@ import org.esa.beam.util.ProductUtils;
 import java.awt.Rectangle;
 import java.util.Map;
 
-
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.2 $ $Date: 2007/04/26 11:53:53 $
- */
+@OperatorMetadata(alias = "Meris.SmileCorrection", internal = true)
 public class SmileCorrectionOp extends MerisBasisOp implements Constants {
 
     private L2AuxData auxData;
@@ -81,9 +76,7 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
             rhoCorectedBands[i].setNoDataValueUsed(true);
             rhoCorectedBands[i].setNoDataValue(BAD_VALUE);
         }
-        BandMathsOp bandArithmeticOp =
-            BandMathsOp.createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
-        isLandBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
+        isLandBand = createBooleanExpressionBand(LandClassificationOp.LAND_FLAGS + ".F_LANDCONS", landProduct);
         if (l1bProduct.getPreferredTileSize() != null) {
             targetProduct.setPreferredTileSize(l1bProduct.getPreferredTileSize());
         }
@@ -145,10 +138,24 @@ public class SmileCorrectionOp extends MerisBasisOp implements Constants {
         }
     }
 
+    public static Band createBooleanExpressionBand(String expression, Product sourceProduct) {
+        BandMathsOp.BandDescriptor bandDescriptor = new BandMathsOp.BandDescriptor();
+        bandDescriptor.name = "band1";
+        bandDescriptor.expression = expression;
+        bandDescriptor.type = ProductData.TYPESTRING_INT8;
+
+        BandMathsOp bandMathsOp = new BandMathsOp();
+        bandMathsOp.setParameterDefaultValues();
+        bandMathsOp.setSourceProduct(sourceProduct);
+        bandMathsOp.setTargetBandDescriptors(bandDescriptor);
+        return bandMathsOp.getTargetProduct().getBandAt(0);
+    }
+
+
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(SmileCorrectionOp.class, "Meris.SmileCorrection");
+            super(SmileCorrectionOp.class);
         }
     }
 }
