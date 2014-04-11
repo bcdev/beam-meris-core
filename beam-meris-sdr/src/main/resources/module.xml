@@ -62,6 +62,7 @@
 
     <extension point="beam-ui:actions">
         <action>
+            <parent>processing.preProcessing</parent>
             <id>Meris.Brr</id>
             <class>org.esa.beam.meris.brr.ui.BrrProcessingAction</class>
             <operatorName>Meris.Brr</operatorName>
@@ -70,7 +71,6 @@
             <longDescr>Performs the Rayleigh correction on a MERIS L1b product.</longDescr>
             <mnemonic/>
             <targetProductNameSuffix>_BRR</targetProductNameSuffix>
-            <parent>tools</parent>
             <helpID>BrrProcessorPlugIn</helpID>
         </action>
     </extension>
