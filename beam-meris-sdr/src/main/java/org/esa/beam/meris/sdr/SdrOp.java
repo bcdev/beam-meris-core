@@ -15,6 +15,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -36,13 +37,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Map;
 
-/**
- * Created by IntelliJ IDEA.
- * User: marcoz
- * Date: 12.05.2005
- * Time: 12:17:11
- * To change this template use File | Settings | File Templates.
- */
+@OperatorMetadata(alias = "Meris.Sdr", internal = true)
 public class SdrOp extends MerisBasisOp {
 
     private static final String DEFAULT_OUTPUT_PRODUCT_NAME = "MER_SDR";
@@ -52,7 +47,7 @@ public class SdrOp extends MerisBasisOp {
     private static final String SDR_FLAGS_BAND_NAME = "sdr_flags";
 
     private static final String SDR_INVALID_FLAG_NAME = "INVALID_SDR";
-    private static final int SDR_INVALID_FLAG_VALUE = 1 << 0;
+    private static final int SDR_INVALID_FLAG_VALUE = 1;
     private static final float SCALING_FACTOR = 0.0001f;
 
     private static final int[] sdrBandNo = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14};
@@ -137,8 +132,6 @@ public class SdrOp extends MerisBasisOp {
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
-        final double[] sdrAlgoInput = new double[9];
-        final double[] sdrAlgoOutput = new double[1];
         pm.beginTask("Processing frame...", rectangle.height);
         try {
             Tile sza = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), rectangle);
@@ -167,16 +160,16 @@ public class SdrOp extends MerisBasisOp {
             Tile sdrFlag = targetTiles.get(sdrFlagBand);
 
             SdrAlgorithm clonedAlgorithm = algorithm.clone();
-            
-			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+
+            final double[] sdrAlgoInput = new double[9];
+            final double[] sdrAlgoOutput = new double[1];
+            for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x+rectangle.width; x++) {
 	                if (isValidPixel.getSampleBoolean(x, y)) {
 	                    double t_sza = sza.getSampleDouble(x, y) * MathUtils.DTOR;
 	                    double t_vza = vza.getSampleDouble(x, y) * MathUtils.DTOR;
 	                    double ada = AlbedoUtils.computeAzimuthDifference(vaa.getSampleDouble(x, y), saa.getSampleDouble(x, y)) * MathUtils.DTOR;
-	                    double rhoNorm;
-	                    double wavelength;
-	                    double mueSun = Math.cos(t_sza);
+                        double mueSun = Math.cos(t_sza);
 	                    double geomX = Math.sin(t_vza) * Math.cos(ada);
 	                    double geomY = Math.sin(t_vza) * Math.sin(ada);
 	                    double geomZ = Math.cos(t_vza);
@@ -185,9 +178,9 @@ public class SdrOp extends MerisBasisOp {
 	                    short sdrFlags = 0;
 	                    for (int bandId = 0; bandId < reflectanceBands.length; bandId++) {
 	                        final Band reflInputBand = reflectanceBands[bandId];
-	                        rhoNorm = reflectance[bandId].getSampleDouble(x, y) / Math.PI;
-	                        wavelength = reflInputBand.getSpectralWavelength();
-	                        sdrAlgoInput[0] = rhoNorm;
+                            double rhoNorm = reflectance[bandId].getSampleDouble(x, y) / Math.PI;
+                            double wavelength = reflInputBand.getSpectralWavelength();
+                            sdrAlgoInput[0] = rhoNorm;
 	                        sdrAlgoInput[1] = wavelength;
 	                        sdrAlgoInput[2] = mueSun;
 	                        sdrAlgoInput[3] = geomX;
@@ -242,13 +235,10 @@ public class SdrOp extends MerisBasisOp {
         resourceInstaller.install(".*", new NullProgressMonitor());
         
         File nnFile = new File(auxdataTargetDir, neuralNetFile);
-        final InputStreamReader reader = new FileReader(nnFile);
         final JnnNet neuralNet;
-        try {
+        try (InputStreamReader reader = new FileReader(nnFile)) {
             Jnn.setOptimizing(true);
             neuralNet = Jnn.readNna(reader);
-        } finally {
-            reader.close();
         }
         algorithm = new SdrAlgorithm(neuralNet);
     }
@@ -301,7 +291,7 @@ public class SdrOp extends MerisBasisOp {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(SdrOp.class, "Meris.Sdr");
+            super(SdrOp.class);
         }
     }
 }
