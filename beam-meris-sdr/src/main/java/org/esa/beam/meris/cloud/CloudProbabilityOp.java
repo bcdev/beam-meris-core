@@ -29,6 +29,7 @@ import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -55,6 +56,7 @@ import java.util.Properties;
 /**
  * A processing node to compute a cloud_probability mask using a neural network.
  */
+@OperatorMetadata(alias = "Meris.CloudProbability", internal = true)
 public class CloudProbabilityOp extends MerisBasisOp {
 
     public static final String CLOUD_AUXDATA_DIR_PROPERTY = "cloud.auxdata.dir";
@@ -156,7 +158,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
     
     private void createBooleanBands() throws OperatorException {
     	
-		Map<String, Object> parameters = new HashMap<String, Object>();
+		Map<String, Object> parameters = new HashMap<>();
 		BandMathsOp.BandDescriptor[] bandDescriptors = new BandMathsOp.BandDescriptor[3];
 		
 		bandDescriptors[0] = new BandMathsOp.BandDescriptor();
@@ -257,9 +259,6 @@ public class CloudProbabilityOp extends MerisBasisOp {
      * Creates a new color object to be used in the bitmaskDef.
      * The given indices start with 1.
      *
-     * @param index
-     * @param maxIndex
-     * @return the color
      */
     private static Color createBitmaskColor(int index, int maxIndex) {
         final double rf1 = 0.0;
@@ -276,7 +275,6 @@ public class CloudProbabilityOp extends MerisBasisOp {
     @Override
     public void computeTileStack(Map<Band, Tile> targetTiles, Rectangle rectangle, ProgressMonitor pm) throws OperatorException {
 
-        final double[] cloudIn = new double[15];
         pm.beginTask("Processing frame...", rectangle.height);
 
         try {
@@ -304,6 +302,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
             CloudAlgorithm cloneLandAlgo = landAlgo.clone();
             CloudAlgorithm cloneOceanAlgo = oceanAlgo.clone();
 
+            final double[] cloudIn = new double[15];
             int i = 0;
 			for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
 				for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
@@ -396,7 +395,7 @@ public class CloudProbabilityOp extends MerisBasisOp {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(CloudProbabilityOp.class, "Meris.CloudProbability");
+            super(CloudProbabilityOp.class);
         }
     }
 }
