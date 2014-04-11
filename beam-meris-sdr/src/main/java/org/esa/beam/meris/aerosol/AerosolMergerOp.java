@@ -26,6 +26,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
@@ -35,12 +36,7 @@ import java.awt.Rectangle;
 import java.util.Map;
 
 
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.1 $ $Date: 2007/03/27 12:52:21 $
- */
+@OperatorMetadata(alias = "Meris.AerosolMerger", internal = true)
 public class AerosolMergerOp extends MerisBasisOp {
 
     private static final int LARS_FLAG = 1;
@@ -48,7 +44,7 @@ public class AerosolMergerOp extends MerisBasisOp {
     private static final int DEFAULT_FLAG = 4;
 
     private static final float AOT_DEFAULT = 0.1f;
-    private static final float ANG_DEFAULT = 1f;
+    private static final float ANG_DEFAULT = 1.0f;
 
     private Band aot470Band;
     private Band angstrBand;
@@ -156,8 +152,7 @@ public class AerosolMergerOp extends MerisBasisOp {
     }
 
     public static class Spi extends OperatorSpi {
-        public Spi() {
-            super(AerosolMergerOp.class, "Meris.AerosolMerger");
+        public Spi() {super(AerosolMergerOp.class);
         }
     }
 }
