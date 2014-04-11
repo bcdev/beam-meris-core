@@ -27,6 +27,7 @@ import org.esa.beam.framework.datamodel.RasterDataNode;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -38,12 +39,7 @@ import org.esa.beam.util.math.MathUtils;
 import java.awt.Rectangle;
 
 
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.1 $ $Date: 2007/03/27 12:52:22 $
- */
+@OperatorMetadata(alias = "Meris.CloudShadow", internal = true)
 public class CloudShadowOp extends MerisBasisOp {
 
     private static final int MEAN_EARTH_RADIUS = 6372000;
@@ -56,11 +52,11 @@ public class CloudShadowOp extends MerisBasisOp {
     private GeoCoding geoCoding;
     private RasterDataNode altitudeRDN;
 
-    @SourceProduct(alias="l1b")
+    @SourceProduct(alias = "l1b")
     private Product l1bProduct;
-    @SourceProduct(alias="cloud")
+    @SourceProduct(alias = "cloud")
     private Product cloudProduct;
-    @SourceProduct(alias="ctp")
+    @SourceProduct(alias = "ctp")
     private Product ctpProduct;
     @TargetProduct
     private Product targetProduct;
@@ -84,24 +80,25 @@ public class CloudShadowOp extends MerisBasisOp {
             }
             altitudeRDN = l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_DEM_ALTITUDE_DS_NAME);
         }
-        rectCalculator = new RectangleExtender(new Rectangle(l1bProduct.getSceneRasterWidth(), l1bProduct.getSceneRasterHeight()), shadowWidth, shadowWidth);
+        rectCalculator = new RectangleExtender(new Rectangle(l1bProduct.getSceneRasterWidth(), l1bProduct.getSceneRasterHeight()), shadowWidth,
+                                               shadowWidth);
         geoCoding = l1bProduct.getGeoCoding();
     }
 
     @Override
     public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
-    	
-    	Rectangle targetRectangle = targetTile.getRectangle();
+
+        Rectangle targetRectangle = targetTile.getRectangle();
         Rectangle sourceRectangle = rectCalculator.extend(targetRectangle);
         pm.beginTask("Processing frame...", sourceRectangle.height);
         try {
-        	Tile szaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle);
-        	Tile saaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle);
-        	Tile vzaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), sourceRectangle);
-        	Tile vaaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle);
-        	Tile cloudTile = getSourceTile(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle);
-        	Tile ctpTile = getSourceTile(ctpProduct.getBand("cloud_top_press"), sourceRectangle);
-        	Tile altTile = getSourceTile(altitudeRDN, sourceRectangle);
+            Tile szaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_ZENITH_DS_NAME), sourceRectangle);
+            Tile saaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_SUN_AZIMUTH_DS_NAME), sourceRectangle);
+            Tile vzaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_ZENITH_DS_NAME), sourceRectangle);
+            Tile vaaTile = getSourceTile(l1bProduct.getTiePointGrid(EnvisatConstants.MERIS_VIEW_AZIMUTH_DS_NAME), sourceRectangle);
+            Tile cloudTile = getSourceTile(cloudProduct.getBand(CombinedCloudOp.FLAG_BAND_NAME), sourceRectangle);
+            Tile ctpTile = getSourceTile(ctpProduct.getBand("cloud_top_press"), sourceRectangle);
+            Tile altTile = getSourceTile(altitudeRDN, sourceRectangle);
 
             for (int y = targetRectangle.y; y < targetRectangle.y + targetRectangle.height; y++) {
                 for (int x = targetRectangle.x; x < targetRectangle.x + targetRectangle.width; x++) {
@@ -111,7 +108,7 @@ public class CloudShadowOp extends MerisBasisOp {
 
             for (int y = sourceRectangle.y; y < sourceRectangle.y + sourceRectangle.height; y++) {
                 for (int x = sourceRectangle.x; x < sourceRectangle.x + sourceRectangle.width; x++) {
-                    if ((cloudTile.getSampleInt(x, y) & CombinedCloudOp.FLAG_CLOUD) != 0 ) {
+                    if ((cloudTile.getSampleInt(x, y) & CombinedCloudOp.FLAG_CLOUD) != 0) {
                         final float sza = szaTile.getSampleFloat(x, y) * MathUtils.DTOR_F;
                         final float saa = saaTile.getSampleFloat(x, y) * MathUtils.DTOR_F;
                         final float vza = vzaTile.getSampleFloat(x, y) * MathUtils.DTOR_F;
@@ -120,7 +117,7 @@ public class CloudShadowOp extends MerisBasisOp {
                         PixelPos pixelPos = new PixelPos(x, y);
                         final GeoPos geoPos = geoCoding.getGeoPos(pixelPos, null);
                         float ctp = ctpTile.getSampleFloat(x, y);
-                        if (ctp >0) {
+                        if (ctp > 0) {
                             float cloudAlt = computeHeightFromPressure(ctp);
                             GeoPos shadowPos = getCloudShadow2(altTile, sza, saa, vza, vaa, cloudAlt, geoPos);
                             if (shadowPos != null) {
@@ -147,7 +144,7 @@ public class CloudShadowOp extends MerisBasisOp {
     }
 
     private float computeHeightFromPressure(float pressure) {
-        return (float) (-8000 * Math.log(pressure / 1013f));
+        return (float) (-8000 * Math.log(pressure / 1013.0f));
     }
 
     private GeoPos getCloudShadow2(Tile altTile, float sza, float saa, float vza,
@@ -159,16 +156,16 @@ public class CloudShadowOp extends MerisBasisOp {
         // real cloud position from the apparent one
         // deltaX/deltyY are in meters
         final double deltaX = -(cloudAlt - surfaceAlt) * Math.tan(vza)
-                * Math.sin(vaa);
+                              * Math.sin(vaa);
         final double deltaY = -(cloudAlt - surfaceAlt) * Math.tan(vza)
-                * Math.cos(vaa);
+                              * Math.cos(vaa);
 
         // distLat and distLon are in degrees
         double distLat = -(deltaY / MEAN_EARTH_RADIUS) * MathUtils.RTOD;
         double distLon = -(deltaX / (MEAN_EARTH_RADIUS * Math.cos(appCloud
-                .getLat()
-                * MathUtils.DTOR)))
-                * MathUtils.RTOD;
+                                                                          .getLat()
+                                                                  * MathUtils.DTOR)))
+                         * MathUtils.RTOD;
 
         double latCloud = appCloud.getLat() + distLat;
         double lonCloud = appCloud.getLon() + distLon;
@@ -178,33 +175,31 @@ public class CloudShadowOp extends MerisBasisOp {
         int iter = 0;
         double dist = 2 * DIST_THRESHOLD;
         surfaceAlt = 0;
-        double lat0, lon0;
         double lat = latCloud;
         double lon = lonCloud;
         GeoPos pos = new GeoPos();
 
-        while ((iter < MAX_ITER) && (dist > DIST_THRESHOLD)
-                && (surfaceAlt < cloudAlt)) {
-            lat0 = lat;
-            lon0 = lon;
+        while ((iter < MAX_ITER) && (dist > DIST_THRESHOLD) && (surfaceAlt < cloudAlt)) {
+            double lat0 = lat;
+            double lon0 = lon;
             pos.setLocation((float) lat, (float) lon);
             PixelPos pixelPos = geoCoding.getPixelPos(pos, null);
-            if (!(pixelPos.isValid()&& altTile.getRectangle().contains(pixelPos))) {
+            if (!(pixelPos.isValid() && altTile.getRectangle().contains(pixelPos))) {
                 return null;
             }
             surfaceAlt = getAltitude(altTile, pos);
 
             double deltaProjX = (cloudAlt - surfaceAlt) * Math.tan(sza)
-                    * Math.sin(saa);
+                                * Math.sin(saa);
             double deltaProjY = (cloudAlt - surfaceAlt) * Math.tan(sza)
-                    * Math.cos(saa);
+                                * Math.cos(saa);
 
             // distLat and distLon are in degrees
             distLat = -(deltaProjY / MEAN_EARTH_RADIUS) * MathUtils.RTOD;
             lat = latCloud + distLat;
             distLon = -(deltaProjX / (MEAN_EARTH_RADIUS * Math.cos(lat
-                    * MathUtils.DTOR)))
-                    * MathUtils.RTOD;
+                                                                   * MathUtils.DTOR)))
+                      * MathUtils.RTOD;
             lon = lonCloud + distLon;
 
             dist = Math.max(Math.abs(lat - lat0), Math.abs(lon - lon0));
@@ -220,13 +215,14 @@ public class CloudShadowOp extends MerisBasisOp {
         final PixelPos pixelPos = geoCoding.getPixelPos(geoPos, null);
         Rectangle rectangle = altTile.getRectangle();
         final int x = MathUtils.roundAndCrop(pixelPos.x, rectangle.x, rectangle.x + rectangle.width - 1);
-        final int y = MathUtils.roundAndCrop(pixelPos.y, rectangle.y, rectangle.y + rectangle.height -1);
+        final int y = MathUtils.roundAndCrop(pixelPos.y, rectangle.y, rectangle.y + rectangle.height - 1);
         return altTile.getSampleFloat(x, y);
     }
 
     public static class Spi extends OperatorSpi {
+
         public Spi() {
-            super(CloudShadowOp.class, "Meris.CloudShadow");
+            super(CloudShadowOp.class);
         }
     }
 }
