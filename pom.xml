@@ -21,32 +21,36 @@
         <!--<module>beam-meris-l2auxdata-bundle</module>-->
     </modules>
 
+    <properties>
+        <beam.version>5.0-SNAPSHOT</beam.version>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>org.esa.beam</groupId>
                 <artifactId>beam-gpf</artifactId>
-                <version>5.0-SNAPSHOT</version>
+                <version>${beam.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.esa.beam</groupId>
                 <artifactId>beam-core</artifactId>
-                <version>5.0-SNAPSHOT</version>
+                <version>${beam.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.esa.beam</groupId>
                 <artifactId>beam-visat</artifactId>
-                <version>5.0-SNAPSHOT</version>
+                <version>${beam.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.esa.beam</groupId>
+                <artifactId>beam-envisat-reader</artifactId>
+                <version>${beam.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.esa.beam</groupId>
                 <artifactId>beam-meris-l2auxdata</artifactId>
                 <version>1.2.5-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>org.esa.beam</groupId>
-                <artifactId>beam-envisat-reader</artifactId>
-                <version>1.5.3.5.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>ncsa.hdf</groupId>
