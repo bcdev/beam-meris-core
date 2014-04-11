@@ -16,30 +16,25 @@
  */
 package org.esa.beam.meris;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
 
-import com.bc.ceres.core.ProgressMonitor;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.1 $ $Date: 2007/05/14 12:26:01 $
- */
+@OperatorMetadata(alias = "FillBand", internal = true)
 public class FillBandOp extends MerisBasisOp {
 	
 	private Map<Band, Float> defaultMap;
@@ -50,7 +45,7 @@ public class FillBandOp extends MerisBasisOp {
 		private List<BandDesc> bands;
 		
 		public Configuration() {
-			bands = new ArrayList<BandDesc>();
+			bands = new ArrayList<>();
 		}
 	}
 	public static class BandDesc {
@@ -77,7 +72,7 @@ public class FillBandOp extends MerisBasisOp {
     public void initialize() throws OperatorException {
         
 		targetProduct = createCompatibleProduct(sourceProduct, "fille_band", "FILL");
-		defaultMap = new HashMap<Band, Float>(config.bands.size());
+		defaultMap = new HashMap<>(config.bands.size());
 		for (BandDesc bandDesc: config.bands) {
 			Band targetBand = targetProduct.addBand(bandDesc.name, ProductData.TYPE_FLOAT32);
 			defaultMap.put(targetBand, bandDesc.defaultValue);
@@ -96,7 +91,7 @@ public class FillBandOp extends MerisBasisOp {
 	
 	public static class Spi extends OperatorSpi {
         public Spi() {
-            super(FillBandOp.class, "FillBand");
+            super(FillBandOp.class);
         }
     }
 }
