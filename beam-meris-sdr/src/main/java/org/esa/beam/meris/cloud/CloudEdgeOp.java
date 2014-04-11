@@ -22,6 +22,7 @@ import org.esa.beam.framework.datamodel.Product;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -31,13 +32,7 @@ import org.esa.beam.util.RectangleExtender;
 
 import java.awt.Rectangle;
 
-
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.1 $ $Date: 2007/03/27 12:52:22 $
- */
+@OperatorMetadata(alias = "Meris.CloudEdge", internal = true)
 public class CloudEdgeOp extends MerisBasisOp {
 
     private RectangleExtender rectCalculator;
@@ -129,7 +124,7 @@ public class CloudEdgeOp extends MerisBasisOp {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(CloudEdgeOp.class, "Meris.CloudEdge");
+            super(CloudEdgeOp.class);
         }
     }
 }
