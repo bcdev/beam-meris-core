@@ -27,6 +27,7 @@ import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
@@ -37,13 +38,7 @@ import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.Map;
 
-
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.1 $ $Date: 2007/03/27 12:52:22 $
- */
+@OperatorMetadata(alias = "Meris.ProcessFurtherState", internal = true)
 public class ProcessFurtherStateOp extends MerisBasisOp {
 
     private static final String PROCESS_FURTHER_BAND_NAME = "process_further_state";
@@ -114,7 +109,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
         processFurtherBand.setSampleCoding(indexCoding);
         processFurtherBand.setImageInfo(new ImageInfo(new ColorPaletteDef(points, points.length)));
 
-        Map<String, Object> parameters = new HashMap<String, Object>();
+        Map<String, Object> parameters = new HashMap<>();
         BandMathsOp.BandDescriptor[] bandDescriptions = new BandMathsOp.BandDescriptor[EXPRESSIONS.length];
         for (int i = 0; i < EXPRESSIONS.length; i++) {
         	BandMathsOp.BandDescriptor bandDescriptor = new BandMathsOp.BandDescriptor();
@@ -125,7 +120,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
     	}
 		parameters.put("targetBands", bandDescriptions);
 
-		Map<String, Product> products = new HashMap<String, Product>();
+		Map<String, Product> products = new HashMap<>();
 		products.put(getSourceProductId(l1bProduct), l1bProduct);
 		products.put(getSourceProductId(brrProduct), brrProduct);
 		products.put(getSourceProductId(cloudProduct), cloudProduct);
@@ -156,7 +151,7 @@ public class ProcessFurtherStateOp extends MerisBasisOp {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(ProcessFurtherStateOp.class, "Meris.ProcessFurtherState");
+            super(ProcessFurtherStateOp.class);
         }
     }
 }
