@@ -19,9 +19,11 @@ package org.esa.beam.meris;
 import com.bc.ceres.core.ProgressMonitor;
 import org.esa.beam.framework.datamodel.Band;
 import org.esa.beam.framework.datamodel.Product;
+import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
@@ -32,13 +34,7 @@ import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.Map;
 
-
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.1 $ $Date: 2007/03/27 12:52:22 $
- */
+@OperatorMetadata(alias = "Meris.GapLessSdr", internal = true)
 public class GapLessSdrOp extends MerisBasisOp {
 
     private Map<Band, Band> sdrBands;
@@ -56,8 +52,8 @@ public class GapLessSdrOp extends MerisBasisOp {
     public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sdrProduct, "MER_SDR", "MER_SDR");
 
-        sdrBands = new HashMap<Band, Band>();
-        toarBands = new HashMap<Band, Band>();
+        sdrBands = new HashMap<>();
+        toarBands = new HashMap<>();
         String[] bandNames = sdrProduct.getBandNames();
         for (final String bandName : bandNames) {
             if (bandName.startsWith("sdr_") && !bandName.endsWith("flags")) {
@@ -70,10 +66,9 @@ public class GapLessSdrOp extends MerisBasisOp {
                 toarBands.put(targetBand, toarBand);
             }
         }
-        BandMathsOp bandArithmeticOp = BandMathsOp.createBooleanExpressionBand("l2_flags_p1.F_INVALID", toarProduct);
-        invalidBand = bandArithmeticOp.getTargetProduct().getBandAt(0);
+        invalidBand = createBooleanExpressionBand("l2_flags_p1.F_INVALID", toarProduct);
     }
-    
+
     @Override
     public void computeTile(Band band, Tile targetTile, ProgressMonitor pm) throws OperatorException {
 
@@ -103,9 +98,22 @@ public class GapLessSdrOp extends MerisBasisOp {
         }
     }
 
+    private static Band createBooleanExpressionBand(String expression, Product sourceProduct) {
+        BandMathsOp.BandDescriptor bandDescriptor = new BandMathsOp.BandDescriptor();
+        bandDescriptor.name = "band1";
+        bandDescriptor.expression = expression;
+        bandDescriptor.type = ProductData.TYPESTRING_INT8;
+
+        BandMathsOp bandMathsOp = new BandMathsOp();
+        bandMathsOp.setParameterDefaultValues();
+        bandMathsOp.setSourceProduct(sourceProduct);
+        bandMathsOp.setTargetBandDescriptors(bandDescriptor);
+        return bandMathsOp.getTargetProduct().getBandAt(0);
+    }
+
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(GapLessSdrOp.class, "Meris.GapLessSdr");
+            super(GapLessSdrOp.class);
         }
     }
 }
