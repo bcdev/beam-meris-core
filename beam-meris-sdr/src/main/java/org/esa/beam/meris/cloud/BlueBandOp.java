@@ -27,6 +27,7 @@ import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
@@ -37,7 +38,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-
+@OperatorMetadata(alias = "Meris.BlueBand", internal = true)
 public class BlueBandOp extends MerisBasisOp {
 
     public static final int FLAG_CLEAR = 1;
@@ -61,7 +62,7 @@ public class BlueBandOp extends MerisBasisOp {
     private static final float D_BBT = 0.25f;
     private static final float D_ASS = 0.4f;
 
-    private static final float R1_BBT = -1f;
+    private static final float R1_BBT = -1.0f;
     private static final float R2_BBT = 0.01f;
     private static final float R3_BBT = 0.1f;
     private static final float R4_BBT = 0.95f;
@@ -119,7 +120,7 @@ public class BlueBandOp extends MerisBasisOp {
     }
     
     private Band createBooleanBandForExpression(String expression) throws OperatorException {
-        Map<String, Object> parameters = new HashMap<String, Object>();
+        Map<String, Object> parameters = new HashMap<>();
         BandMathsOp.BandDescriptor[] bandDescriptors = new BandMathsOp.BandDescriptor[1];
         BandMathsOp.BandDescriptor bandDescriptor = new BandMathsOp.BandDescriptor();
         bandDescriptor.name = "bBand";
@@ -128,7 +129,7 @@ public class BlueBandOp extends MerisBasisOp {
         bandDescriptors[0] = bandDescriptor;
         parameters.put("targetBands", bandDescriptors);
 
-        Map<String, Product> products = new HashMap<String, Product>();
+        Map<String, Product> products = new HashMap<>();
         products.put(getSourceProductId(l1bProduct), l1bProduct);
         products.put(getSourceProductId(brrProduct), brrProduct);
         
@@ -174,17 +175,15 @@ public class BlueBandOp extends MerisBasisOp {
             ProductData rawSampleData = targetTile.getRawSamples();
             byte[] cloudFlagScanLine = (byte[]) rawSampleData.getElems();
 
-            boolean isSnowPlausible;
-            boolean isBrightLand;
             int i = 0;
             for (int y = rect.y; y < rect.y+rect.height; y++) {
             	for (int x = rect.x; x < rect.x+rect.width; x++, i++) {
             		final float po2 = toar11[i] / toar10[i];
             		final float alt = altitude.getSampleFloat(x, y);
                     boolean assuredLand = safeLand[i];
-                    isSnowPlausible = isSnowPlausible(latitude.getSampleFloat(x, y), alt, assuredLand);
+                    boolean isSnowPlausible = isSnowPlausible(latitude.getSampleFloat(x, y), alt, assuredLand);
 
-            		isBrightLand = isBrightLand(toar9[i], toar14[i]);
+                    boolean isBrightLand = isBrightLand(toar9[i], toar14[i]);
 
             		// blue band test
             		if (toar1[i] >= D_BBT) {
@@ -255,7 +254,8 @@ public class BlueBandOp extends MerisBasisOp {
         }
         if (lat > LAT_ALWAYS_SNOW || lat < -LAT_ALWAYS_SNOW) {
             return true;
-        } else if (lat <= LAT_ALWAYS_SNOW && lat >= LAT_TROPIC) {
+        }
+        if (lat <= LAT_ALWAYS_SNOW && lat >= LAT_TROPIC) {
             // northern hemisphere
             if (month >= 4 && month <= 10) {
                 //summer
@@ -321,7 +321,7 @@ public class BlueBandOp extends MerisBasisOp {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(BlueBandOp.class, "Meris.BlueBand");
+            super(BlueBandOp.class);
         }
     }
 }
