@@ -25,10 +25,11 @@ import org.esa.beam.framework.gpf.GPF;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
-import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.gpf.operators.meris.MerisBasisOp;
+import org.esa.beam.gpf.operators.standard.BandMathsOp;
 import org.esa.beam.util.RectangleExtender;
 import org.esa.beam.util.StringUtils;
 import org.esa.beam.util.math.MathUtils;
@@ -39,12 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by marcoz.
- *
- * @author marcoz
- * @version $Revision: 1.1 $ $Date: 2007/05/14 12:26:01 $
- */
+@OperatorMetadata(alias = "FillAerosol", internal = true)
 public class FillAerosolOp extends MerisBasisOp {
 
     private RectangleExtender rectCalculator;
@@ -75,7 +71,7 @@ public class FillAerosolOp extends MerisBasisOp {
         private List<BandDesc> bands;
 
         public Configuration() {
-            bands = new ArrayList<BandDesc>();
+            bands = new ArrayList<>();
         }
     }
 
@@ -93,10 +89,10 @@ public class FillAerosolOp extends MerisBasisOp {
     @Override
     public void initialize() throws OperatorException {
         targetProduct = createCompatibleProduct(sourceProduct, "fill_aerosol", "MER_L2");
-        sourceBands = new HashMap<Band, Band>(config.bands.size());
-        defaultBands = new HashMap<Band, Band>(config.bands.size());
+        sourceBands = new HashMap<>(config.bands.size());
+        defaultBands = new HashMap<>(config.bands.size());
         
-        Map<String, Object> parameters = new HashMap<String, Object>();
+        Map<String, Object> parameters = new HashMap<>();
         BandMathsOp.BandDescriptor[] bandDescriptors = new BandMathsOp.BandDescriptor[config.bands.size()];
         int i = 0;
         for (BandDesc bandDesc : config.bands) {
@@ -182,8 +178,7 @@ public class FillAerosolOp extends MerisBasisOp {
 	}
     
     private static int convertToIndex(int x, int y, Rectangle rectangle) {
-        final int index = (y - rectangle.y) * rectangle.width + (x - rectangle.x);
-        return index;
+        return (y - rectangle.y) * rectangle.width + (x - rectangle.x);
     }
     
     private float[] getScaledArrayFromTile(Tile tile) {
@@ -395,7 +390,7 @@ public class FillAerosolOp extends MerisBasisOp {
         private final ProductData productData;
         private final Rectangle rectangle;
 
-        public SimpleTile(Rectangle rectangle) {
+        private SimpleTile(Rectangle rectangle) {
             this.rectangle = rectangle;
             productData = ProductData.createInstance(ProductData.TYPE_FLOAT32, rectangle.width * rectangle.height);
         }
@@ -417,7 +412,7 @@ public class FillAerosolOp extends MerisBasisOp {
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(FillAerosolOp.class, "FillAerosol");
+            super(FillAerosolOp.class);
         }
     }
 }
