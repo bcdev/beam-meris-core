@@ -22,6 +22,7 @@ import org.esa.beam.framework.datamodel.ProductData;
 import org.esa.beam.framework.gpf.OperatorException;
 import org.esa.beam.framework.gpf.OperatorSpi;
 import org.esa.beam.framework.gpf.Tile;
+import org.esa.beam.framework.gpf.annotations.OperatorMetadata;
 import org.esa.beam.framework.gpf.annotations.Parameter;
 import org.esa.beam.framework.gpf.annotations.SourceProduct;
 import org.esa.beam.framework.gpf.annotations.TargetProduct;
@@ -39,7 +40,7 @@ import java.util.Date;
 import java.util.Map;
 
 
-
+@OperatorMetadata(alias = "Meris.Mod08Aerosol", internal = true)
 public class ModisAerosolOp extends MerisBasisOp {
 
     public static final String BAND_NAME_AOT_470 = "aot_470";
@@ -54,8 +55,8 @@ public class ModisAerosolOp extends MerisBasisOp {
     private static final int MOD08_WIDTH = 360;
     private static final int MOD08_HEIGHT = 180;
 
-    private static final double AOT_470_WAVELENGTH = 470E-9;
-    private static final double AOT_660_WAVELENGTH = 660E-9;
+    private static final double AOT_470_WAVELENGTH = 470.0E-9;
+    private static final double AOT_660_WAVELENGTH = 660.0E-9;
 
     private TemporalFileArray mod08FileArray;
 
@@ -134,14 +135,12 @@ public class ModisAerosolOp extends MerisBasisOp {
 
         final double time = getSceneRasterMeanTime(sourceProduct).getMJD();
         final double logWavelengthDiff = Math.log(AOT_660_WAVELENGTH) - Math.log(AOT_470_WAVELENGTH);
-        float lat, lon;
-        int i = 0;
         for (int y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
             for (int x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
                 pixelPos.setLocation(x, y);
                 geoCoding.getGeoPos(pixelPos, geoPos);
-                lon = geoPos.getLon();
-                lat = geoPos.getLat();
+                float lon = geoPos.getLon();
+                float lat = geoPos.getLat();
 
                 Interp.interpCoord(time, _aot470LUT.getTab(0), indexes[0]);
                 Interp.interpCoord(lat, _aot470LUT.getTab(1), indexes[1]);
@@ -163,7 +162,6 @@ public class ModisAerosolOp extends MerisBasisOp {
                 }
                 flagTile.setSample(x, y, tFlag);
 
-                i++;
             }
         }
 
@@ -210,10 +208,6 @@ public class ModisAerosolOp extends MerisBasisOp {
     /**
      * Creates a new color object to be used in the bitmaskDef.
      * The given indices start with 1.
-     *
-     * @param index
-     * @param maxIndex
-     * @return color
      */
     private Color createBitmaskColor(int index, int maxIndex) {
         final double rf1 = 0.3;
@@ -221,11 +215,10 @@ public class ModisAerosolOp extends MerisBasisOp {
         final double bf1 = 1.0;
 
         final double a = 2 * Math.PI * index / maxIndex;
-        Color color = new Color((float) (0.5 + 0.5 * Math.sin(a + rf1 * Math.PI)),
+
+        return new Color((float) (0.5 + 0.5 * Math.sin(a + rf1 * Math.PI)),
                                 (float) (0.5 + 0.5 * Math.sin(a + gf1 * Math.PI)),
                                 (float) (0.5 + 0.5 * Math.sin(a + bf1 * Math.PI)));
-
-        return color;
     }
 
     private void readMod08() throws IOException {
@@ -291,11 +284,11 @@ public class ModisAerosolOp extends MerisBasisOp {
                     if (unscaled != AEROSOL_GAP_VALUE) {
                         mod08DataFloat[i][y][x] = unscaled * SCALE_FACTOR;
                     } else {
-                        mod08DataFloat[i][y][x] = 0f;
+                        mod08DataFloat[i][y][x] = 0.0f;
                     }
                 }
             }
-            gapFiller.findGaps(mod08DataFloat[i], 0f);
+            gapFiller.findGaps(mod08DataFloat[i], 0.0f);
             gapFiller.fillGaps(mod08DataFloat[i], gapFilled[index + i]);
         }
         return mod08DataFloat;
@@ -328,14 +321,14 @@ public class ModisAerosolOp extends MerisBasisOp {
         } finally {
             try {
                 HDFLibrary.SDend(sdId);
-            } catch (HDFException e) {
+            } catch (HDFException ignored) {
             }
         }
     }
 
     public static class Spi extends OperatorSpi {
         public Spi() {
-            super(ModisAerosolOp.class, "Meris.Mod08Aerosol");
+            super(ModisAerosolOp.class);
         }
     }
 }
