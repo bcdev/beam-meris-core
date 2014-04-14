@@ -5,7 +5,7 @@
 <node id="brrTestNode">
     <operator>Meris.Brr</operator>
     <sources>
-        <MERIS__L1b>${MERIS_L1b}</MERIS__L1b>
+        <merisL1bProduct>${merisL1bProduct}</merisL1bProduct>
     </sources>
     <parameters>
         <copyAllTiePoints>false</copyAllTiePoints>
