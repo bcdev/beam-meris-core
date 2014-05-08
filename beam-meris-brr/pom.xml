@@ -7,13 +7,13 @@
 
     <parent>
         <artifactId>beam-meris-core</artifactId>
-        <version>2.4-SNAPSHOT</version>
+        <version>2.4</version>
         <groupId>org.esa.beam</groupId>
     </parent>
 
     <name>BEAM MERIS BRR Implementation</name>
     <artifactId>beam-meris-brr</artifactId>
-    <version>2.4-SNAPSHOT</version>
+    <version>2.4</version>
 
     <packaging>jar</packaging>
 

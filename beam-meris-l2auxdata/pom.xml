@@ -7,13 +7,13 @@
 
     <parent>
         <artifactId>beam-meris-core</artifactId>
-        <version>2.4-SNAPSHOT</version>
+        <version>2.4</version>
         <groupId>org.esa.beam</groupId>
     </parent>
 
     <name>BEAM MERIS L2 Auxdata</name>
     <artifactId>beam-meris-l2auxdata</artifactId>
-    <version>1.2.5-SNAPSHOT</version>
+    <version>1.2.5</version>
 
     <packaging>jar</packaging>
 
