@@ -66,7 +66,7 @@
             <id>Meris.Brr</id>
             <class>org.esa.beam.meris.brr.ui.BrrProcessingAction</class>
             <operatorName>Meris.Brr</operatorName>
-            <text>MERIS L1b Rayleigh correction ...</text>
+            <text>MERIS L1b Rayleigh Correction ...</text>
             <shortDescr>Performs the Rayleigh correction on a MERIS L1b product.</shortDescr>
             <longDescr>Performs the Rayleigh correction on a MERIS L1b product.</longDescr>
             <mnemonic/>
