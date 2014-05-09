@@ -1,7 +1,7 @@
 <module>
     <manifestVersion>1.0.0</manifestVersion>
     <symbolicName>beam-meris-sdr</symbolicName>
-    <version>2.4</version>
+    <version>2.4.1</version>
     <name>MERIS Surface Directional Reflectance (SDR) Processor</name>
 
     <description>This processor computes the Surface Directional Reflectance (SDR) from MERIS L1B products.</description>
