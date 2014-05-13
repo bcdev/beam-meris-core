@@ -13,7 +13,6 @@
 
     <name>BEAM MERIS BRR Implementation</name>
     <artifactId>beam-meris-brr</artifactId>
-    <version>2.4.1</version>
 
     <packaging>jar</packaging>
 

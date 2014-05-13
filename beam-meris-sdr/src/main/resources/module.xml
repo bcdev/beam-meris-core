@@ -8,25 +8,14 @@
 
     <vendor>Brockmann Consult GmbH</vendor>
     <contactAddress>Max-Planck-Str. 2, 21502 Geesthacht (Germany)</contactAddress>
-    <copyright>(C) 2008 by Brockmann Consult GmbH</copyright>
+    <copyright>(C) 2014 by Brockmann Consult GmbH</copyright>
     <url>http://envisat.esa.int/beam</url>
     <licenseUrl>http://www.gnu.org/licenses/gpl.html</licenseUrl>
 
     <changelog>
         <![CDATA[
-        From 2.3.2 to 2.3.3:<br/>
-          Fix reading of GLint auxiliary data.<br/>
-          Added parameter option to include l1-flags into target product.<br/>
-        From 2.3 to 2.3.1:<br/>
-          Support for MERIS RRG products.<br/>
-        From 2.2 to 2.3<br/>
-          Adaptions to BEAM API changes.
-        From 2.1 to 2.2<br/>
-          Adaptions to BEAM API changes.
-        <br/>
-         From 2.0.1 to 2.1<br/>
-          Using different neural net files over land and water to compute cloud top pressure.
-        <br/>
+        Changes in 2.4.1:<br/>
+        - Version for BEAM 5.<br/>
         ]]>
     </changelog>
     <dependency>
@@ -67,8 +56,8 @@
             <class>org.esa.beam.meris.brr.ui.BrrProcessingAction</class>
             <operatorName>Meris.Brr</operatorName>
             <text>MERIS L1b Rayleigh Correction ...</text>
-            <shortDescr>Performs the Rayleigh correction on a MERIS L1b product.</shortDescr>
-            <longDescr>Performs the Rayleigh correction on a MERIS L1b product.</longDescr>
+            <shortDescr>Performs a Rayleigh correction on a MERIS L1b product.</shortDescr>
+            <longDescr>Performs a Rayleigh correction on a MERIS L1b product.</longDescr>
             <mnemonic/>
             <targetProductNameSuffix>_BRR</targetProductNameSuffix>
             <helpID>BrrProcessorPlugIn</helpID>

@@ -1,7 +1,6 @@
 package org.esa.beam.meris.brr.ui;
 
 import org.esa.beam.framework.gpf.ui.DefaultSingleTargetProductDialog;
-import org.esa.beam.framework.ui.ModelessDialog;
 import org.esa.beam.framework.ui.command.CommandEvent;
 import org.esa.beam.visat.actions.AbstractVisatAction;
 
@@ -18,7 +17,7 @@ public class BrrProcessingAction extends AbstractVisatAction {
         if (dialog == null) {
             dialog = new DefaultSingleTargetProductDialog("Meris.Brr",
                                                           getAppContext(),
-                                                          "MERIS Rayleigh Correction - v1.0",
+                                                          "MERIS Rayleigh Correction",
                                                           "BrrProcessorPlugIn");
             dialog.setTargetProductNameSuffix("_BRR");
         }
